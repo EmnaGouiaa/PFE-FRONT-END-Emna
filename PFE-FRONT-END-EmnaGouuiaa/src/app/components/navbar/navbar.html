@@ -1,0 +1,126 @@
+<nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+  <div class="container-fluid">
+    <a class="navbar-brand" routerLink="/dashboard">
+      <i class="fas fa-graduation-cap me-2"></i>
+      PFE Management
+    </a>
+
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+
+    <div class="collapse navbar-collapse" id="navbarNav">
+      <ul class="navbar-nav me-auto">
+        <!-- Dashboard -->
+        <li class="nav-item">
+          <a class="nav-link" routerLink="/dashboard" routerLinkActive="active">
+            <i class="fas fa-home me-1"></i> Dashboard
+          </a>
+        </li>
+
+        <!-- Admin Menu -->
+        <ng-container *ngIf="isAdmin$ | async">
+          <li class="nav-item dropdown">
+            <a class="nav-link dropdown-toggle" href="#" id="adminDropdown" role="button" data-bs-toggle="dropdown">
+              <i class="fas fa-cogs me-1"></i> Administration
+            </a>
+            <ul class="dropdown-menu">
+              <li><a class="dropdown-item" routerLink="/admin/dashboard">
+                <i class="fas fa-tachometer-alt me-2"></i> Admin Dashboard
+              </a></li>
+              <li><a class="dropdown-item" routerLink="/admin/users">
+                <i class="fas fa-users me-2"></i> User Management
+              </a></li>
+              <li><hr class="dropdown-divider"></li>
+              <li><a class="dropdown-item" routerLink="/stages">
+                <i class="fas fa-briefcase me-2"></i> All Internships
+              </a></li>
+            </ul>
+          </li>
+        </ng-container>
+
+        <!-- Student Menu -->
+        <ng-container *ngIf="isStagiaire$ | async">
+          <li class="nav-item">
+            <a class="nav-link" routerLink="/student/dashboard" routerLinkActive="active">
+              <i class="fas fa-user-graduate me-1"></i> My Internship
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" routerLink="/stages" routerLinkActive="active">
+              <i class="fas fa-briefcase me-1"></i> Internships
+            </a>
+          </li>
+        </ng-container>
+
+        <!-- Supervisor Menu -->
+        <ng-container *ngIf="isEncadrant$ | async">
+          <li class="nav-item dropdown">
+            <a class="nav-link dropdown-toggle" href="#" id="supervisorDropdown" role="button" data-bs-toggle="dropdown">
+              <i class="fas fa-chalkboard-teacher me-1"></i> Supervision
+            </a>
+            <ul class="dropdown-menu">
+              <li><a class="dropdown-item" routerLink="/encadrant/dashboard">
+                <i class="fas fa-tachometer-alt me-2"></i> Supervisor Dashboard
+              </a></li>
+              <li><a class="dropdown-item" routerLink="/stages">
+                <i class="fas fa-users me-2"></i> Student Internships
+              </a></li>
+              <li><a class="dropdown-item" routerLink="/evaluations">
+                <i class="fas fa-clipboard-check me-2"></i> Evaluations
+              </a></li>
+            </ul>
+          </li>
+        </ng-container>
+
+        <!-- Company Manager Menu -->
+        <ng-container *ngIf="isResponsable$ | async">
+          <li class="nav-item dropdown">
+            <a class="nav-link dropdown-toggle" href="#" id="companyDropdown" role="button" data-bs-toggle="dropdown">
+              <i class="fas fa-building me-1"></i> Company
+            </a>
+            <ul class="dropdown-menu">
+              <li><a class="dropdown-item" routerLink="/company/dashboard">
+                <i class="fas fa-tachometer-alt me-2"></i> Company Dashboard
+              </a></li>
+              <li><a class="dropdown-item" routerLink="/company/internships">
+                <i class="fas fa-briefcase me-2"></i> Our Internships
+              </a></li>
+              <li><a class="dropdown-item" routerLink="/company/interns">
+                <i class="fas fa-user-graduate me-2"></i> Interns
+              </a></li>
+            </ul>
+          </li>
+        </ng-container>
+      </ul>
+
+      <!-- User Menu -->
+      <ul class="navbar-nav">
+        <li class="nav-item dropdown">
+          <a class="nav-link dropdown-toggle d-flex align-items-center" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown">
+            <div class="avatar-placeholder me-2">
+              <i class="fas fa-user-circle"></i>
+            </div>
+            <span>{{ (getUserName() | async) }}</span>
+          </a>
+          <ul class="dropdown-menu dropdown-menu-end">
+            <li class="dropdown-header">
+              <small class="text-muted">{{ getRoleDisplayName((getUserRole() | async)) }}</small>
+            </li>
+            <li><hr class="dropdown-divider"></li>
+            <li><a class="dropdown-item" href="#" (click)="navigateToProfile()">
+              <i class="fas fa-user me-2"></i> Profile
+            </a></li>
+            <li><a class="dropdown-item" href="#" (click)="navigateToSettings()">
+              <i class="fas fa-cog me-2"></i> Settings
+            </a></li>
+            <li><hr class="dropdown-divider"></li>
+            <li><a class="dropdown-item text-danger" href="#" (click)="logout()">
+              <i class="fas fa-sign-out-alt me-2"></i> Logout
+            </a></li>
+          </ul>
+        </li>
+      </ul>
+    </div>
+  </div>
+</nav>

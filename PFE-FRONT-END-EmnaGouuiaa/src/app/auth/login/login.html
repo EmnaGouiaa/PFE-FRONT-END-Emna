@@ -1,0 +1,103 @@
+<div class="login-container">
+  <!-- Background elements -->
+  <div class="dot-pattern"></div>
+  <div class="shape-1"></div>
+  <div class="shape-2"></div>
+
+  <div class="login-wrapper">
+    <!-- Photo Section - Left -->
+    <div class="photo-section">
+      <div class="photo-content">
+        <img src="testt.png" alt="Graduation Cap">
+        <div class="photo-caption">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M22 10v6M2 10l10-5 10 5-10 5z"/>
+            <path d="M6 12v5c3 2 6 2 9 0v-5"/>
+          </svg>
+          Gestion des Stages universitaires
+        </div>
+      </div>
+    </div>
+
+    <!-- Login Card - Right -->
+    <div class="login-card">
+      <div class="header">
+        <h2>Connexion</h2>
+        <p>Plateforme de gestion des stages</p>
+        <div class="jwt-badge">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+          </svg>
+          Sécurisé avec JWT
+        </div>
+      </div>
+
+      <form [formGroup]="loginForm" (ngSubmit)="onSubmit()" class="login-form">
+        <div class="form-group">
+          <label for="email">Adresse email</label>
+          <div class="input-wrapper">
+            <input
+              type="text"
+              id="email"
+              formControlName="email"
+              placeholder="exemple@universite.ma"
+              [class.is-invalid]="loginForm.get('email')?.invalid && loginForm.get('email')?.touched"
+            >
+          </div>
+          <div class="error-message" *ngIf="loginForm.get('email')?.invalid && loginForm.get('email')?.touched">
+            L'adresse email est requise
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="password">Mot de passe</label>
+          <div class="input-wrapper">
+            <input
+              type="password"
+              id="password"
+              formControlName="password"
+              placeholder="Entrez votre mot de passe"
+              [class.is-invalid]="loginForm.get('password')?.invalid && loginForm.get('password')?.touched"
+            >
+          </div>
+          <div class="error-message" *ngIf="loginForm.get('password')?.invalid && loginForm.get('password')?.touched">
+            Minimum 6 caractères
+          </div>
+        </div>
+
+        <div class="info-message">
+           Accès réservé aux utilisateurs autorisés
+        </div>
+
+        <div class="success-banner" *ngIf="successMessage">
+          ✅ {{ successMessage }}
+        </div>
+
+        <div class="error-banner" *ngIf="errorMessage">
+          ⚠️ {{ errorMessage }}
+        </div>
+
+        <button type="submit" class="submit-btn" [disabled]="loginForm.invalid || isLoading">
+          {{ isLoading ? 'Connexion en cours...' : 'Se connecter' }}
+        </button>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Demo Accounts Section -->
+<div class="demo-accounts">
+  <div class="demo-header">
+    <h4>Comptes de démonstration</h4>
+    <p>Utilisez ces comptes pour tester l'application</p>
+  </div>
+  <div class="demo-list">
+    <div class="demo-item" *ngFor="let account of demoAccounts">
+      <div class="demo-role">{{ account.role }}</div>
+      <div class="demo-credentials">
+        <strong>Email:</strong> {{ account.email }}<br>
+        <strong>Password:</strong> {{ account.password }}
+      </div>
+    </div>
+  </div>
+</div>

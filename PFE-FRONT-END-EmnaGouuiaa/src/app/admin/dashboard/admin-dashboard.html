@@ -1,0 +1,166 @@
+<div class="admin-container">
+    <!-- Background Pattern -->
+    <div class="dot-pattern"></div>
+    <div class="shape-1"></div>
+    <div class="shape-2"></div>
+
+    <div class="admin-wrapper">
+        <!-- Header -->
+        <header class="admin-header">
+            <div class="header-content">
+                <h1>
+                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                        <circle cx="9" cy="7" r="4" />
+                        <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+                        <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+                    </svg>
+                    Admin Dashboard
+                </h1>
+                <p>Welcome back! Manage your users and monitor system activity.</p>
+            </div>
+        </header>
+
+        <!-- Stats Cards -->
+        <div class="stats-grid" *ngIf="!isLoading; else loadingSkeleton">
+            <div class="stat-card stat-total">
+                <div class="stat-icon">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                        <circle cx="9" cy="7" r="4" />
+                    </svg>
+                </div>
+                <div class="stat-info">
+                    <h3>{{ stats.totalUsers }}</h3>
+                    <p>Total Users</p>
+                </div>
+            </div>
+
+            <div class="stat-card stat-students">
+                <div class="stat-icon">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M22 10v6M2 10l10-5 10 5-10 5z" />
+                        <path d="M6 12v5c3 2 6 2 9 0v-5" />
+                    </svg>
+                </div>
+                <div class="stat-info">
+                    <h3>{{ stats.students }}</h3>
+                    <p>Students</p>
+                </div>
+            </div>
+
+            <div class="stat-card stat-teachers">
+                <div class="stat-icon">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z" />
+                        <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z" />
+                    </svg>
+                </div>
+                <div class="stat-info">
+                    <h3>{{ stats.teachers }}</h3>
+                    <p>Supervisors</p>
+                </div>
+            </div>
+
+            <div class="stat-card stat-companies">
+                <div class="stat-icon">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect x="2" y="7" width="20" height="14" rx="2" ry="2" />
+                        <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16" />
+                    </svg>
+                </div>
+                <div class="stat-info">
+                    <h3>{{ stats.companies }}</h3>
+                    <p>Companies</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Loading Skeleton -->
+        <ng-template #loadingSkeleton>
+            <div class="stats-grid">
+                <div class="stat-card skeleton" *ngFor="let i of [1,2,3,4]"></div>
+            </div>
+        </ng-template>
+
+        <!-- Quick Actions -->
+        <div class="quick-actions">
+            <a routerLink="/admin/users" class="action-btn action-primary">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                    <circle cx="8.5" cy="7" r="4" />
+                    <line x1="20" y1="8" x2="20" y2="14" />
+                    <line x1="23" y1="11" x2="17" y2="11" />
+                </svg>
+                Manage Users
+            </a>
+            <a routerLink="/admin/reports" class="action-btn action-secondary">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                    <polyline points="14 2 14 8 20 8" />
+                    <line x1="16" y1="13" x2="8" y2="13" />
+                    <line x1="16" y1="17" x2="8" y2="17" />
+                    <polyline points="10 9 9 9 8 9" />
+                </svg>
+                View Reports
+            </a>
+        </div>
+
+        <!-- Recent Users -->
+        <div class="recent-users-section">
+            <div class="section-header">
+                <h2>Recent Users</h2>
+                <a routerLink="/admin/users" class="view-all-link">View All →</a>
+            </div>
+
+            <div class="users-table-container" *ngIf="recentUsers.length > 0; else noUsers">
+                <table class="users-table">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Email</th>
+                            <th>Role</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr *ngFor="let user of recentUsers">
+                            <td>
+                                <div class="user-name">
+                                    <span class="user-avatar">{{ user.prenom[0] }}{{ user.nom[0] }}</span>
+                                    {{ user.prenom }} {{ user.nom }}
+                                </div>
+                            </td>
+                            <td>{{ user.email }}</td>
+                            <td>
+                                <span class="role-badge" [class]="getRoleBadgeClass(user.role)">
+                                    {{ getRoleLabel(user.role) }}
+                                </span>
+                            </td>
+                            <td>
+                                <span class="status-badge" [class.active]="user.compteValide"
+                                    [class.inactive]="!user.compteValide">
+                                    {{ user.compteValide ? 'Active' : 'Inactive' }}
+                                </span>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <ng-template #noUsers>
+                <div class="empty-state">
+                    <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                        stroke-width="1.5">
+                        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                        <circle cx="9" cy="7" r="4" />
+                        <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+                        <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+                    </svg>
+                    <p>No users found</p>
+                    <a routerLink="/admin/users" class="btn-add-first">Add Your First User</a>
+                </div>
+            </ng-template>
+        </div>
+    </div>
+</div>
