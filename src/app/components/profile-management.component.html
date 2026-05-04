@@ -1,0 +1,201 @@
+<div class="profile-management">
+  <!-- En-tête -->
+  <header class="dashboard-header">
+    <div class="header-content">
+      <div class="welcome-section">
+        <h1>👤 Gestion du Profil</h1>
+        <p>Gérez vos informations personnelles et vos paramètres</p>
+      </div>
+      <div class="header-actions">
+        <button class="btn btn-secondary" (click)="deconnexion()">
+          🚪 Déconnexion
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Contenu Principal -->
+  <main class="dashboard-content">
+    
+    <!-- État de Chargement -->
+    <div *ngIf="enChargement" class="loading-container">
+      <div class="spinner"></div>
+      <p>Chargement du profil...</p>
+    </div>
+
+    <!-- Messages d'Erreur/Succès -->
+    <div *ngIf="messageErreur" class="alert alert-danger">
+      <span class="alert-icon">❌</span>
+      {{ messageErreur }}
+    </div>
+
+    <div *ngIf="messageSucces" class="alert alert-success">
+      <span class="alert-icon">✅</span>
+      {{ messageSucces }}
+    </div>
+
+    <!-- Contenu du Profil -->
+    <div *ngIf="!enChargement && profil" class="profile-content">
+      
+      <!-- Aperçu du Profil -->
+      <section class="profile-overview">
+        <div class="overview-header">
+          <h2>📋 Aperçu du Profil</h2>
+          <div class="status-badge" [class.active]="profil.actif">
+            {{ profil.actif ? '✅ Actif' : '❌ Inactif' }}
+          </div>
+        </div>
+        
+        <div class="overview-grid">
+          <div class="overview-item">
+            <span class="label">📧 Email :</span>
+            <span class="value">{{ profil.email }}</span>
+            <small class="immutable-note">🔒 Ne peut pas être modifié</small>
+          </div>
+          
+          <div class="overview-item">
+            <span class="label">👤 Nom complet :</span>
+            <span class="value">{{ profil.prenom }} {{ profil.nom }}</span>
+          </div>
+          
+          <div class="overview-item">
+            <span class="label">🎭 Rôle :</span>
+            <span class="value">{{ getNomAffichageRole(profil.role) }}</span>
+          </div>
+          
+          <div class="overview-item" *ngIf="profil.telephone">
+            <span class="label">📱 Téléphone :</span>
+            <span class="value">{{ profil.telephone }}</span>
+          </div>
+          
+          <div class="overview-item" *ngIf="profil.adresse">
+            <span class="label">📍 Adresse :</span>
+            <span class="value">{{ profil.adresse }}</span>
+          </div>
+          
+          <div class="overview-item" *ngIf="profil.poste">
+            <span class="label">💼 Poste :</span>
+            <span class="value">{{ profil.poste }}</span>
+          </div>
+          
+          <div class="overview-item" *ngIf="profil.specialite">
+            <span class="label">🎓 Spécialité :</span>
+            <span class="value">{{ profil.specialite }}</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- Formulaire d'Édition -->
+      <section class="profile-form-section">
+        <div class="section-header">
+          <h2>✏️ Modifier le Profil</h2>
+        </div>
+        
+        <form [formGroup]="formulaireProfil" (ngSubmit)="mettreAJourProfil()" class="profile-form">
+          <div class="form-section">
+            <h3>📝 Informations de Base</h3>
+            
+            <div class="form-row">
+              <div class="form-group">
+                <label for="prenom">Prénom *</label>
+                <input 
+                  type="text" 
+                  id="prenom" 
+                  formControlName="prenom" 
+                  class="form-control"
+                >
+              </div>
+              
+              <div class="form-group">
+                <label for="nom">Nom *</label>
+                <input 
+                  type="text" 
+                  id="nom" 
+                  formControlName="nom" 
+                  class="form-control"
+                >
+              </div>
+            </div>
+            
+            <div class="form-row">
+              <div class="form-group">
+                <label for="telephone">Téléphone</label>
+                <input 
+                  type="tel" 
+                  id="telephone" 
+                  formControlName="telephone" 
+                  class="form-control"
+                  placeholder="+216 -- --- ---"
+                >
+              </div>
+            </div>
+          </div>
+
+          <!-- Bouton de Sauvegarde -->
+          <div class="form-actions">
+            <button type="submit" class="btn btn-primary" [disabled]="enregistrementEnCours || formulaireProfil.invalid">
+              <span *ngIf="enregistrementEnCours" class="spinner-small"></span>
+              {{ enregistrementEnCours ? 'Enregistrement...' : '💾 Sauvegarder les modifications' }}
+            </button>
+          </div>
+        </form>
+      </section>
+
+      <!-- Section Changement de Mot de Passe -->
+      <section class="password-section">
+        <div class="section-header">
+          <h2>🔐 Changer le Mot de Passe</h2>
+        </div>
+        
+        <form [formGroup]="formulaireMotDePasse" (ngSubmit)="mettreAJourMotDePasse()" class="password-form">
+          <div class="form-row">
+            <div class="form-group">
+              <label for="motDePasseActuel">Mot de passe actuel *</label>
+              <input type="password" id="motDePasseActuel" formControlName="motDePasseActuel" class="form-control">
+            </div>
+          </div>
+          
+          <div class="form-row">
+            <div class="form-group">
+              <label for="nouveauMotDePasse">Nouveau mot de passe *</label>
+              <input type="password" id="nouveauMotDePasse" formControlName="nouveauMotDePasse" class="form-control">
+            </div>
+          </div>
+          
+          <div class="form-row">
+            <div class="form-group">
+              <label for="confirmationMotDePasse">Confirmer le nouveau mot de passe *</label>
+              <input type="password" id="confirmationMotDePasse" formControlName="confirmationMotDePasse" class="form-control">
+            </div>
+          </div>
+
+          <div class="form-actions">
+            <button type="submit" class="btn btn-warning" [disabled]="modificationMotDePasseEnCours || formulaireMotDePasse.invalid">
+              {{ modificationMotDePasseEnCours ? 'Mise à jour...' : '🔐 Mettre à jour le mot de passe' }}
+            </button>
+          </div>
+        </form>
+      </section>
+
+      <!-- Actions du Compte -->
+      <section class="account-actions">
+        <div class="section-header">
+          <h2>⚙️ Actions du Compte</h2>
+        </div>
+        
+        <div class="actions-grid">
+          <div class="action-card danger">
+            <div class="action-icon">⚠️</div>
+            <div class="action-content">
+              <h3>Désactiver le Compte</h3>
+              <p>Désactive temporairement votre compte. Vous devrez contacter un administrateur pour le réactiver.</p>
+              <button class="btn btn-danger" (click)="desactiverCompte()">
+                🚫 Désactiver le Compte
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+  </main>
+</div>

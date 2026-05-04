@@ -1,0 +1,69 @@
+<div class="agreement-container">
+  <div class="agreement-header" *ngIf="convention">
+    <div class="title-section">
+      <h1>📄 Convention de Stage #{{convention.id}}</h1>
+      <span class="status-chip" [ngClass]="convention.statut.toLowerCase()">{{convention.statut | replace:'_':' '}}</span>
+    </div>
+    <div class="actions">
+      <button mat-stroked-button (click)="telechargerManuel()">
+        <mat-icon>download</mat-icon>
+        Télécharger PDF
+      </button>
+      <button mat-flat-button color="primary" *ngIf="signatureUtilisateurActuel" (click)="ouvrirDialogueSignature()">
+        <mat-icon>draw</mat-icon>
+        Signer la Convention
+      </button>
+    </div>
+  </div>
+
+  <div class="content-grid" *ngIf="convention && !chargement">
+    <!-- Visualiseur PDF -->
+    <div class="pdf-viewer card mat-elevation-z2">
+      <iframe *ngIf="pdfUrl" [src]="pdfUrl" width="100%" height="700px"></iframe>
+      <div *ngIf="!pdfUrl" class="loading-pdf">
+        <mat-spinner diameter="40"></mat-spinner>
+        <span>Chargement du document PDF...</span>
+      </div>
+    </div>
+
+    <!-- Barre latérale / Suivi -->
+    <div class="tracking-sidebar">
+      <mat-card class="progress-card">
+        <mat-card-header>
+          <mat-card-title>Progression des Signatures</mat-card-title>
+          <mat-card-subtitle>{{getNombreSignaturesDone()}} signatures sur 5 collectées</mat-card-subtitle>
+        </mat-card-header>
+        <mat-card-content>
+          <mat-progress-bar mode="determinate" [value]="getProgres()"></mat-progress-bar>
+          
+          <div class="signature-list">
+            <div class="signatory-item" *ngFor="let sig of convention.signatures" [class.signed]="sig.estSigne">
+              <mat-icon [color]="sig.estSigne ? 'primary' : 'disabled'">
+                {{sig.estSigne ? 'check_circle' : 'pending'}}
+              </mat-icon>
+              <div class="sig-info">
+                <span class="role">{{sig.roleSignataire | replace:'_':' '}}</span>
+                <span class="name">{{sig.utilisateurSignataire.prenom}} {{sig.utilisateurSignataire.nom}}</span>
+                <span class="date" *ngIf="sig.estSigne">{{sig.signeLe | date:'medium'}}</span>
+                <span class="waiting" *ngIf="!sig.estSigne">En attente de signature...</span>
+              </div>
+            </div>
+          </div>
+        </mat-card-content>
+      </mat-card>
+
+      <div class="success-banner" *ngIf="convention.statut === 'ENTIEREMENT_SIGNEE'">
+        <mat-icon>verified</mat-icon>
+        <div class="banner-text">
+          <h3>Convention entièrement signée !</h3>
+          <p>Le stage est maintenant officiellement prêt à commencer.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div *ngIf="chargement" class="global-loading">
+    <mat-spinner></mat-spinner>
+    <p>Préparation des détails de la convention...</p>
+  </div>
+</div>

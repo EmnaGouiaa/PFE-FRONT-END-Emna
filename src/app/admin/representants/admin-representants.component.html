@@ -1,0 +1,80 @@
+<div class="page">
+  <header class="page-header">
+    <div>
+      <h1>Representants</h1>
+      <p>Gestion des responsables d'entreprise.</p>
+    </div>
+    <button class="btn btn-primary" (click)="openCreate()" [disabled]="isLoading">+ Nouveau representant</button>
+  </header>
+
+  <section class="filters">
+    <input class="input" type="text" placeholder="Rechercher..." [(ngModel)]="searchQuery" (input)="filter()" />
+    <button class="btn btn-secondary" (click)="load()" [disabled]="isLoading">Rafraichir</button>
+  </section>
+
+  <div *ngIf="errorMessage" class="alert alert-error">{{ errorMessage }}</div>
+  <div *ngIf="successMessage" class="alert alert-success">{{ successMessage }}</div>
+  <div *ngIf="isLoading" class="loading">Chargement...</div>
+
+  <div *ngIf="!isLoading && filtered.length === 0" class="empty">Aucun representant.</div>
+
+  <div *ngIf="!isLoading && filtered.length > 0" class="table-wrap">
+    <table class="table">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Nom</th>
+          <th>Email</th>
+          <th>Telephone</th>
+          <th>Entreprise ID</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let r of filtered">
+          <td>{{ r.id }}</td>
+          <td>{{ r.prenom }} {{ r.nom }}</td>
+          <td>{{ r.email || '-' }}</td>
+          <td>{{ r.telephone || '-' }}</td>
+          <td>{{ r.entrepriseId ?? '-' }}</td>
+          <td class="actions">
+            <button class="btn btn-secondary" (click)="openEdit(r)" [disabled]="isLoading">Modifier</button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="modal-overlay" *ngIf="showForm" (click)="closeForm()">
+    <div class="modal" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h2>{{ isEditMode ? 'Modifier representant' : 'Nouveau representant' }}</h2>
+        <button class="btn-close" (click)="closeForm()" aria-label="Close">x</button>
+      </div>
+
+      <form [formGroup]="form" (ngSubmit)="submit()" class="form">
+        <label>Prenom *</label>
+        <input class="input" formControlName="prenom" />
+
+        <label>Nom *</label>
+        <input class="input" formControlName="nom" />
+
+        <label>Email *</label>
+        <input class="input" type="email" formControlName="email" />
+
+        <label>Telephone</label>
+        <input class="input" formControlName="telephone" />
+
+        <label>Entreprise ID (optionnel)</label>
+        <input class="input" formControlName="entrepriseId" placeholder="ex: 12" />
+
+        <div class="form-actions">
+          <button type="button" class="btn btn-secondary" (click)="closeForm()" [disabled]="isLoading">Annuler</button>
+          <button type="submit" class="btn btn-primary" [disabled]="form.invalid || isLoading">
+            {{ isLoading ? 'Enregistrement...' : 'Enregistrer' }}
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>

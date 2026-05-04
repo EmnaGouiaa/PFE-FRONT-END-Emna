@@ -1,0 +1,280 @@
+<div class="dashboard-container">
+  <!-- Header -->
+  <div class="dashboard-header">
+    <div class="row align-items-center">
+      <div class="col-md-6">
+        <h1 class="dashboard-title">
+          <i [class]="getRoleIcon((userRole$ | async))" class="me-3"></i>
+          {{ welcomeMessage$ | async }}
+        </h1>
+        <p class="text-muted">{{ getRoleDisplayName((userRole$ | async)) }} Dashboard</p>
+      </div>
+      <div class="col-md-6 text-end">
+        <div class="header-actions">
+          <button class="btn btn-outline-primary me-2" (click)="navigateToInternships()">
+            <i class="fas fa-briefcase me-2"></i>View Internships
+          </button>
+          <button class="btn btn-outline-secondary me-2" (click)="navigateToProfile()">
+            <i class="fas fa-user me-2"></i>Profile
+          </button>
+          <button class="btn btn-outline-secondary" (click)="navigateToSettings()">
+            <i class="fas fa-cog me-2"></i>Settings
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Stats Cards -->
+  <div class="dashboard-stats">
+    <div class="row">
+      <!-- Admin Stats -->
+      <ng-container *ngIf="(userRole$ | async) === 'ADMIN'">
+        <div class="col-md-3 mb-4">
+          <div class="stat-card">
+            <div class="stat-icon bg-primary">
+              <i class="fas fa-users"></i>
+            </div>
+            <div class="stat-content">
+              <h3>{{ (dashboardStats$ | async)?.totalUsers || 0 }}</h3>
+              <p>Total Users</p>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-3 mb-4">
+          <div class="stat-card">
+            <div class="stat-icon bg-success">
+              <i class="fas fa-briefcase"></i>
+            </div>
+            <div class="stat-content">
+              <h3>{{ (dashboardStats$ | async)?.activeInternships || 0 }}</h3>
+              <p>Active Internships</p>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-3 mb-4">
+          <div class="stat-card">
+            <div class="stat-icon bg-warning">
+              <i class="fas fa-clock"></i>
+            </div>
+            <div class="stat-content">
+              <h3>{{ (dashboardStats$ | async)?.pendingApprovals || 0 }}</h3>
+              <p>Pending Approvals</p>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-3 mb-4">
+          <div class="stat-card">
+            <div class="stat-icon bg-info">
+              <i class="fas fa-heartbeat"></i>
+            </div>
+            <div class="stat-content">
+              <h3>{{ (dashboardStats$ | async)?.systemHealth || 'N/A' }}</h3>
+              <p>System Health</p>
+            </div>
+          </div>
+        </div>
+      </ng-container>
+
+      <!-- Student Stats -->
+      <ng-container *ngIf="(userRole$ | async) === 'STAGIAIRE'">
+        <div class="col-md-3 mb-4">
+          <div class="stat-card">
+            <div class="stat-icon bg-primary">
+              <i class="fas fa-briefcase"></i>
+            </div>
+            <div class="stat-content">
+              <h3>{{ (dashboardStats$ | async)?.myInternship || 'N/A' }}</h3>
+              <p>My Internship</p>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-3 mb-4">
+          <div class="stat-card">
+            <div class="stat-icon bg-success">
+              <i class="fas fa-tasks"></i>
+            </div>
+            <div class="stat-content">
+              <h3>{{ (dashboardStats$ | async)?.completedTasks || 0 }}</h3>
+              <p>Completed Tasks</p>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-3 mb-4">
+          <div class="stat-card">
+            <div class="stat-icon bg-warning">
+              <i class="fas fa-clipboard-check"></i>
+            </div>
+            <div class="stat-content">
+              <h3>{{ (dashboardStats$ | async)?.pendingEvaluations || 0 }}</h3>
+              <p>Pending Evaluations</p>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-3 mb-4">
+          <div class="stat-card">
+            <div class="stat-icon bg-info">
+              <i class="fas fa-calendar-alt"></i>
+            </div>
+            <div class="stat-content">
+              <h3>{{ (dashboardStats$ | async)?.daysRemaining || 0 }}</h3>
+              <p>Days Remaining</p>
+            </div>
+          </div>
+        </div>
+      </ng-container>
+
+      <!-- Supervisor Stats -->
+      <ng-container *ngIf="(userRole$ | async) === 'ENCADRANT_PROFESSIONNEL' || (userRole$ | async) === 'ENCADRANT_ACADEMIQUE'">
+        <div class="col-md-3 mb-4">
+          <div class="stat-card">
+            <div class="stat-icon bg-primary">
+              <i class="fas fa-user-graduate"></i>
+            </div>
+            <div class="stat-content">
+              <h3>{{ (dashboardStats$ | async)?.supervisedStudents || 0 }}</h3>
+              <p>Supervised Students</p>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-3 mb-4">
+          <div class="stat-card">
+            <div class="stat-icon bg-warning">
+              <i class="fas fa-clipboard-check"></i>
+            </div>
+            <div class="stat-content">
+              <h3>{{ (dashboardStats$ | async)?.pendingEvaluations || 0 }}</h3>
+              <p>Pending Evaluations</p>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-3 mb-4">
+          <div class="stat-card">
+            <div class="stat-icon bg-info">
+              <i class="fas fa-calendar"></i>
+            </div>
+            <div class="stat-content">
+              <h3>{{ (dashboardStats$ | async)?.upcomingMeetings || 0 }}</h3>
+              <p>Upcoming Meetings</p>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-3 mb-4">
+          <div class="stat-card">
+            <div class="stat-icon bg-success">
+              <i class="fas fa-star"></i>
+            </div>
+            <div class="stat-content">
+              <h3>{{ (dashboardStats$ | async)?.averageRating || 0 }}</h3>
+              <p>Average Rating</p>
+            </div>
+          </div>
+        </div>
+      </ng-container>
+
+      <!-- Company Manager Stats -->
+      <ng-container *ngIf="(userRole$ | async) === 'RESPONSABLE_ENTREPRISE'">
+        <div class="col-md-3 mb-4">
+          <div class="stat-card">
+            <div class="stat-icon bg-primary">
+              <i class="fas fa-briefcase"></i>
+            </div>
+            <div class="stat-content">
+              <h3>{{ (dashboardStats$ | async)?.activeInternships || 0 }}</h3>
+              <p>Active Internships</p>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-3 mb-4">
+          <div class="stat-card">
+            <div class="stat-icon bg-success">
+              <i class="fas fa-user-graduate"></i>
+            </div>
+            <div class="stat-content">
+              <h3>{{ (dashboardStats$ | async)?.currentInterns || 0 }}</h3>
+              <p>Current Interns</p>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-3 mb-4">
+          <div class="stat-card">
+            <div class="stat-icon bg-warning">
+              <i class="fas fa-plus-circle"></i>
+            </div>
+            <div class="stat-content">
+              <h3>{{ (dashboardStats$ | async)?.openPositions || 0 }}</h3>
+              <p>Open Positions</p>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-3 mb-4">
+          <div class="stat-card">
+            <div class="stat-icon bg-info">
+              <i class="fas fa-chart-line"></i>
+            </div>
+            <div class="stat-content">
+              <h3>{{ (dashboardStats$ | async)?.conversionRate || 0 }}</h3>
+              <p>Conversion Rate</p>
+            </div>
+          </div>
+        </div>
+      </ng-container>
+    </div>
+  </div>
+
+  <!-- Quick Actions -->
+  <div class="quick-actions">
+    <h2 class="section-title">Quick Actions</h2>
+    <div class="row">
+      <!-- Admin Actions -->
+      <ng-container *ngIf="(userRole$ | async) === 'ADMIN'">
+        <div class="col-md-4 mb-3">
+          <div class="action-card" (click)="router.navigate(['/admin/users'])">
+            <i class="fas fa-users action-icon"></i>
+            <h4>Manage Users</h4>
+            <p>Add, edit, or remove user accounts</p>
+          </div>
+        </div>
+        <div class="col-md-4 mb-3">
+          <div class="action-card" (click)="router.navigate(['/stages'])">
+            <i class="fas fa-briefcase action-icon"></i>
+            <h4>View All Internships</h4>
+            <p>Monitor and manage all internship programs</p>
+          </div>
+        </div>
+        <div class="col-md-4 mb-3">
+          <div class="action-card" (click)="router.navigate(['/admin/reports'])">
+            <i class="fas fa-chart-bar action-icon"></i>
+            <h4>Generate Reports</h4>
+            <p>Create system and performance reports</p>
+          </div>
+        </div>
+      </ng-container>
+
+      <!-- Student Actions -->
+      <ng-container *ngIf="(userRole$ | async) === 'STAGIAIRE'">
+        <div class="col-md-4 mb-3">
+          <div class="action-card" (click)="router.navigate(['/stages'])">
+            <i class="fas fa-search action-icon"></i>
+            <h4>Find Internships</h4>
+            <p>Browse available internship opportunities</p>
+          </div>
+        </div>
+        <div class="col-md-4 mb-3">
+          <div class="action-card" (click)="router.navigate(['/student/internship'])">
+            <i class="fas fa-tasks action-icon"></i>
+            <h4>My Internship Tasks</h4>
+            <p>View and complete assigned tasks</p>
+          </div>
+        </div>
+        <div class="col-md-4 mb-3">
+          <div class="action-card" (click)="router.navigate(['/student/evaluations'])">
+            <i class="fas fa-clipboard-check action-icon"></i>
+            <h4>My Evaluations</h4>
+            <p>View feedback and evaluations</p>
+          </div>
+        </div>
+      </ng-container>
+    </div>
+  </div>
+</div>
