@@ -1,0 +1,38 @@
+
+> pfe-front-end-emna-gouuiaa@0.0.0 start
+> ng serve --host 127.0.0.1 --port 4201
+
+[33m>[39m Building...
+[32m√[39m Building...
+[1mInitial chunk files[22m[2m | [22m[1mNames[22m                              [2m | [22m [1mRaw size[22m
+[32mmain.js[39m            [2m | [22m[2mmain[22m                               [2m | [22m [36m27.64 kB[39m[2m | [22m
+[32mstyles.css[39m         [2m | [22m[2mstyles[22m                             [2m | [22m [36m11.29 kB[39m[2m | [22m
+[32mchunk-W4ZAXXJC.js[39m  [2m | [22m[2m-[22m                                  [2m | [22m [36m10.34 kB[39m[2m | [22m
+[32mchunk-CZJLB7T5.js[39m  [2m | [22m[2m-[22m                                  [2m | [22m  [36m1.08 kB[39m[2m | [22m
+[32mchunk-XR6DBZRL.js[39m  [2m | [22m[2m-[22m                                  [2m | [22m[36m153 bytes[39m[2m | [22m
+
+[1m [22m                  [2m | [22m[1mInitial total[22m                      [2m | [22m [1m50.50 kB[22m
+
+[1mLazy chunk files[22m   [2m | [22m[1mNames[22m                              [2m | [22m [1mRaw size[22m
+[32mchunk-KCIVQGUY.js[39m  [2m | [22m[2msupervisor-workspace-component[22m     [2m | [22m[36m291.17 kB[39m[2m | [22m
+[32mchunk-DLNI5D7D.js[39m  [2m | [22m[2mstudent-profile-page-component[22m     [2m | [22m[36m158.27 kB[39m[2m | [22m
+[32mchunk-FGKNAZZX.js[39m  [2m | [22m[2mprofile-management-component[22m       [2m | [22m[36m148.07 kB[39m[2m | [22m
+[32mchunk-WDKVG2NC.js[39m  [2m | [22m[2mstudent-follow-up-page-component[22m   [2m | [22m[36m140.66 kB[39m[2m | [22m
+[32mchunk-J27K4CZJ.js[39m  [2m | [22m[2mfaculty-dashboard-component[22m        [2m | [22m[36m107.59 kB[39m[2m | [22m
+[32mchunk-M62Q7JNO.js[39m  [2m | [22m[2mstudent-dashboard-page-component[22m   [2m | [22m[36m102.55 kB[39m[2m | [22m
+[32mchunk-QPKLMNES.js[39m  [2m | [22m[2madmin-dashboard[22m                    [2m | [22m[36m102.48 kB[39m[2m | [22m
+[32mchunk-3H2HJUDN.js[39m  [2m | [22m[2mfaculty-offers-validation-component[22m[2m | [22m [36m99.46 kB[39m[2m | [22m
+[32mchunk-5ZCGVOPL.js[39m  [2m | [22m[2mcompany-internships-component[22m      [2m | [22m [36m92.61 kB[39m[2m | [22m
+[32mchunk-RPXPPU5R.js[39m  [2m | [22m[2mcompany-offers-component[22m           [2m | [22m [36m92.25 kB[39m[2m | [22m
+[32mchunk-KWZXAC6K.js[39m  [2m | [22m[2mstudent-meetings-page-component[22m    [2m | [22m [36m92.16 kB[39m[2m | [22m
+[32mchunk-J6H4377L.js[39m  [2m | [22m[2mfaculty-assignments-component[22m      [2m | [22m [36m91.77 kB[39m[2m | [22m
+[32mchunk-XMIBQBME.js[39m  [2m | [22m[2mstudent-documents-page-component[22m   [2m | [22m [36m85.96 kB[39m[2m | [22m
+[32mchunk-LS6PEHGX.js[39m  [2m | [22m[2magreement-detail-component[22m         [2m | [22m [36m85.79 kB[39m[2m | [22m
+[32mchunk-ZHYJZ4O6.js[39m  [2m | [22m[2mstudent-offers-page-component[22m      [2m | [22m [36m85.78 kB[39m[2m | [22m
+[2m...and 50 more lazy chunks files. Use "--verbose" to show all the files.[22m
+
+Application bundle generation complete. [11.043 seconds] - 2026-05-05T08:54:06.352Z
+
+Watch mode enabled. Watching for file changes...
+NOTE: Raw file sizes do not reflect development server per-request transformations.
+  [32m➜[39m  [1mLocal[22m:   [36mhttp://127.0.0.1:[1m4201[22m/[39m

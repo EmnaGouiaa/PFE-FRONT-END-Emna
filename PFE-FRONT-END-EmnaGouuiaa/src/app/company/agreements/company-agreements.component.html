@@ -1,0 +1,111 @@
+<div class="company-page">
+  <header class="page-hero">
+    <div>
+      <h1>Conventions de stage</h1>
+      <p>
+        Suivez les conventions de stage et l’état des signatures. Un aperçu imprimable est disponible pour chaque convention.
+      </p>
+    </div>
+    <div class="hero-actions">
+      <button type="button" class="btn btn-secondary" (click)="loadAgreements()" [disabled]="isLoading">Actualiser</button>
+    </div>
+  </header>
+
+  <div *ngIf="errorMessage" class="alert alert-error">{{ errorMessage }}</div>
+  <div *ngIf="successMessage" class="alert alert-success">{{ successMessage }}</div>
+  <div *ngIf="isLoading" class="loading">Chargement des conventions...</div>
+
+  <section class="content-grid" *ngIf="!isLoading">
+    <article class="panel">
+      <div class="table-wrap" *ngIf="agreements.length > 0">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>Convention</th>
+              <th>Stage</th>
+              <th>Période</th>
+              <th>Statut</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let agreement of agreements" (click)="selectedAgreement = agreement">
+              <td>#{{ agreement.numConv || agreement.id }}</td>
+              <td>{{ agreement.stageTitre || ('Stage #' + agreement.stageId) }}</td>
+              <td>{{ agreement.dateDebut || '-' }} → {{ agreement.dateFin || '-' }}</td>
+              <td>
+                <span class="status-pill" [ngClass]="agreement.statutSignatures ? 'status-positive' : 'status-warning'">
+                  {{ agreement.statutSignatures ? 'Complète' : 'En attente' }}
+                </span>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="empty-card" *ngIf="agreements.length === 0">Aucune convention disponible pour les stages de cette entreprise.</div>
+    </article>
+
+    <article class="panel">
+      <div class="panel-header">
+        <div>
+          <h2>État des signatures</h2>
+          <div class="panel-subtitle">Suivi détaillé par convention</div>
+        </div>
+      </div>
+
+      <div class="empty-card" *ngIf="!selectedAgreement">Sélectionnez une convention pour afficher ses détails.</div>
+
+      <div class="stack" *ngIf="selectedAgreement">
+        <div class="detail-grid">
+          <div class="detail-item">
+            <span class="label">Convention</span>
+            <span class="value">#{{ selectedAgreement.numConv || selectedAgreement.id }}</span>
+          </div>
+          <div class="detail-item">
+            <span class="label">Stage</span>
+            <span class="value">{{ selectedAgreement.stageTitre || '-' }}</span>
+          </div>
+          <div class="detail-item">
+            <span class="label">Signature stagiaire</span>
+            <span class="value">{{ selectedAgreement.signeeStagiaire ? 'Oui' : 'Non' }}</span>
+          </div>
+          <div class="detail-item">
+            <span class="label">Signature encadrant académique</span>
+            <span class="value">{{ selectedAgreement.signeeEncAca ? 'Oui' : 'Non' }}</span>
+          </div>
+          <div class="detail-item">
+            <span class="label">Signature encadrant professionnel</span>
+            <span class="value">{{ selectedAgreement.signeeEncPro ? 'Oui' : 'Non' }}</span>
+          </div>
+          <div class="detail-item">
+            <span class="label">Signature entreprise</span>
+            <span class="value">{{ selectedAgreement.signeeEntreprise ? 'Oui' : 'Non' }}</span>
+          </div>
+          <div class="detail-item">
+            <span class="label">Signature responsable des stages</span>
+            <span class="value">{{ selectedAgreement.signeeResp ? 'Oui' : 'Non' }}</span>
+          </div>
+          <div class="detail-item">
+            <span class="label">Statut global</span>
+            <span class="value">{{ selectedAgreement.statutSignatures ? 'Complet' : 'En attente' }}</span>
+          </div>
+        </div>
+
+        <div class="inline-actions">
+          <a type="button" class="btn btn-secondary" [routerLink]="['/stages/convention', selectedAgreement.id]">
+            Afficher la convention
+          </a>
+          <button
+            type="button"
+            class="btn btn-primary"
+            *ngIf="!selectedAgreement.signeeEntreprise"
+            (click)="signAgreement(selectedAgreement)"
+            [disabled]="isSigning"
+          >
+            {{ isSigning ? 'Signature…' : 'Signer côté entreprise' }}
+          </button>
+        </div>
+      </div>
+    </article>
+  </section>
+</div>

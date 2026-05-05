@@ -1,0 +1,200 @@
+<div class="page">
+  <div class="page-bg"></div>
+
+  <header class="page-header">
+    <div>
+      <span class="eyebrow">Admin</span>
+      <h1>Entreprises & responsables</h1>
+      <p>Creation centralisee d'une entreprise et de son representant avec controle de validite, unicite et envoi d'identifiants par email.</p>
+    </div>
+    <button class="btn btn-primary" (click)="openCreate()" [disabled]="isLoading || isSubmitting">
+      + Nouvelle fiche
+    </button>
+  </header>
+
+  <section class="summary-grid">
+    <article class="summary-card">
+      <span class="summary-label">Entreprises</span>
+      <strong>{{ companyAccounts.length }}</strong>
+      <p>Structures gerees depuis un seul formulaire.</p>
+    </article>
+    <article class="summary-card">
+      <span class="summary-label">Representants relies</span>
+      <strong>{{ linkedRepresentativeCount }}</strong>
+      <p>Comptes relies automatiquement a leur entreprise.</p>
+    </article>
+    <article class="summary-card">
+      <span class="summary-label">Emails renseignes</span>
+      <strong>{{ configuredEmailCount }}</strong>
+      <p>Necessaires pour la transmission des identifiants.</p>
+    </article>
+  </section>
+
+  <section class="toolbar">
+    <div class="search-box">
+      <input
+        class="input"
+        type="text"
+        placeholder="Rechercher une entreprise, un responsable ou un contact..."
+        [(ngModel)]="searchQuery"
+        (input)="filter()"
+      />
+    </div>
+    <button class="btn btn-secondary" (click)="load()" [disabled]="isLoading || isSubmitting">Rafraichir</button>
+  </section>
+
+  <div *ngIf="errorMessage" class="alert alert-error">{{ errorMessage }}</div>
+  <div *ngIf="successMessage" class="alert alert-success">{{ successMessage }}</div>
+
+  <section class="table-card">
+    <div class="table-status" *ngIf="isLoading">
+      <span class="spinner"></span>
+      Chargement...
+    </div>
+
+    <div *ngIf="!isLoading && filtered.length === 0" class="empty">
+      <h3>Aucune fiche disponible</h3>
+      <p>Ajoutez une entreprise et son representant depuis une seule action.</p>
+      <button class="btn btn-primary" (click)="openCreate()" [disabled]="isSubmitting">Creer une fiche</button>
+    </div>
+
+    <div *ngIf="!isLoading && filtered.length > 0" class="table-wrap">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Entreprise</th>
+            <th>Contact entreprise</th>
+            <th>Representant</th>
+            <th>Contact representant</th>
+            <th>Secteur</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let item of filtered">
+            <td>
+              <div class="main-info">
+                <strong>{{ item.nomEntreprise }}</strong>
+                <span>{{ item.adresse || 'Adresse non renseignee' }}</span>
+              </div>
+            </td>
+            <td>
+              <div class="contact-stack">
+                <span>{{ item.emailEntreprise || 'Email non renseigne' }}</span>
+                <span>{{ item.telephoneEntreprise || 'Telephone non renseigne' }}</span>
+              </div>
+            </td>
+            <td>
+              <div class="main-info">
+                <strong>{{ item.prenomResponsable }} {{ item.nomResponsable }}</strong>
+                <span>{{ item.representantId ? 'Compte lie' : 'Compte a completer' }}</span>
+              </div>
+            </td>
+            <td>
+              <div class="contact-stack">
+                <span>{{ item.emailResponsable || 'Email non renseigne' }}</span>
+                <span>{{ item.telephoneResponsable || 'Telephone non renseigne' }}</span>
+              </div>
+            </td>
+            <td>{{ item.secteurActivite || '-' }}</td>
+            <td class="actions">
+              <button class="btn btn-secondary" (click)="openEdit(item)" [disabled]="isSubmitting">Modifier</button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <div class="modal-overlay" *ngIf="showForm" (click)="closeForm()">
+    <div class="modal" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <div>
+          <h2>{{ isEditMode ? 'Modifier la fiche entreprise' : 'Nouvelle entreprise & representant' }}</h2>
+          <p>
+            {{ isEditMode
+              ? 'Mettez a jour les coordonnees sans perdre le lien entre le representant et son entreprise.'
+              : 'Le mot de passe du representant est genere automatiquement puis envoye par email.' }}
+          </p>
+        </div>
+        <button class="btn-close" (click)="closeForm()" aria-label="Fermer">x</button>
+      </div>
+
+      <form [formGroup]="form" (ngSubmit)="submit()" class="form">
+        <section class="form-section">
+          <div class="section-title">Entreprise</div>
+          <div class="form-grid">
+            <div class="form-group">
+              <label>Nom entreprise *</label>
+              <input class="input" formControlName="nomEntreprise" autofocus />
+              <div class="field-error" *ngIf="getFieldError('nomEntreprise')">{{ getFieldError('nomEntreprise') }}</div>
+            </div>
+
+            <div class="form-group">
+              <label>Secteur d'activite</label>
+              <input class="input" formControlName="secteurActivite" />
+            </div>
+
+            <div class="form-group">
+              <label>Email entreprise</label>
+              <input class="input" type="email" formControlName="emailEntreprise" />
+              <div class="field-error" *ngIf="getFieldError('emailEntreprise')">{{ getFieldError('emailEntreprise') }}</div>
+            </div>
+
+            <div class="form-group">
+              <label>Telephone entreprise</label>
+              <input class="input" formControlName="telephoneEntreprise" />
+              <div class="field-error" *ngIf="getFieldError('telephoneEntreprise')">{{ getFieldError('telephoneEntreprise') }}</div>
+            </div>
+
+            <div class="form-group form-group-full">
+              <label>Adresse</label>
+              <input class="input" formControlName="adresse" />
+            </div>
+          </div>
+        </section>
+
+        <section class="form-section">
+          <div class="section-title">Representant</div>
+          <div class="form-grid">
+            <div class="form-group">
+              <label>Prenom *</label>
+              <input class="input" formControlName="prenomResponsable" />
+              <div class="field-error" *ngIf="getFieldError('prenomResponsable')">{{ getFieldError('prenomResponsable') }}</div>
+            </div>
+
+            <div class="form-group">
+              <label>Nom *</label>
+              <input class="input" formControlName="nomResponsable" />
+              <div class="field-error" *ngIf="getFieldError('nomResponsable')">{{ getFieldError('nomResponsable') }}</div>
+            </div>
+
+            <div class="form-group">
+              <label>Email responsable *</label>
+              <input class="input" type="email" formControlName="emailResponsable" />
+              <div class="field-error" *ngIf="getFieldError('emailResponsable')">{{ getFieldError('emailResponsable') }}</div>
+            </div>
+
+            <div class="form-group">
+              <label>Telephone responsable</label>
+              <input class="input" formControlName="telephoneResponsable" />
+              <div class="field-error" *ngIf="getFieldError('telephoneResponsable')">{{ getFieldError('telephoneResponsable') }}</div>
+            </div>
+          </div>
+        </section>
+
+        <div class="info-banner">
+          L'unicite des emails et telephones est verifiee cote serveur. Les erreurs de doublon sont affichees directement sous le champ concerne.
+        </div>
+
+        <div class="form-actions">
+          <button type="button" class="btn btn-secondary" (click)="closeForm()" [disabled]="isSubmitting">Annuler</button>
+          <button type="submit" class="btn btn-primary" [disabled]="isSubmitting">
+            <span class="spinner small" *ngIf="isSubmitting"></span>
+            {{ isSubmitting ? (isEditMode ? 'Mise a jour...' : 'Creation...') : (isEditMode ? 'Mettre a jour' : 'Creer la fiche') }}
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>

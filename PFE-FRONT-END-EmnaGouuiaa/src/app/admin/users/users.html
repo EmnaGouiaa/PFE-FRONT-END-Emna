@@ -1,205 +1,193 @@
 <div class="users-container">
-    <div class="dot-pattern"></div>
+  <div class="dot-pattern"></div>
 
-    <div class="users-wrapper">
-        <!-- Header -->
-        <header class="page-header">
-            <div class="header-left">
-                <h1>User Management</h1>
-                <p>Create, edit, and manage user accounts</p>
-            </div>
-            <button class="btn-add-user" (click)="openCreateForm()" [disabled]="isLoading">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <line x1="12" y1="5" x2="12" y2="19" />
-                    <line x1="5" y1="12" x2="19" y2="12" />
-                </svg>
-                Add User
-            </button>
-        </header>
+  <div class="users-wrapper">
+    <header class="page-header">
+      <div class="header-left">
+        <h1>Utilisateurs</h1>
+        <p>Creation securisee des comptes avec mot de passe genere automatiquement et envoye par email.</p>
+      </div>
+      <button class="btn-add-user" (click)="openCreateForm()" [disabled]="isLoading || isSubmitting">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="12" y1="5" x2="12" y2="19" />
+          <line x1="5" y1="12" x2="19" y2="12" />
+        </svg>
+        Ajouter
+      </button>
+    </header>
 
-        <!-- Filters -->
-        <div class="filters-bar">
-            <div class="search-box">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <circle cx="11" cy="11" r="8" />
-                    <path d="m21 21-4.35-4.35" />
-                </svg>
-                <input type="text" placeholder="Search by name or email..." [(ngModel)]="searchQuery"
-                    (input)="filterUsers()">
-            </div>
+    <div class="filters-bar">
+      <div class="search-box">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="11" cy="11" r="8" />
+          <path d="m21 21-4.35-4.35" />
+        </svg>
+        <input
+          type="text"
+          placeholder="Rechercher par nom, email ou telephone..."
+          [(ngModel)]="searchQuery"
+          (input)="filterUsers()"
+        />
+      </div>
 
-            <select [(ngModel)]="selectedRole" (change)="filterUsers()" class="role-filter">
-                <option *ngFor="let role of roles" [value]="role.value">{{ role.label }}</option>
-            </select>
-        </div>
-
-        <!-- Users Table -->
-        <div class="table-container" *ngIf="!isLoading; else loadingState">
-            <div class="table-wrapper" *ngIf="filteredUsers.length > 0; else emptyState">
-                <table class="data-table">
-                    <thead>
-                        <tr>
-                            <th>User</th>
-                            <th>Email</th>
-                            <th>Role</th>
-                            <th>Status</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr *ngFor="let user of filteredUsers">
-                            <td>
-                                <div class="user-cell">
-                                    <div class="avatar">{{ user.prenom[0] }}{{ user.nom[0] }}</div>
-                                    <div class="user-info">
-                                        <div class="name">{{ user.prenom }} {{ user.nom }}</div>
-                                    </div>
-                                </div>
-                            </td>
-                            <td>{{ user.email }}</td>
-                            <td>
-                                <span class="role-badge" [class]="getRoleBadgeClass(user.role)">
-                                    {{ getRoleLabel(user.role) }}
-                                </span>
-                            </td>
-                            <td>
-                                <span class="status-badge" [class.active]="user.compteValide"
-                                    [class.inactive]="!user.compteValide">
-                                    {{ user.compteValide ? 'Active' : 'Inactive' }}
-                                </span>
-                            </td>
-                            <td>
-                                <div class="action-buttons">
-                                    <button class="btn-edit" (click)="openEditForm(user)" title="Edit">
-                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
-                                            stroke="currentColor" stroke-width="2">
-                                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
-                                            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
-                                        </svg>
-                                    </button>
-                                    <button class="btn-delete"
-                                        (click)="deleteUser(user.id, user.prenom + ' ' + user.nom)" title="Delete">
-                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
-                                            stroke="currentColor" stroke-width="2">
-                                            <polyline points="3 6 5 6 21 6" />
-                                            <path
-                                                d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-                                        </svg>
-                                    </button>
-                                </div>
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-
-            <ng-template #emptyState>
-                <div class="empty-state">
-                    <svg width="80" height="80" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1">
-                        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
-                        <circle cx="9" cy="7" r="4" />
-                        <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
-                        <path d="M16 3.13a4 4 0 0 1 0 7.75" />
-                    </svg>
-                    <h3>No users found</h3>
-                    <p *ngIf="searchQuery || selectedRole !== 'ALL'">Try adjusting your filters</p>
-                    <p *ngIf="!searchQuery && selectedRole === 'ALL'">Get started by adding your first user</p>
-                    <button class="btn-primary" (click)="openCreateForm()"
-                        *ngIf="!searchQuery && selectedRole === 'ALL'">
-                        Add User
-                    </button>
-                </div>
-            </ng-template>
-        </div>
-
-        <ng-template #loadingState>
-            <div class="loading-spinner">
-                <div class="spinner"></div>
-                <p>Loading users...</p>
-            </div>
-        </ng-template>
-
-        <!-- Modal Form -->
-        <div class="modal-overlay" *ngIf="showForm" (click)="closeForm()">
-            <div class="modal-content" (click)="$event.stopPropagation()">
-                <div class="modal-header">
-                    <h2>{{ isEditMode ? 'Edit User' : 'Create New User' }}</h2>
-                    <button class="btn-close" (click)="closeForm()" aria-label="Close">×</button>
-                </div>
-
-                <form [formGroup]="userForm" (ngSubmit)="onSubmit()" class="user-form">
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label>First Name *</label>
-                            <input type="text" formControlName="prenom" placeholder="Enter first name">
-                            <div class="error"
-                                *ngIf="userForm.get('prenom')?.touched && userForm.get('prenom')?.errors?.['required']">
-                                First name is required
-                            </div>
-                            <div class="error"
-                                *ngIf="userForm.get('prenom')?.touched && userForm.get('prenom')?.errors?.['minlength']">
-                                Minimum 2 characters
-                            </div>
-                        </div>
-
-                        <div class="form-group">
-                            <label>Last Name *</label>
-                            <input type="text" formControlName="nom" placeholder="Enter last name">
-                            <div class="error"
-                                *ngIf="userForm.get('nom')?.touched && userForm.get('nom')?.errors?.['required']">
-                                Last name is required
-                            </div>
-                            <div class="error"
-                                *ngIf="userForm.get('nom')?.touched && userForm.get('nom')?.errors?.['minlength']">
-                                Minimum 2 characters
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="form-group">
-                        <label>Email *</label>
-                        <input type="email" formControlName="email" placeholder="example@domain.com">
-                        <div class="error"
-                            *ngIf="userForm.get('email')?.touched && userForm.get('email')?.errors?.['required']">
-                            Email is required
-                        </div>
-                        <div class="error"
-                            *ngIf="userForm.get('email')?.touched && userForm.get('email')?.errors?.['email']">
-                            Invalid email format
-                        </div>
-                    </div>
-
-                    <div class="form-group">
-                        <label>Password {{ isEditMode ? '(leave blank to keep current)' : '*' }}</label>
-                        <input type="password" formControlName="password"
-                            [placeholder]="isEditMode ? 'Enter new password (optional)' : 'Enter password'"
-                            [required]="!isEditMode">
-                        <div class="error"
-                            *ngIf="!isEditMode && userForm.get('password')?.touched && userForm.get('password')?.errors?.['required']">
-                            Password is required
-                        </div>
-                        <div class="error"
-                            *ngIf="userForm.get('password')?.touched && userForm.get('password')?.errors?.['minlength']">
-                            Minimum 6 characters
-                        </div>
-                    </div>
-
-                    <div class="form-group">
-                        <label>Role *</label>
-                        <select formControlName="role">
-                            <option *ngFor="let role of roles | slice:1" [value]="role.value">{{ role.label }}</option>
-                        </select>
-                    </div>
-
-                    <div class="form-actions">
-                        <button type="button" class="btn-cancel" (click)="closeForm()"
-                            [disabled]="isLoading">Cancel</button>
-                        <button type="submit" class="btn-submit" [disabled]="userForm.invalid || isLoading">
-                            {{ isLoading ? 'Saving...' : (isEditMode ? 'Update User' : 'Create User') }}
-                        </button>
-                    </div>
-                </form>
-            </div>
-        </div>
+      <select [(ngModel)]="selectedRole" (change)="filterUsers()" class="role-filter">
+        <option *ngFor="let role of roles" [value]="role.value">{{ role.label }}</option>
+      </select>
     </div>
+
+    <div class="table-container">
+      <div class="error-banner" *ngIf="errorMessage">{{ errorMessage }}</div>
+      <div class="success-banner" *ngIf="successMessage">{{ successMessage }}</div>
+
+      <div class="loading-overlay" *ngIf="isLoading">
+        <div class="spinner small"></div>
+        <span>Chargement...</span>
+      </div>
+
+      <div class="table-wrapper" *ngIf="filteredUsers.length > 0; else emptyState">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Utilisateur</th>
+              <th>Email</th>
+              <th>Telephone</th>
+              <th>Role</th>
+              <th>Statut</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let user of filteredUsers">
+              <td>
+                <div class="user-cell">
+                  <div class="avatar">
+                    {{ (user.prenom || '').slice(0, 1) }}{{ (user.nom || '').slice(0, 1) }}
+                  </div>
+                  <div class="user-info">
+                    <div class="name">{{ user.prenom }} {{ user.nom }}</div>
+                  </div>
+                </div>
+              </td>
+              <td>{{ user.email }}</td>
+              <td>{{ user.telephone || '-' }}</td>
+              <td>
+                <span [class]="'role-badge ' + getRoleBadgeClass(user.role)">
+                  {{ getRoleLabel(user.role) }}
+                </span>
+              </td>
+              <td>
+                <span class="status-badge" [class.active]="user.actif" [class.inactive]="!user.actif">
+                  {{ user.actif ? 'Actif' : 'Desactive' }}
+                </span>
+              </td>
+              <td>
+                <div class="action-buttons">
+                  <button class="btn-edit" (click)="openEditForm(user)" title="Modifier" [disabled]="isSubmitting">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                      <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                    </svg>
+                  </button>
+                  <button
+                    class="btn-toggle"
+                    (click)="toggleActivation(user)"
+                    [disabled]="isLoading || isSubmitting"
+                    [title]="user.actif ? 'Desactiver' : 'Activer'"
+                  >
+                    {{ user.actif ? 'Desactiver' : 'Activer' }}
+                  </button>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <ng-template #emptyState>
+        <div class="empty-state">
+          <p>Aucun utilisateur</p>
+          <button class="btn-primary" (click)="openCreateForm()" [disabled]="isLoading || isSubmitting">Ajouter</button>
+        </div>
+      </ng-template>
+    </div>
+
+    <div class="modal-overlay" *ngIf="showForm" (click)="closeForm()">
+      <div class="modal-content" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <div>
+            <h2>{{ isEditMode ? 'Modifier utilisateur' : 'Créer un utilisateur' }}</h2>
+            <p class="modal-subtitle" *ngIf="!isEditMode">
+              Le mot de passe est genere automatiquement et envoye a l'adresse email du compte.
+            </p>
+          </div>
+          <button class="btn-close" (click)="closeForm()" aria-label="Fermer">x</button>
+        </div>
+
+        <form [formGroup]="userForm" (ngSubmit)="onSubmit()" class="user-form">
+          <div class="form-row">
+            <div class="form-group">
+              <label>Prenom *</label>
+              <input type="text" formControlName="prenom" placeholder="Prenom" autofocus />
+              <div class="error" *ngIf="getFieldError('prenom')">{{ getFieldError('prenom') }}</div>
+            </div>
+
+            <div class="form-group">
+              <label>Nom *</label>
+              <input type="text" formControlName="nom" placeholder="Nom" />
+              <div class="error" *ngIf="getFieldError('nom')">{{ getFieldError('nom') }}</div>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label>Email *</label>
+              <input
+                type="email"
+                formControlName="email"
+                placeholder="exemple@domaine.com"
+                [readonly]="isReadonlyInEditMode('email')"
+              />
+              <div class="error" *ngIf="getFieldError('email')">{{ getFieldError('email') }}</div>
+              <div class="form-note" *ngIf="isReadonlyInEditMode('email')">
+                L'email ne peut pas etre modifie apres la creation du compte.
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label>Telephone</label>
+              <input type="text" formControlName="telephone" placeholder="+216 12 345 678" />
+              <div class="error" *ngIf="getFieldError('telephone')">{{ getFieldError('telephone') }}</div>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label>Role *</label>
+            <select formControlName="role" [disabled]="isReadonlyInEditMode('role')">
+              <option *ngFor="let role of roles | slice:1" [value]="role.value">{{ role.label }}</option>
+            </select>
+            <div class="form-note" *ngIf="isReadonlyInEditMode('role')">
+              Le role d'un utilisateur existant reste verrouille pour proteger les affectations en cours.
+            </div>
+          </div>
+
+          <div class="form-note" *ngIf="!isEditMode">
+            Le compte recoit ses identifiants par email et devra modifier son mot de passe lors de la premiere connexion.
+          </div>
+
+          <div class="form-actions">
+            <button type="button" class="btn-cancel" (click)="closeForm()" [disabled]="isSubmitting">
+              Annuler
+            </button>
+            <button type="submit" class="btn-submit" [disabled]="isSubmitting">
+              <span class="btn-spinner" *ngIf="isSubmitting"></span>
+              {{ isSubmitting ? (isEditMode ? 'Mise a jour...' : 'Creation...') : (isEditMode ? 'Mettre a jour' : 'Creer') }}
+            </button>
+          </div>
+          <div class="error" *ngIf="formSubmitAttempted && userForm.invalid">
+            Verifiez les champs obligatoires avant de continuer.
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
 </div>

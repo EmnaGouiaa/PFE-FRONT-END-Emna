@@ -2,14 +2,14 @@ import { Injectable } from '@angular/core';
 import { CanActivate, Router, UrlTree, ActivatedRouteSnapshot, RouterStateSnapshot } from '@angular/router';
 import { Observable } from 'rxjs';
 import { map, take } from 'rxjs/operators';
-import { AuthService, UserRole } from '../services/auth.service';
+import { AuthentificationService, RoleUtilisateur } from '../services/authentification.service';
 
 @Injectable({
   providedIn: 'root'
 })
 export class RoleGuard implements CanActivate {
   constructor(
-    private authService: AuthService,
+    private serviceAuthentification: AuthentificationService,
     private router: Router
   ) { }
 
@@ -17,62 +17,60 @@ export class RoleGuard implements CanActivate {
     route: ActivatedRouteSnapshot,
     state: RouterStateSnapshot
   ): Observable<boolean | UrlTree> | Promise<boolean | UrlTree> | boolean | UrlTree {
-    const allowedRoles = route.data?.['roles'] as UserRole[] || [];
+    const rolesAutorises = route.data?.['roles'] as RoleUtilisateur[] || [];
 
-    console.log('🔒 RoleGuard checking access to:', state.url);
-    console.log('🔒 Required roles:', allowedRoles);
+    console.log('🔒 RoleGuard vérification de l\'accès à :', state.url);
+    console.log('🔒 Rôles requis :', rolesAutorises);
 
-    return this.authService.isAuthenticated$.pipe(
+    return this.serviceAuthentification.estAuthentifie$.pipe(
       take(1),
-      map(isAuthenticated => {
-        console.log('🔒 isAuthenticated:', isAuthenticated);
-
-        if (!isAuthenticated || this.authService.isTokenExpired()) {
-          console.warn('🔒 Not authenticated, redirecting to login');
-          this.router.navigate(['/login'], {
-            queryParams: { returnUrl: state.url }
+      map(estAuthentifie => {
+        if (!estAuthentifie) {
+          console.warn('🔒 Non authentifié, redirection vers connexion');
+          this.router.navigate(['/connexion'], {
+            queryParams: { retourUrl: state.url }
           });
           return false;
         }
 
-        const userRole = this.authService.getUserRole();
-        console.log('🔒 User role:', userRole);
+        const roleUtilisateur = this.serviceAuthentification.getRoleUtilisateur();
+        console.log('🔒 Rôle utilisateur :', roleUtilisateur);
 
-        if (!userRole) {
-          console.error('🔒 No user role found, redirecting to unauthorized');
-          this.router.navigate(['/unauthorized']);
+        if (!roleUtilisateur) {
+          console.error('🔒 Aucun rôle trouvé, redirection vers non-autorisé');
+          this.router.navigate(['/non-autorise']);
           return false;
         }
 
-        const hasRequiredRole = allowedRoles.includes(userRole as UserRole);
-        console.log('🔒 Has required role:', hasRequiredRole);
+        const aLeRoleRequis = rolesAutorises.includes(roleUtilisateur as RoleUtilisateur);
+        console.log('🔒 Possède le rôle requis :', aLeRoleRequis);
 
-        if (!hasRequiredRole) {
-          // Redirect to unauthorized page with required roles info
-          console.warn('🔒 Insufficient permissions. Required:', allowedRoles, 'Got:', userRole);
-          this.router.navigate(['/unauthorized'], {
-            state: { requiredRoles: allowedRoles }
+        if (!aLeRoleRequis) {
+          console.warn('🔒 Permissions insuffisantes. Requis :', rolesAutorises, 'Obtenu :', roleUtilisateur);
+          this.router.navigate(['/non-autorise'], {
+            state: { rolesRequis: rolesAutorises }
           });
           return false;
         }
 
-        console.log('✅ RoleGuard: Access granted');
+        console.log('✅ RoleGuard : Accès autorisé');
         return true;
       })
     );
   }
 
-  private redirectToUserDashboard(userRole: string): void {
-    const dashboardRoutes: { [key: string]: string } = {
-      [UserRole.ADMIN]: '/admin/dashboard',
-      [UserRole.STAGIAIRE]: '/student/dashboard',
-      [UserRole.ENCADRANT_PROFESSIONNEL]: '/encadrant/dashboard',
-      [UserRole.ENCADRANT_ACADEMIQUE]: '/encadrant/dashboard',
-      [UserRole.RESPONSABLE_SERVICE_STAGES]: '/responsable/dashboard',
-      [UserRole.RESPONSABLE_ENTREPRISE]: '/company/dashboard'
+  private redirigerVersTableauDeBord(role: string): void {
+    const routesTableauDeBord: { [key: string]: string } = {
+      [RoleUtilisateur.ADMINISTRATEUR]: '/admin/tableau-de-bord',
+      [RoleUtilisateur.STAGIAIRE]: '/etudiant/tableau-de-bord',
+      [RoleUtilisateur.ENCADRANT_PROFESSIONNEL]: '/encadrant/tableau-de-bord',
+      [RoleUtilisateur.ENCADRANT_ACADEMIQUE]: '/encadrant/tableau-de-bord',
+      [RoleUtilisateur.RESPONSABLE_SERVICE_STAGES]: '/admin/demandes-stage',
+      [RoleUtilisateur.RESPONSABLE_UNIVERSITAIRE_STAGES]: '/responsable/tableau-de-bord',
+      [RoleUtilisateur.RESPONSABLE_ENTREPRISE]: '/entreprise/tableau-de-bord'
     };
 
-    const dashboard = dashboardRoutes[userRole] || '/dashboard';
+    const dashboard = routesTableauDeBord[role] || '/tableau-de-bord';
     this.router.navigate([dashboard]);
   }
 }

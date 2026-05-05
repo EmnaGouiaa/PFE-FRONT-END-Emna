@@ -2,13 +2,23 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { RouterModule } from '@angular/router';
-import { UserManagementService, User, CreateUserRequest, UpdateUserRequest } from '../../services/user-management.service';
-import { UserRole } from '../../services/auth.service';
+import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
+import { timeout } from 'rxjs/operators';
+import {
+  UserManagementService,
+  User,
+  CreateUserRequest,
+  UpdateUserRequest
+} from '../../services/user-management.service';
+import { RoleUtilisateur } from '../../services/authentification.service';
+import { phoneValidator, strictEmailValidator } from '../admin-form-validators';
+
+type FieldErrors = Record<string, string>;
 
 @Component({
   selector: 'app-users',
   standalone: true,
-  imports: [CommonModule, FormsModule, ReactiveFormsModule, RouterModule],
+  imports: [CommonModule, FormsModule, ReactiveFormsModule, RouterModule, MatSnackBarModule],
   templateUrl: './users.html',
   styleUrls: ['./users.css']
 })
@@ -16,28 +26,35 @@ export class Users implements OnInit {
   users: User[] = [];
   filteredUsers: User[] = [];
   isLoading = false;
+  isSubmitting = false;
+  errorMessage = '';
+  successMessage = '';
   showForm = false;
   isEditMode = false;
   searchQuery = '';
   selectedRole = 'ALL';
   userForm!: FormGroup;
   editingUserId: number | null = null;
+  selectedUser: User | null = null;
+  formSubmitAttempted = false;
+  fieldErrors: FieldErrors = {};
 
   roles = [
-    { value: 'ALL', label: 'All Roles' },
-    { value: UserRole.ADMIN, label: 'Admin' },
-    { value: UserRole.STAGIAIRE, label: 'Student' },
-    { value: UserRole.ENCADRANT_ACADEMIQUE, label: 'Academic Supervisor' },
-    { value: UserRole.ENCADRANT_PROFESSIONNEL, label: 'Professional Supervisor' },
-    { value: UserRole.RESPONSABLE_SERVICE_STAGES, label: 'Internship Manager' },
-    { value: UserRole.RESPONSABLE_UNIVERSITAIRE_STAGES, label: 'University Manager' },
-    { value: UserRole.RESPONSABLE_ENTREPRISE, label: 'Company Manager' }
+    { value: 'ALL', label: 'Tous les roles' },
+    { value: RoleUtilisateur.ADMINISTRATEUR, label: 'Administrateur' },
+    { value: RoleUtilisateur.STAGIAIRE, label: 'Stagiaire' },
+    { value: RoleUtilisateur.ENCADRANT_ACADEMIQUE, label: 'Encadrant academique' },
+    { value: RoleUtilisateur.ENCADRANT_PROFESSIONNEL, label: 'Encadrant professionnel' },
+    { value: RoleUtilisateur.RESPONSABLE_SERVICE_STAGES, label: 'Responsable service stages' },
+    { value: RoleUtilisateur.RESPONSABLE_UNIVERSITAIRE_STAGES, label: 'Responsable universitaire stages' },
+    { value: RoleUtilisateur.RESPONSABLE_ENTREPRISE, label: 'Responsable entreprise' }
   ];
 
   constructor(
     private userManagementService: UserManagementService,
-    private fb: FormBuilder
-  ) { }
+    private fb: FormBuilder,
+    private snackBar: MatSnackBar
+  ) {}
 
   ngOnInit(): void {
     this.initForm();
@@ -48,37 +65,152 @@ export class Users implements OnInit {
     this.userForm = this.fb.group({
       prenom: ['', [Validators.required, Validators.minLength(2)]],
       nom: ['', [Validators.required, Validators.minLength(2)]],
-      email: ['', [Validators.required, Validators.email]],
-      password: ['', [Validators.required, Validators.minLength(6)]],
-      role: [UserRole.STAGIAIRE, Validators.required]
+      email: ['', [Validators.required, strictEmailValidator()]],
+      telephone: ['', [phoneValidator()]],
+      role: [RoleUtilisateur.STAGIAIRE, Validators.required]
     });
+  }
+
+  private clearFeedback(): void {
+    this.errorMessage = '';
+    this.successMessage = '';
+    this.fieldErrors = {};
+  }
+
+  private extractErrorMessage(error: any, fallback: string): string {
+    if (typeof error?.error === 'string' && error.error.trim()) return error.error;
+    if (typeof error?.error?.message === 'string' && error.error.message.trim()) return error.error.message;
+    if (error?.error && typeof error.error === 'object') {
+      const firstValue = Object.values(error.error).find(
+        (value) => typeof value === 'string' && value.trim().length > 0
+      );
+      if (typeof firstValue === 'string') return firstValue;
+    }
+    if (Array.isArray(error?.error?.errors) && error.error.errors.length > 0) {
+      return String(error.error.errors[0]);
+    }
+    return fallback;
+  }
+
+  private applyBackendFieldErrors(error: any): void {
+    const errors: FieldErrors = {};
+
+    if (typeof error?.error?.field === 'string' && typeof error?.error?.message === 'string') {
+      errors[error.error.field] = error.error.message;
+    }
+
+    if (error?.error && typeof error.error === 'object') {
+      for (const [key, value] of Object.entries(error.error)) {
+        if (typeof value === 'string' && this.userForm.contains(key)) {
+          errors[key] = value;
+        }
+      }
+    }
+
+    this.fieldErrors = errors;
   }
 
   loadUsers(): void {
     this.isLoading = true;
-    this.userManagementService.getAllUsers().subscribe({
-      next: (response) => {
-        this.users = response.users;
-        this.filteredUsers = [...this.users];
-        this.isLoading = false;
+    this.errorMessage = '';
+
+    this.userManagementService.getAllUsers().pipe(
+      timeout(15000)
+    ).subscribe({
+      next: (users) => {
+        try {
+          this.replaceUsers(users);
+        } finally {
+          this.isLoading = false;
+        }
       },
       error: (error) => {
-        console.error('Error loading users:', error);
-        alert('Failed to load users');
-        this.isLoading = false;
+        try {
+          this.errorMessage = this.extractErrorMessage(error, 'Echec du chargement des utilisateurs.');
+        } finally {
+          this.isLoading = false;
+        }
+      }
+    });
+  }
+
+  private normalizeRole(value: unknown): string {
+    if (typeof value === 'string') return value;
+    if (value && typeof value === 'object') {
+      const obj = value as any;
+      return String(obj.role ?? obj.name ?? obj.code ?? obj.libelle ?? '');
+    }
+    return '';
+  }
+
+  private upsertUserInState(user: User): void {
+    if (!user || !Number.isFinite(user.id) || user.id <= 0) return;
+
+    const index = this.users.findIndex((item) => item.id === user.id);
+    if (index >= 0) {
+      const nextUsers = [...this.users];
+      nextUsers[index] = user;
+      this.users = nextUsers;
+    } else {
+      this.users = [user, ...this.users];
+    }
+
+    this.filteredUsers = [...this.users];
+    this.filterUsers();
+  }
+
+  private replaceUsers(items: User[] | null | undefined): void {
+    this.users = Array.isArray(items) ? [...items] : [];
+    this.filteredUsers = [...this.users];
+    this.filterUsers();
+  }
+
+  private resolveUserMessage(user: User | null | undefined, fallback: string): string {
+    const message = user?.message?.trim();
+    return message ? message : fallback;
+  }
+
+  private refreshAfterCreate(createdUser: User, message: string): void {
+    this.userManagementService.getAllUsers().pipe(
+      timeout(15000)
+    ).subscribe({
+      next: (users) => {
+        try {
+          this.replaceUsers(users);
+          const exists = this.users.some((user) => user.id === createdUser.id);
+          this.successMessage = exists
+            ? message
+            : `${message} La liste actualisee ne confirme pas encore la presence du compte.`;
+          this.snackBar.open(this.successMessage, 'Fermer', { duration: exists ? 4000 : 5000 });
+          this.closeForm();
+        } finally {
+          this.isSubmitting = false;
+        }
+      },
+      error: (error) => {
+        try {
+          this.successMessage = `${message} Impossible d'actualiser la liste pour confirmer la creation.`;
+          this.snackBar.open(this.successMessage, 'Fermer', { duration: 5000 });
+          this.errorMessage = this.extractErrorMessage(error, "Impossible d'actualiser la liste des utilisateurs.");
+          this.closeForm();
+        } finally {
+          this.isSubmitting = false;
+        }
       }
     });
   }
 
   filterUsers(): void {
-    this.filteredUsers = this.users.filter(user => {
-      const matchesSearch =
-        user.prenom.toLowerCase().includes(this.searchQuery.toLowerCase()) ||
-        user.nom.toLowerCase().includes(this.searchQuery.toLowerCase()) ||
-        user.email.toLowerCase().includes(this.searchQuery.toLowerCase());
+    const q = (this.searchQuery ?? '').trim().toLowerCase();
+    this.filteredUsers = this.users.filter((user) => {
+      const prenom = (user.prenom ?? '').toLowerCase();
+      const nom = (user.nom ?? '').toLowerCase();
+      const email = (user.email ?? '').toLowerCase();
+      const telephone = (user.telephone ?? '').toLowerCase();
+      const role = this.normalizeRole((user as any).role);
 
-      const matchesRole = this.selectedRole === 'ALL' || user.role === this.selectedRole;
-
+      const matchesSearch = !q || prenom.includes(q) || nom.includes(q) || email.includes(q) || telephone.includes(q);
+      const matchesRole = this.selectedRole === 'ALL' || role === this.selectedRole;
       return matchesSearch && matchesRole;
     });
   }
@@ -86,136 +218,240 @@ export class Users implements OnInit {
   openCreateForm(): void {
     this.isEditMode = false;
     this.editingUserId = null;
+    this.selectedUser = null;
     this.showForm = true;
+    this.formSubmitAttempted = false;
+    this.clearFeedback();
+    this.userForm.get('email')?.enable({ emitEvent: false });
+    this.userForm.get('role')?.enable({ emitEvent: false });
     this.userForm.reset({
       prenom: '',
       nom: '',
       email: '',
-      password: '',
-      role: UserRole.STAGIAIRE
+      telephone: '',
+      role: RoleUtilisateur.STAGIAIRE
     });
   }
 
   openEditForm(user: User): void {
     this.isEditMode = true;
     this.editingUserId = user.id;
+    this.selectedUser = { ...user };
     this.showForm = true;
-    this.userForm.patchValue({
-      prenom: user.prenom,
-      nom: user.nom,
-      email: user.email,
-      password: '', // Don't show password
-      role: user.role
+    this.formSubmitAttempted = false;
+    this.clearFeedback();
+    const normalizedRole = this.normalizeRole((user as any).role);
+
+    this.userForm.reset({
+      prenom: user.prenom ?? '',
+      nom: user.nom ?? '',
+      email: user.email ?? '',
+      telephone: user.telephone ?? '',
+      role: normalizedRole || RoleUtilisateur.STAGIAIRE
     });
+    this.userForm.get('email')?.disable({ emitEvent: false });
+    this.userForm.get('role')?.disable({ emitEvent: false });
   }
 
   closeForm(): void {
     this.showForm = false;
     this.isEditMode = false;
     this.editingUserId = null;
+    this.selectedUser = null;
+    this.formSubmitAttempted = false;
+    this.fieldErrors = {};
     this.userForm.reset();
+    this.userForm.get('email')?.enable({ emitEvent: false });
+    this.userForm.get('role')?.enable({ emitEvent: false });
+  }
+
+  private buildCreatePayload(): CreateUserRequest {
+    const formData = this.userForm.getRawValue();
+    return {
+      prenom: String(formData.prenom ?? '').trim(),
+      nom: String(formData.nom ?? '').trim(),
+      email: String(formData.email ?? '').trim(),
+      telephone: String(formData.telephone ?? '').trim(),
+      role: this.normalizeRole(formData.role)
+    };
+  }
+
+  private buildUpdatePayload(): UpdateUserRequest {
+    const formData = this.userForm.getRawValue();
+    const current = this.selectedUser;
+    return {
+      prenom: String(formData.prenom ?? current?.prenom ?? '').trim(),
+      nom: String(formData.nom ?? current?.nom ?? '').trim(),
+      email: String(current?.email ?? formData.email ?? '').trim(),
+      telephone: String(formData.telephone ?? current?.telephone ?? '').trim(),
+      actif: typeof current?.actif === 'boolean' ? current.actif : true,
+      nomFichierSignature: undefined,
+      role: this.normalizeRole(current?.role ?? formData.role)
+    };
   }
 
   onSubmit(): void {
+    this.formSubmitAttempted = true;
+    this.clearFeedback();
+
     if (this.userForm.invalid) {
       this.userForm.markAllAsTouched();
+      this.errorMessage = 'Verifiez les champs obligatoires avant de continuer.';
       return;
     }
 
-    this.isLoading = true;
-    const formData = this.userForm.value;
+    this.isSubmitting = true;
 
-    if (this.isEditMode && this.editingUserId) {
-      // Update user
-      const updateData: UpdateUserRequest = {
-        prenom: formData.prenom,
-        nom: formData.nom,
-        email: formData.email,
-        role: formData.role
-      };
+    if (this.isEditMode && this.editingUserId !== null) {
+      const updateData = this.buildUpdatePayload();
 
-      // Only include password if provided
-      if (formData.password && formData.password.trim() !== '') {
-        updateData.password = formData.password;
-      }
-
-      this.userManagementService.updateUser(this.editingUserId, updateData).subscribe({
-        next: () => {
-          alert('User updated successfully!');
-          this.closeForm();
-          this.loadUsers();
+      this.userManagementService.updateUser(this.editingUserId, updateData).pipe(
+        timeout(15000)
+      ).subscribe({
+        next: (updatedUser) => {
+          try {
+            this.successMessage = this.resolveUserMessage(updatedUser, 'Utilisateur mis a jour avec succes.');
+            this.upsertUserInState(updatedUser);
+            this.snackBar.open(this.successMessage, 'Fermer', { duration: 3500 });
+            this.closeForm();
+          } finally {
+            this.isSubmitting = false;
+          }
         },
         error: (error) => {
-          console.error('Error updating user:', error);
-          alert(error.error?.message || 'Failed to update user');
-          this.isLoading = false;
+          try {
+            this.applyBackendFieldErrors(error);
+            this.errorMessage = this.extractErrorMessage(error, 'Echec de la mise a jour.');
+            this.snackBar.open(this.errorMessage, 'Fermer', { duration: 4500 });
+          } finally {
+            this.isSubmitting = false;
+          }
         }
       });
-    } else {
-      // Create new user
-      const createData: CreateUserRequest = {
-        prenom: formData.prenom,
-        nom: formData.nom,
-        email: formData.email,
-        password: formData.password,
-        role: formData.role
-      };
-
-      this.userManagementService.createUser(createData).subscribe({
-        next: () => {
-          alert('User created successfully!');
-          this.closeForm();
-          this.loadUsers();
-        },
-        error: (error) => {
-          console.error('Error creating user:', error);
-          alert(error.error?.message || 'Failed to create user');
-          this.isLoading = false;
-        }
-      });
+      return;
     }
+
+    const createData = this.buildCreatePayload();
+    this.userManagementService.createUser(createData).pipe(
+      timeout(15000)
+    ).subscribe({
+      next: (createdUser) => {
+        const message = this.resolveUserMessage(
+          createdUser,
+          'Utilisateur cree avec succes. Un email contenant le mot de passe temporaire a ete envoye.'
+        );
+        this.refreshAfterCreate(createdUser, message);
+      },
+      error: (error) => {
+        try {
+          this.applyBackendFieldErrors(error);
+          this.errorMessage = this.extractErrorMessage(error, 'Echec de la creation.');
+          this.snackBar.open(this.errorMessage, 'Fermer', { duration: 4500 });
+        } finally {
+          this.isSubmitting = false;
+        }
+      }
+    });
   }
 
-  deleteUser(userId: number, userName: string): void {
-    if (confirm(`Are you sure you want to delete ${userName}? This action cannot be undone.`)) {
-      this.isLoading = true;
-      this.userManagementService.deleteUser(userId).subscribe({
-        next: () => {
-          alert('User deleted successfully!');
-          this.loadUsers();
-        },
-        error: (error) => {
-          console.error('Error deleting user:', error);
-          alert(error.error?.message || 'Failed to delete user');
+  toggleActivation(user: User): void {
+    const shouldActivate = !user?.actif;
+    const fullName = `${user.prenom ?? ''} ${user.nom ?? ''}`.trim();
+    const confirmationMessage = shouldActivate
+      ? `Voulez-vous activer le compte de ${fullName} ?`
+      : `Voulez-vous desactiver le compte de ${fullName} ?`;
+
+    if (!confirm(confirmationMessage)) return;
+
+    this.isLoading = true;
+    this.clearFeedback();
+
+    const request$ = shouldActivate
+      ? this.userManagementService.activerUser(user.id)
+      : this.userManagementService.desactiverUser(user.id);
+
+    request$.pipe(
+      timeout(15000)
+    ).subscribe({
+      next: () => {
+        try {
+          this.successMessage = 'Statut utilisateur mis a jour avec succes.';
+          this.users = this.users.map((item) =>
+            item.id === user.id ? { ...item, actif: shouldActivate } : item
+          );
+          this.filteredUsers = [...this.users];
+          this.filterUsers();
+          this.snackBar.open(this.successMessage, 'Fermer', { duration: 3500 });
+        } finally {
           this.isLoading = false;
         }
-      });
+      },
+      error: (error) => {
+        try {
+          this.errorMessage = this.extractErrorMessage(error, 'Echec de la modification du statut.');
+          this.snackBar.open(this.errorMessage, 'Fermer', { duration: 4500 });
+        } finally {
+          this.isLoading = false;
+        }
+      }
+    });
+  }
+
+  getFieldError(fieldName: string): string {
+    if (this.fieldErrors[fieldName]) {
+      return this.fieldErrors[fieldName];
     }
+
+    const control = this.userForm.get(fieldName);
+    if (!control || !(control.touched || this.formSubmitAttempted)) {
+      return '';
+    }
+
+    if (control.errors?.['required']) return 'Ce champ est obligatoire.';
+    if (control.errors?.['minlength']) return 'Minimum 2 caracteres.';
+    if (control.errors?.['missingAt']) return "L'email doit contenir @.";
+    if (control.errors?.['email']) return 'Format email invalide.';
+    if (control.errors?.['phone']) return 'Numero de telephone invalide.';
+
+    return '';
+  }
+
+  isReadonlyInEditMode(fieldName: string): boolean {
+    return this.isEditMode && (fieldName === 'email' || fieldName === 'role');
   }
 
   getRoleBadgeClass(role: string): string {
-    switch (role) {
-      case UserRole.ADMIN: return 'badge-admin';
-      case UserRole.STAGIAIRE: return 'badge-student';
-      case UserRole.ENCADRANT_ACADEMIQUE:
-      case UserRole.ENCADRANT_PROFESSIONNEL: return 'badge-teacher';
-      case UserRole.RESPONSABLE_ENTREPRISE: return 'badge-company';
-      case UserRole.RESPONSABLE_SERVICE_STAGES: return 'badge-manager';
-      case UserRole.RESPONSABLE_UNIVERSITAIRE_STAGES: return 'badge-university';
-      default: return 'badge-default';
+    const normalized = this.normalizeRole(role);
+    switch (normalized) {
+      case RoleUtilisateur.ADMINISTRATEUR:
+        return 'badge-admin';
+      case RoleUtilisateur.STAGIAIRE:
+        return 'badge-student';
+      case RoleUtilisateur.ENCADRANT_ACADEMIQUE:
+      case RoleUtilisateur.ENCADRANT_PROFESSIONNEL:
+        return 'badge-teacher';
+      case RoleUtilisateur.RESPONSABLE_ENTREPRISE:
+        return 'badge-company';
+      case RoleUtilisateur.RESPONSABLE_SERVICE_STAGES:
+        return 'badge-manager';
+      case RoleUtilisateur.RESPONSABLE_UNIVERSITAIRE_STAGES:
+        return 'badge-university';
+      default:
+        return 'badge-default';
     }
   }
 
   getRoleLabel(role: string): string {
+    const normalized = this.normalizeRole(role);
     const labels: { [key: string]: string } = {
-      'ADMIN': 'Admin',
-      'STAGIAIRE': 'Student',
-      'ENCADRANT_ACADEMIQUE': 'Academic Supervisor',
-      'ENCADRANT_PROFESSIONNEL': 'Professional Supervisor',
-      'RESPONSABLE_ENTREPRISE': 'Company Manager',
-      'RESPONSABLE_SERVICE_STAGES': 'Internship Manager',
-      'RESPONSABLE_UNIVERSITAIRE_STAGES': 'University Manager'
+      [RoleUtilisateur.ADMINISTRATEUR]: 'Administrateur',
+      [RoleUtilisateur.STAGIAIRE]: 'Stagiaire',
+      [RoleUtilisateur.ENCADRANT_ACADEMIQUE]: 'Encadrant academique',
+      [RoleUtilisateur.ENCADRANT_PROFESSIONNEL]: 'Encadrant professionnel',
+      [RoleUtilisateur.RESPONSABLE_ENTREPRISE]: 'Responsable entreprise',
+      [RoleUtilisateur.RESPONSABLE_SERVICE_STAGES]: 'Responsable service stages',
+      [RoleUtilisateur.RESPONSABLE_UNIVERSITAIRE_STAGES]: 'Responsable universitaire stages'
     };
-    return labels[role] || role;
+    return labels[normalized] || normalized || String(role);
   }
 }

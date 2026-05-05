@@ -26,6 +26,9 @@
         </div>
         <div class="nav-user">
             <span class="user-info">{{ userName$ | async }}</span>
+            <a class="nav-link" (click)="navigateTo('/entreprise/profil')">
+                <i class="fas fa-user"></i> Gérer profil
+            </a>
             <button class="logout-btn" (click)="logout()">
                 <i class="fas fa-sign-out-alt"></i> Logout
             </button>

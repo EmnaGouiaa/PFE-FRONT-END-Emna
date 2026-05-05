@@ -1,0 +1,86 @@
+.dialog-content {
+  min-width: 500px;
+  max-width: 700px;
+}
+
+h2 {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-weight: 700;
+  color: #1e293b;
+}
+
+h2 mat-icon {
+  color: #3b82f6;
+  font-size: 28px;
+  width: 28px;
+  height: 28px;
+}
+
+.details-section {
+  padding: 16px 0;
+}
+
+.details-section h3 {
+  font-size: 14px;
+  font-weight: 600;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 12px;
+}
+
+.info-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.info-item {
+  display: flex;
+  flex-direction: column;
+}
+
+.info-item.full-width {
+  grid-column: span 2;
+}
+
+.info-item label {
+  font-size: 12px;
+  color: #94a3b8;
+  margin-bottom: 4px;
+}
+
+.info-item span {
+  font-size: 15px;
+  color: #1e293b;
+  font-weight: 500;
+}
+
+.comment-text {
+  background: #f1f5f9;
+  padding: 12px;
+  border-radius: 8px;
+  font-size: 14px;
+  color: #475569;
+  font-style: italic;
+  margin: 0;
+}
+
+.action-form {
+  padding-top: 24px;
+}
+
+.full-width {
+  width: 100%;
+}
+
+mat-dialog-actions {
+  padding: 16px 24px !important;
+  gap: 12px;
+}
+
+button mat-icon {
+  margin-right: 4px;
+}

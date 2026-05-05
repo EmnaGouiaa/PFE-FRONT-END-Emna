@@ -1,0 +1,94 @@
+.admin-validation-container {
+  padding: 24px;
+  background: #f8fafc;
+  min-height: calc(100vh - 64px);
+}
+
+.header {
+  margin-bottom: 24px;
+}
+
+.header h1 {
+  font-size: 28px;
+  font-weight: 700;
+  color: #1e293b;
+  margin-bottom: 8px;
+}
+
+.header p {
+  color: #64748b;
+  font-size: 16px;
+}
+
+.table-container {
+  border-radius: 12px;
+  overflow: hidden;
+  background: white;
+}
+
+table {
+  width: 100%;
+}
+
+.student-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.student-info .name {
+  font-weight: 600;
+  color: #1e293b;
+}
+
+.student-info .email {
+  font-size: 12px;
+  color: #64748b;
+}
+
+.status-badge {
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.status-approved-academic {
+  background: #e0f2fe;
+  color: #0369a1;
+}
+
+.status-official {
+  background: #dcfce7;
+  color: #15803d;
+}
+
+.status-rejected-admin {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
+.loading-spinner, .no-data {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 48px;
+  color: #64748b;
+  gap: 16px;
+}
+
+.no-data mat-icon {
+  font-size: 48px;
+  width: 48px;
+  height: 48px;
+}
+
+.success-snackbar {
+  background: #15803d;
+  color: white;
+}
+
+button mat-icon {
+  margin-right: 4px;
+}

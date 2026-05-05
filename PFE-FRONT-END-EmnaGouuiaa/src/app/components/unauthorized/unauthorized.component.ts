@@ -3,7 +3,7 @@ import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
-import { AuthService, UserRole } from '../../services/auth.service';
+import { AuthentificationService, RoleUtilisateur, UtilisateurActuel } from '../../services/authentification.service';
 
 @Component({
   selector: 'app-unauthorized',
@@ -12,27 +12,29 @@ import { AuthService, UserRole } from '../../services/auth.service';
   template: `
     <div class="unauthorized-container">
       <div class="unauthorized-card">
-        <div class="icon-section">
-          <i class="fas fa-exclamation-triangle"></i>
+        <div class="icon-section" aria-hidden="true">
+          <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+            <path d="M12 9v4" />
+            <path d="M12 17h.01" />
+            <path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+          </svg>
         </div>
-        
+
         <div class="content-section">
-          <h1>Access Denied</h1>
-          <p>You don't have permission to access this page.</p>
-          
-          <div class="user-info" *ngIf="(currentUser$ | async)">
-            <p><strong>Your Role:</strong> {{ getRoleDisplayName((userRole$ | async) || '') }}</p>
-            <p><strong>Required Roles:</strong> {{ getRequiredRoles() }}</p>
+          <h1>Accès refusé</h1>
+          <p>Vous n’avez pas la permission d’accéder à cette page.</p>
+
+          <div class="user-info" *ngIf="(currentUser$ | async) as u">
+            <p><strong>Votre rôle :</strong> {{ getRoleDisplayName(u.role || '') }}</p>
+            <p><strong>Rôles requis :</strong> {{ getRequiredRoles() }}</p>
           </div>
           
           <div class="actions">
             <button class="btn btn-primary" (click)="goToDashboard()">
-              <i class="fas fa-home"></i>
-              Go to My Dashboard
+              Aller au tableau de bord
             </button>
             <button class="btn btn-secondary" (click)="logout()">
-              <i class="fas fa-sign-out-alt"></i>
-              Logout
+              Déconnexion
             </button>
           </div>
         </div>
@@ -65,8 +67,7 @@ import { AuthService, UserRole } from '../../services/auth.service';
       border-bottom: 1px solid #e9ecef;
     }
 
-    .icon-section i {
-      font-size: 4rem;
+    .icon-section svg {
       color: #dc3545;
     }
 
@@ -158,71 +159,72 @@ import { AuthService, UserRole } from '../../services/auth.service';
   `]
 })
 export class Unauthorized implements OnInit {
-  currentUser$: Observable<any>;
-  userRole$: Observable<string>;
+  currentUser$: Observable<UtilisateurActuel | null>;
   requiredRoles: string[] = [];
 
   constructor(
-    private authService: AuthService,
+    private authService: AuthentificationService,
     private router: Router
   ) {
-    this.currentUser$ = this.authService.currentUser$;
-    this.userRole$ = this.currentUser$.pipe(
-      map(user => user?.role || '')
-    );
+    this.currentUser$ = this.authService.utilisateurActuel$;
   }
 
   ngOnInit(): void {
-    // Get required roles from router state if available
     const navigation = this.router.getCurrentNavigation();
-    if (navigation?.extras.state?.['requiredRoles']) {
-      this.requiredRoles = navigation.extras.state['requiredRoles'];
-    }
+    const state = navigation?.extras?.state as any;
+    const fromState = (state?.rolesRequis ?? state?.requiredRoles) as any;
+    if (Array.isArray(fromState)) this.requiredRoles = fromState.map((r) => String(r));
   }
 
   getRoleDisplayName(role: string): string {
     const roleNames: { [key: string]: string } = {
-      [UserRole.ADMIN]: 'Administrator',
-      [UserRole.STAGIAIRE]: 'Student',
-      [UserRole.ENCADRANT_PROFESSIONNEL]: 'Professional Supervisor',
-      [UserRole.ENCADRANT_ACADEMIQUE]: 'Academic Supervisor',
-      [UserRole.RESPONSABLE_SERVICE_STAGES]: 'Internship Service Manager',
-      [UserRole.RESPONSABLE_ENTREPRISE]: 'Company Manager'
+      [RoleUtilisateur.ADMINISTRATEUR]: 'Administrateur',
+      [RoleUtilisateur.STAGIAIRE]: 'Stagiaire',
+      [RoleUtilisateur.ENCADRANT_PROFESSIONNEL]: 'Encadrant professionnel',
+      [RoleUtilisateur.ENCADRANT_ACADEMIQUE]: 'Encadrant académique',
+      [RoleUtilisateur.RESPONSABLE_SERVICE_STAGES]: 'Responsable du service des stages',
+      [RoleUtilisateur.RESPONSABLE_UNIVERSITAIRE_STAGES]: 'Responsable universitaire des stages',
+      [RoleUtilisateur.RESPONSABLE_ENTREPRISE]: 'Responsable d’entreprise'
     };
-    return roleNames[role] || role;
+    return roleNames[role] || role || '—';
   }
 
   getRequiredRoles(): string {
-    if (this.requiredRoles.length === 0) return 'Unknown';
+    if (this.requiredRoles.length === 0) return 'Inconnu';
     return this.requiredRoles.map(role => this.getRoleDisplayName(role)).join(', ');
   }
 
   goToDashboard(): void {
-    const userRole = this.authService.getUserRole();
-    
-    switch (userRole) {
-      case UserRole.ADMIN:
-        this.router.navigate(['/admin/dashboard']);
-        break;
-      case UserRole.STAGIAIRE:
-        this.router.navigate(['/student/dashboard']);
-        break;
-      case UserRole.ENCADRANT_PROFESSIONNEL:
-      case UserRole.ENCADRANT_ACADEMIQUE:
-        this.router.navigate(['/encadrant/dashboard']);
-        break;
-      case UserRole.RESPONSABLE_SERVICE_STAGES:
-        this.router.navigate(['/responsable/dashboard']);
-        break;
-      case UserRole.RESPONSABLE_ENTREPRISE:
-        this.router.navigate(['/company/dashboard']);
-        break;
+    const role = this.authService.getRoleUtilisateur();
+
+    switch (role) {
+      case RoleUtilisateur.ADMINISTRATEUR:
+        this.router.navigate(['/admin/tableau-de-bord']);
+        return;
+      case RoleUtilisateur.STAGIAIRE:
+        this.router.navigate(['/etudiant/tableau-de-bord']);
+        return;
+      case RoleUtilisateur.ENCADRANT_PROFESSIONNEL:
+      case RoleUtilisateur.ENCADRANT_ACADEMIQUE:
+        this.router.navigate(['/enseignant/tableau-de-bord']);
+        return;
+      case RoleUtilisateur.RESPONSABLE_SERVICE_STAGES:
+        this.router.navigate(['/admin/demandes-stage']);
+        return;
+      case RoleUtilisateur.RESPONSABLE_UNIVERSITAIRE_STAGES:
+        this.router.navigate(['/responsable/tableau-de-bord']);
+        return;
+      case RoleUtilisateur.RESPONSABLE_ENTREPRISE:
+        this.router.navigate(['/entreprise/tableau-de-bord']);
+        return;
       default:
-        this.router.navigate(['/dashboard']);
+        this.router.navigate(['/connexion']);
+        return;
     }
   }
 
   logout(): void {
-    this.authService.logout();
+    this.authService.deconnexion();
+    this.router.navigate(['/connexion']);
   }
 }

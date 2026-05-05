@@ -1,0 +1,9 @@
+.student-header {
+  background: linear-gradient(135deg, rgba(16, 71, 120, 0.96), rgba(37, 150, 190, 0.92));
+}
+
+.student-sidebar::before {
+  background:
+    radial-gradient(circle at top right, rgba(37, 150, 190, 0.14), transparent 28%),
+    radial-gradient(circle at bottom left, rgba(203, 216, 18, 0.16), transparent 24%);
+}

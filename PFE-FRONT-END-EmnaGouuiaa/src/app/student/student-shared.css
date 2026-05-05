@@ -1,0 +1,704 @@
+.student-page .student-hero {
+  align-items: center;
+}
+
+.student-page .student-stat-grid {
+  margin-bottom: 24px;
+}
+
+.student-page .student-stat-card {
+  min-height: 206px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.student-page .student-stat-head {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.student-page .student-stat-icon {
+  width: 48px;
+  height: 48px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 16px;
+  background: linear-gradient(135deg, rgba(16, 71, 120, 0.12), rgba(37, 150, 190, 0.18));
+  color: var(--primary-color);
+}
+
+.student-page .student-stat-icon svg {
+  width: 22px;
+  height: 22px;
+}
+
+.student-page .dashboard-split-grid {
+  margin-bottom: 24px;
+}
+
+.student-page .signature-reminder-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  margin-bottom: 24px;
+  padding: 22px;
+  border-radius: 26px;
+  border: 1px solid rgba(203, 216, 18, 0.35);
+  background:
+    radial-gradient(circle at top right, rgba(203, 216, 18, 0.22), transparent 34%),
+    linear-gradient(135deg, rgba(255, 255, 255, 0.96), rgba(236, 239, 207, 0.78));
+  box-shadow: var(--shadow-md);
+}
+
+.student-page .signature-reminder-copy {
+  max-width: 720px;
+}
+
+.student-page .signature-reminder-card h2 {
+  margin: 6px 0 0;
+  color: var(--text-main);
+  font-size: clamp(1.25rem, 2vw, 1.75rem);
+  font-weight: 900;
+}
+
+.student-page .signature-reminder-card p {
+  margin: 8px 0 0;
+  color: var(--text-muted);
+  line-height: 1.55;
+  font-weight: 650;
+}
+
+.student-page .dashboard-panel {
+  box-shadow: var(--shadow-md);
+}
+
+.student-page .notification-bell {
+  position: relative;
+  width: 48px;
+  height: 48px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 18px;
+  color: var(--primary-color);
+  background: rgba(255, 255, 255, 0.95);
+  border: 1px solid rgba(16, 71, 120, 0.14);
+  box-shadow: var(--shadow-sm);
+  transition: var(--transition);
+}
+
+.student-page .notification-bell:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+
+.student-page .notification-bell svg {
+  width: 22px;
+  height: 22px;
+}
+
+.student-page .notification-count {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  min-width: 24px;
+  height: 24px;
+  padding: 0 7px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: #8b1e3f;
+  color: var(--white);
+  font-size: 0.78rem;
+  font-weight: 900;
+  border: 2px solid var(--white);
+}
+
+.student-page .notifications-list {
+  display: grid;
+  gap: 14px;
+}
+
+.student-page .notification-card {
+  display: grid;
+  grid-template-columns: 54px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 16px;
+  padding: 18px;
+  border-radius: 24px;
+  border: 1px solid rgba(16, 71, 120, 0.08);
+  background: rgba(255, 255, 255, 0.9);
+  box-shadow: var(--shadow-sm);
+}
+
+.student-page .notification-unread {
+  border-color: rgba(203, 216, 18, 0.38);
+  background:
+    radial-gradient(circle at top right, rgba(203, 216, 18, 0.18), transparent 34%),
+    rgba(255, 255, 255, 0.96);
+}
+
+.student-page .notification-icon {
+  width: 54px;
+  height: 54px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 18px;
+  background: linear-gradient(135deg, rgba(16, 71, 120, 0.12), rgba(37, 150, 190, 0.18));
+  color: var(--primary-color);
+}
+
+.student-page .notification-icon svg {
+  width: 24px;
+  height: 24px;
+}
+
+.student-page .notification-topline {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.student-page .notification-copy h3 {
+  margin: 0;
+  color: var(--text-main);
+  font-size: 1.05rem;
+  font-weight: 900;
+}
+
+.student-page .notification-copy p {
+  margin: 8px 0 0;
+  color: var(--text-muted);
+  line-height: 1.55;
+  font-weight: 650;
+}
+
+.student-page .actions-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 14px;
+}
+
+.student-page .action-card {
+  display: block;
+  padding: 18px;
+  border-radius: 22px;
+  text-decoration: none;
+  color: inherit;
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid var(--line-soft);
+  box-shadow: var(--shadow-sm);
+  transition: var(--transition);
+}
+
+.student-page .action-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+
+.student-page .action-title {
+  display: block;
+  font-size: 1rem;
+  font-weight: 800;
+  color: var(--text-main);
+}
+
+.student-page .action-text {
+  display: block;
+  margin-top: 8px;
+  color: var(--text-muted);
+  font-size: 0.92rem;
+  line-height: 1.5;
+}
+
+.student-page .split-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(320px, 0.9fr);
+  gap: 18px;
+}
+
+.student-page .table-shell {
+  overflow-x: auto;
+  border-radius: 20px;
+  border: 1px solid rgba(16, 71, 120, 0.08);
+}
+
+.student-page table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 680px;
+  background: rgba(255, 255, 255, 0.9);
+}
+
+.student-page th,
+.student-page td {
+  padding: 14px 16px;
+  text-align: left;
+  border-bottom: 1px solid rgba(16, 71, 120, 0.08);
+  vertical-align: top;
+}
+
+.student-page th {
+  color: var(--text-muted);
+  font-size: 0.8rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  background: rgba(236, 239, 207, 0.3);
+}
+
+.student-page .cell-title {
+  color: var(--text-main);
+  font-weight: 800;
+}
+
+.student-page .cell-sub {
+  margin-top: 6px;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+.student-page .filters-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 12px;
+}
+
+.student-page .input,
+.student-page .select {
+  width: 100%;
+  min-height: 48px;
+  padding: 12px 14px;
+  border-radius: 16px;
+  border: 1px solid var(--line-soft);
+  background: rgba(255, 255, 255, 0.94);
+  color: var(--text-main);
+  font: inherit;
+}
+
+.student-page .input:focus,
+.student-page .select:focus {
+  outline: none;
+  border-color: rgba(37, 150, 190, 0.45);
+  box-shadow: 0 0 0 4px rgba(37, 150, 190, 0.12);
+}
+
+.student-page .button-row,
+.student-page .detail-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.student-page .btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  padding: 0 16px;
+  border: 1px solid transparent;
+  border-radius: 16px;
+  cursor: pointer;
+  font: inherit;
+  font-weight: 800;
+  transition: var(--transition);
+}
+
+.student-page .btn-primary {
+  background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+  color: var(--white);
+  box-shadow: 0 14px 24px rgba(16, 71, 120, 0.18);
+}
+
+.student-page .btn-secondary {
+  background: rgba(255, 255, 255, 0.95);
+  color: var(--primary-color);
+  border-color: rgba(16, 71, 120, 0.14);
+}
+
+.student-page .btn-ghost {
+  background: rgba(16, 71, 120, 0.06);
+  color: var(--primary-color);
+  border-color: rgba(16, 71, 120, 0.08);
+}
+
+.student-page .btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+  box-shadow: none;
+  transform: none;
+}
+
+.student-page .note-banner {
+  margin-bottom: 18px;
+  padding: 14px 16px;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.84);
+  border: 1px dashed rgba(16, 71, 120, 0.18);
+  color: var(--text-muted);
+  font-weight: 700;
+}
+
+.student-page .message-success,
+.student-page .message-error,
+.student-page .message-info {
+  margin-bottom: 16px;
+  padding: 14px 16px;
+  border-radius: 18px;
+  font-weight: 700;
+}
+
+.student-page .message-success {
+  color: var(--secondary-color);
+  background: rgba(37, 150, 190, 0.1);
+  border: 1px solid rgba(37, 150, 190, 0.18);
+}
+
+.student-page .message-error {
+  color: #8b1e3f;
+  background: rgba(139, 30, 63, 0.08);
+  border: 1px solid rgba(139, 30, 63, 0.14);
+}
+
+.student-page .message-info {
+  color: var(--primary-color);
+  background: rgba(236, 239, 207, 0.7);
+  border: 1px solid rgba(203, 216, 18, 0.22);
+}
+
+.student-page .badge-stack {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 10px;
+}
+
+.student-page .muted {
+  color: var(--text-muted);
+}
+
+.student-page .info-columns {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 12px;
+}
+
+.student-page .stage-selector {
+  max-width: 320px;
+}
+
+.student-page.follow-up-page .stage-selector {
+  min-width: min(360px, 100%);
+  max-width: 420px;
+  box-shadow: var(--shadow-sm);
+}
+
+.student-page .detail-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 12px;
+}
+
+.student-page .detail-item {
+  padding: 14px 16px;
+  border-radius: 18px;
+  border: 1px solid rgba(16, 71, 120, 0.08);
+  background: rgba(255, 255, 255, 0.88);
+}
+
+.student-page .detail-item.full-width,
+.student-page .full-width {
+  grid-column: 1 / -1;
+}
+
+.student-page .detail-item .label {
+  display: block;
+  color: var(--text-muted);
+  font-size: 0.78rem;
+  font-weight: 900;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.student-page .detail-item .value {
+  display: block;
+  margin-top: 6px;
+  color: var(--text-main);
+  font-weight: 800;
+  word-break: break-word;
+}
+
+.student-page .progress-track {
+  height: 14px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(16, 71, 120, 0.08);
+  border: 1px solid rgba(16, 71, 120, 0.08);
+  margin-bottom: 16px;
+}
+
+.student-page .progress-fill {
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--primary-color), var(--secondary-color));
+  transition: width 0.3s ease;
+}
+
+.student-page .kv-list {
+  display: grid;
+  gap: 12px;
+}
+
+.student-page .kv-item {
+  padding: 14px 16px;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.88);
+  border: 1px solid rgba(16, 71, 120, 0.08);
+}
+
+.student-page .kv-item .label {
+  display: block;
+  color: var(--text-muted);
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.student-page .kv-item .value {
+  display: block;
+  margin-top: 6px;
+  font-weight: 800;
+  color: var(--text-main);
+  word-break: break-word;
+}
+
+.student-page .status-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+}
+
+.student-page .status-card {
+  padding: 16px;
+  border-radius: 18px;
+  border: 1px solid rgba(16, 71, 120, 0.08);
+  background: rgba(255, 255, 255, 0.88);
+}
+
+.student-page .status-card h4 {
+  font-size: 0.95rem;
+  font-weight: 800;
+}
+
+.student-page .status-card p {
+  margin-top: 8px;
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+.student-page .mini-offer-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 14px;
+}
+
+.student-page .mini-offer-card {
+  padding: 16px;
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid rgba(16, 71, 120, 0.08);
+  box-shadow: var(--shadow-sm);
+}
+
+.student-page .mini-offer-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.student-page .mini-offer-head h3 {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 800;
+  color: var(--text-main);
+}
+
+.student-page .mini-offer-company {
+  margin: 8px 0 0;
+  color: var(--primary-color);
+  font-weight: 700;
+}
+
+.student-page .mini-offer-description {
+  margin: 12px 0 0;
+  color: var(--text-muted);
+  line-height: 1.5;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.student-page .mini-offer-meta {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 14px;
+  color: var(--text-muted);
+  font-size: 0.86rem;
+  font-weight: 700;
+}
+
+.student-page .trello-section {
+  margin-bottom: 24px;
+  border: 1px solid rgba(37, 150, 190, 0.18);
+  background:
+    radial-gradient(circle at top right, rgba(37, 150, 190, 0.12), transparent 34%),
+    linear-gradient(135deg, rgba(255, 255, 255, 0.96), rgba(236, 239, 207, 0.62));
+}
+
+.student-page .trello-section-header {
+  align-items: flex-start;
+  gap: 16px;
+}
+
+.student-page .trello-section-copy {
+  margin: 10px 0 0;
+  max-width: 760px;
+  color: var(--text-muted);
+  line-height: 1.55;
+  font-weight: 650;
+}
+
+.student-page .trello-overview {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 18px;
+  align-items: center;
+  margin-bottom: 18px;
+}
+
+.student-page .trello-progress-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.student-page .trello-progress-label {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  font-weight: 800;
+}
+
+.student-page .trello-progress-value {
+  color: var(--text-main);
+  font-size: 1rem;
+  font-weight: 900;
+}
+
+.student-page .trello-progress-note {
+  color: var(--text-muted);
+  font-size: 0.92rem;
+  font-weight: 700;
+}
+
+.student-page .trello-board-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: min(320px, 100%);
+}
+
+.student-page .trello-primary-button {
+  min-height: 52px;
+  padding-inline: 20px;
+}
+
+.student-page .trello-empty-state {
+  display: grid;
+  grid-template-columns: 52px minmax(0, 1fr);
+  gap: 14px;
+  align-items: flex-start;
+  margin-bottom: 18px;
+  padding: 16px 18px;
+  border-radius: 20px;
+  border: 1px dashed rgba(16, 71, 120, 0.18);
+  background: rgba(255, 255, 255, 0.82);
+}
+
+.student-page .trello-empty-icon {
+  width: 52px;
+  height: 52px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 18px;
+  color: var(--primary-color);
+  background: linear-gradient(135deg, rgba(16, 71, 120, 0.12), rgba(37, 150, 190, 0.18));
+}
+
+.student-page .trello-empty-title {
+  color: var(--text-main);
+  font-weight: 900;
+}
+
+.student-page .trello-empty-state p {
+  margin: 6px 0 0;
+  color: var(--text-muted);
+  line-height: 1.5;
+  font-weight: 650;
+}
+
+.student-page .trello-stats-grid {
+  margin-bottom: 0;
+}
+
+@media (max-width: 1080px) {
+  .student-page .split-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 768px) {
+  .student-page .signature-reminder-card {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .student-page .trello-overview {
+    grid-template-columns: 1fr;
+  }
+
+  .student-page .trello-progress-head {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .student-page .trello-board-actions {
+    min-width: 0;
+  }
+
+  .student-page .trello-empty-state {
+    grid-template-columns: 1fr;
+  }
+
+  .student-page .notification-card {
+    grid-template-columns: 1fr;
+  }
+
+  .student-page table {
+    min-width: 560px;
+  }
+}

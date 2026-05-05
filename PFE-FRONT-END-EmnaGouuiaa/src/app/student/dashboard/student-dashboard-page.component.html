@@ -1,0 +1,224 @@
+<div class="company-page student-page">
+  <section class="page-hero student-hero dashboard-top-header">
+    <div>
+      <span class="dashboard-kicker">Parcours stagiaire</span>
+      <h1>Tableau de bord</h1>
+      <p>
+        Retrouve le meme langage visuel que l administration pour suivre ton stage, tes documents,
+        tes reunions et les prochaines actions utiles.
+      </p>
+      <div class="hero-badges" *ngIf="profile">
+        <span class="hero-badge">{{ profile.prenom }} {{ profile.nom }}</span>
+        <span class="hero-badge" *ngIf="profile.filiereNom">{{ profile.filiereNom }}</span>
+        <span class="hero-badge" *ngIf="profile.niveau">Niveau {{ profile.niveau }}</span>
+      </div>
+    </div>
+    <div class="hero-actions">
+      <a routerLink="/etudiant/notifications" class="notification-bell" aria-label="Voir mes notifications">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9" />
+          <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+        </svg>
+        <span class="notification-count" *ngIf="unreadNotifications > 0">{{ unreadNotifications }}</span>
+      </a>
+      <a routerLink="/etudiant/mon-stage" class="btn btn-primary">Voir mon stage</a>
+      <a routerLink="/etudiant/offres" class="btn btn-secondary">Offres disponibles</a>
+      <a routerLink="/etudiant/reunions" class="btn btn-secondary">Mes reunions</a>
+    </div>
+  </section>
+
+  <div class="message-error" *ngIf="errorMessage">{{ errorMessage }}</div>
+  <div class="empty-card" *ngIf="isLoading">Chargement du tableau de bord...</div>
+
+  <ng-container *ngIf="!isLoading">
+    <section class="signature-reminder-card" *ngIf="showProfileCompletionReminder">
+      <div class="signature-reminder-copy">
+        <span class="dashboard-kicker">Profil incomplet</span>
+        <h2>{{ profileCompletionService.alertTitle }}</h2>
+        <p>{{ profileCompletionService.alertMessage }}</p>
+        <div class="missing-fields-list" aria-label="Informations manquantes">
+          <span class="missing-field-chip" *ngFor="let field of profileCompletionMissingFields">{{ field }}</span>
+        </div>
+      </div>
+      <a routerLink="/etudiant/profil" class="btn btn-primary">Compléter mon profil</a>
+    </section>
+
+    <app-satisfaction-survey-section></app-satisfaction-survey-section>
+
+    <section class="stats-grid student-stat-grid">
+      <article class="stat-card student-stat-card">
+        <div class="student-stat-head">
+          <span class="student-stat-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M22 10v6M2 10l10-5 10 5-10 5z" />
+              <path d="M6 12v5c3 2 6 2 9 0v-5" />
+            </svg>
+          </span>
+          <span class="stat-label">Stage affecte</span>
+        </div>
+        <strong class="stat-value">{{ stats.stages }}</strong>
+        <div class="stat-subtitle">
+          {{ currentInternship ? 'Un stage est actuellement rattache a votre compte' : 'Aucun stage affecte pour le moment' }}
+        </div>
+      </article>
+
+      <article class="stat-card student-stat-card">
+        <div class="student-stat-head">
+          <span class="student-stat-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M8 2v4" />
+              <path d="M16 2v4" />
+              <rect x="3" y="4" width="18" height="18" rx="2" />
+              <path d="M3 10h18" />
+            </svg>
+          </span>
+          <span class="stat-label">Reunions planifiees</span>
+        </div>
+        <strong class="stat-value">{{ stats.reunions }}</strong>
+        <div class="stat-subtitle">Reunions hebdomadaires et finales reliees a votre stage.</div>
+      </article>
+
+      <article class="stat-card student-stat-card">
+        <div class="student-stat-head">
+          <span class="student-stat-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+              <path d="M14 2v6h6" />
+            </svg>
+          </span>
+          <span class="stat-label">Documents disponibles</span>
+        </div>
+        <strong class="stat-value">{{ stats.documents }}</strong>
+        <div class="stat-subtitle">Convention, rapport et fiche d evaluation exposes par l API.</div>
+      </article>
+
+      <article class="stat-card student-stat-card">
+        <div class="student-stat-head">
+          <span class="student-stat-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M3 21V7a2 2 0 0 1 2-2h6v16" />
+              <path d="M13 21V3h6a2 2 0 0 1 2 2v16" />
+            </svg>
+          </span>
+          <span class="stat-label">Demandes entreprise</span>
+        </div>
+        <strong class="stat-value">{{ stats.demandes }}</strong>
+        <div class="stat-subtitle">Demandes de creation d entreprise deja envoyees.</div>
+      </article>
+    </section>
+
+    <section class="split-grid dashboard-split-grid">
+      <section class="panel dashboard-panel">
+        <div class="panel-header">
+          <div>
+            <h2>Actions rapides</h2>
+            <p class="panel-subtitle">Les raccourcis utiles pendant votre stage.</p>
+          </div>
+        </div>
+
+        <div class="actions-grid">
+          <a routerLink="/etudiant/mon-stage" class="action-card">
+            <span class="action-title">Mon stage</span>
+            <span class="action-text">Consulter le stage affecte, son entreprise et ses encadrants.</span>
+          </a>
+
+          <a routerLink="/etudiant/reunions" class="action-card">
+            <span class="action-title">Mes reunions</span>
+            <span class="action-text">Voir les reunions programmees et leurs comptes rendus.</span>
+          </a>
+
+          <a routerLink="/etudiant/documents-stage" class="action-card">
+            <span class="action-title">Documents de stage</span>
+            <span class="action-text">Consulter convention, evaluation et cahier de stage autorises.</span>
+          </a>
+
+          <a routerLink="/etudiant/demande-entreprise" class="action-card">
+            <span class="action-title">Demande entreprise</span>
+            <span class="action-text">Declarer une entreprise absente du systeme si necessaire.</span>
+          </a>
+        </div>
+      </section>
+
+      <section class="panel dashboard-panel">
+        <div class="panel-header">
+          <div>
+            <h2>Mon stage actuel</h2>
+            <p class="panel-subtitle">Synthese du stage cree apres affectation.</p>
+          </div>
+        </div>
+
+        <div class="empty-card" *ngIf="!currentInternship">
+          Aucun stage ne vous a encore ete affecte.
+        </div>
+
+        <div class="kv-list" *ngIf="currentInternship">
+          <div class="kv-item">
+            <span class="label">Titre</span>
+            <span class="value">{{ currentInternship.titre || 'Non renseigne' }}</span>
+          </div>
+          <div class="kv-item">
+            <span class="label">Sujet</span>
+            <span class="value">{{ currentInternship.sujet || currentInternship.titre || 'Non renseigne' }}</span>
+          </div>
+          <div class="kv-item">
+            <span class="label">Entreprise</span>
+            <span class="value">{{ currentInternship.company.nom || 'Non renseignee' }}</span>
+          </div>
+          <div class="kv-item">
+            <span class="label">Date de debut</span>
+            <span class="value">{{ formatDate(currentInternship.dateDebut) }}</span>
+          </div>
+          <div class="kv-item">
+            <span class="label">Duree</span>
+            <span class="value">{{ currentInternship.duree ? (currentInternship.duree + ' mois') : 'Non renseignee' }}</span>
+          </div>
+          <div class="kv-item">
+            <span class="label">Statut</span>
+            <span class="value">
+              <span class="status-pill" [ngClass]="statusClass(currentInternship.statut)">
+                {{ formatStatus(currentInternship.statut) }}
+              </span>
+            </span>
+          </div>
+          <div class="kv-item">
+            <span class="label">Encadrant academique</span>
+            <span class="value">{{ currentInternship.academicSupervisor.fullName || 'Non affecte' }}</span>
+          </div>
+          <div class="kv-item">
+            <span class="label">Encadrant professionnel</span>
+            <span class="value">{{ currentInternship.professionalSupervisor.fullName || 'Non affecte' }}</span>
+          </div>
+        </div>
+      </section>
+    </section>
+
+    <section class="panel dashboard-panel">
+      <div class="panel-header">
+        <div>
+          <h2>Offres disponibles</h2>
+          <p class="panel-subtitle">Quelques offres encore ouvertes et non affectees.</p>
+        </div>
+        <a routerLink="/etudiant/offres" class="btn btn-secondary">Voir toutes les offres</a>
+      </div>
+
+      <div class="empty-card" *ngIf="availableOffers.length === 0">
+        Aucune offre disponible pour le moment.
+      </div>
+
+      <div class="mini-offer-grid" *ngIf="availableOffers.length > 0">
+        <article class="mini-offer-card" *ngFor="let offer of availableOffers">
+          <div class="mini-offer-head">
+            <h3>{{ offer.titre || 'Sans titre' }}</h3>
+            <span class="status-pill" [ngClass]="statusClass(offer.statut)">{{ formatStatus(offer.statut) }}</span>
+          </div>
+          <p class="mini-offer-company">{{ offer.entrepriseNom || 'Entreprise non renseignee' }}</p>
+          <p class="mini-offer-description">{{ offer.descriptionMissions || 'Aucune description fournie.' }}</p>
+          <div class="mini-offer-meta">
+            <span>{{ offer.profilRecherche || 'Profil non precise' }}</span>
+            <span>{{ formatDate(offer.dateDebutPrevue) }}</span>
+          </div>
+        </article>
+      </div>
+    </section>
+  </ng-container>
+</div>

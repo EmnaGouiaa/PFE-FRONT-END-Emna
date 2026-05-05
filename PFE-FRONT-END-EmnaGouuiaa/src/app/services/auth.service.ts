@@ -1,172 +1,92 @@
 import { Injectable } from '@angular/core';
-import { HttpClient, HttpHeaders } from '@angular/common/http';
-import { Router } from '@angular/router';
-import { BehaviorSubject, Observable, throwError } from 'rxjs';
-import { map, catchError, tap } from 'rxjs/operators';
+import { Observable } from 'rxjs';
+import { map } from 'rxjs/operators';
+import {
+  AuthentificationService,
+  ReponseAuthentification,
+  RoleUtilisateur,
+  UtilisateurActuel
+} from './authentification.service';
 
-export interface User {
-  id: number;
-  email: string;
-  nom: string;
-  prenom: string;
-  role: string;
-  compteValide: boolean;
-}
-
-export interface LoginResponse {
-  token: string;
-  user: User;
-}
+// Compatibility layer for the pre-migration API (AuthService/UserRole/User).
+// The app's source of truth remains AuthentificationService/RoleUtilisateur.
 
 export enum UserRole {
-  ADMIN = 'ADMIN',
-  ENCADRANT_PROFESSIONNEL = 'ENCADRANT_PROFESSIONNEL',
-  ENCADRANT_ACADEMIQUE = 'ENCADRANT_ACADEMIQUE',
-  RESPONSABLE_SERVICE_STAGES = 'RESPONSABLE_SERVICE_STAGES',
-  RESPONSABLE_UNIVERSITAIRE_STAGES = 'RESPONSABLE_UNIVERSITAIRE_STAGES',
-  RESPONSABLE_ENTREPRISE = 'RESPONSABLE_ENTREPRISE',
-  STAGIAIRE = 'STAGIAIRE'
+  ADMIN = RoleUtilisateur.ADMINISTRATEUR,
+  STAGIAIRE = RoleUtilisateur.STAGIAIRE,
+  ENCADRANT_ACADEMIQUE = RoleUtilisateur.ENCADRANT_ACADEMIQUE,
+  ENCADRANT_PROFESSIONNEL = RoleUtilisateur.ENCADRANT_PROFESSIONNEL,
+  RESPONSABLE_ENTREPRISE = RoleUtilisateur.RESPONSABLE_ENTREPRISE,
+  RESPONSABLE_SERVICE_STAGES = RoleUtilisateur.RESPONSABLE_SERVICE_STAGES,
+  AGENT_STAGE = RoleUtilisateur.AGENT_STAGE,
+  RESPONSABLE_UNIVERSITAIRE_STAGES = RoleUtilisateur.RESPONSABLE_UNIVERSITAIRE_STAGES
+}
+
+export interface User {
+  id: number | null;
+  prenom: string;
+  nom: string;
+  email: string;
+  role: string;
 }
 
 @Injectable({
   providedIn: 'root'
 })
 export class AuthService {
-  private readonly API_URL = 'http://localhost:9999/api/v1';
-  private readonly TOKEN_KEY = 'jwtToken';
-  private readonly USER_KEY = 'currentUser';
+  readonly currentUser$: Observable<User | null>;
+  readonly estAuthentifie$: Observable<boolean>;
 
-  private currentUserSubject = new BehaviorSubject<User | null>(null);
-  public currentUser$ = this.currentUserSubject.asObservable();
-
-  private isAuthenticatedSubject = new BehaviorSubject<boolean>(false);
-  public isAuthenticated$ = this.isAuthenticatedSubject.asObservable();
-
-  constructor(
-    private http: HttpClient,
-    private router: Router
-  ) {
-    this.initializeAuthFromStorage();
+  constructor(private serviceAuthentification: AuthentificationService) {
+    this.estAuthentifie$ = this.serviceAuthentification.estAuthentifie$;
+    this.currentUser$ = this.serviceAuthentification.utilisateurActuel$.pipe(
+      map((utilisateur) => (utilisateur ? this.toLegacyUser(utilisateur) : null))
+    );
   }
 
-  private initializeAuthFromStorage(): void {
-    const token = this.getToken();
-    const user = this.getCurrentUser();
-
-    if (token && user) {
-      this.currentUserSubject.next(user);
-      this.isAuthenticatedSubject.next(true);
-    } else {
-      this.clearAuthData();
-    }
-  }
-
-  login(data: { email: string; password: string }): Observable<LoginResponse> {
-    const loginUrl = 'http://localhost:9999/api/v1/auth/authenticate';
-
-    console.log('🌍 AuthService: Login request details:');
-    console.log('🔗 URL:', loginUrl);
-    console.log('📧 Email:', data.email);
-    console.log('🔑 Password length:', data.password.length);
-    console.log('📦 Request body:', JSON.stringify(data, null, 2));
-
-    return this.http.post<LoginResponse>(loginUrl, data)
-      .pipe(
-        tap(response => {
-          console.log('✅ AuthService: Received response:', response);
-          console.log('✅ AuthService: Token received:', !!response.token);
-          console.log('✅ AuthService: User data:', response.user);
-
-          if (response.token && response.user) {
-            console.log('💾 AuthService: Storing auth data...');
-
-            // Store in localStorage with consistent keys
-            localStorage.setItem(this.TOKEN_KEY, response.token);
-            localStorage.setItem(this.USER_KEY, JSON.stringify(response.user));
-
-            // Update BehaviorSubjects
-            this.currentUserSubject.next(response.user);
-            this.isAuthenticatedSubject.next(true);
-
-            console.log('✅ AuthService: Auth data stored successfully');
-            console.log('✅ AuthService: Current user role:', this.getUserRole());
-            console.log('✅ AuthService: Is authenticated:', this.isAuthenticatedSubject.value);
-          } else {
-            console.error('❌ AuthService: Missing token or user in response!');
-          }
-        }),
-        catchError(error => {
-          console.error('❌ AuthService: Login error:', error);
-          console.error('Error details:', {
-            status: error.status,
-            statusText: error.statusText,
-            message: error.message,
-            url: error.url
-          });
-          return throwError(() => error);
-        })
-      );
-  }
-
-  logout(showMessage: boolean = true): void {
-    this.clearAuthData();
-
-    if (showMessage) {
-      sessionStorage.setItem('logoutMessage', 'You have been successfully logged out');
-    }
-
-    this.router.navigate(['/login']);
-  }
-
-  private setAuthData(token: string, user: User): void {
-    console.log('💾 setAuthData called with:', { token: token.substring(0, 20) + '...', user });
-
-    localStorage.setItem(this.TOKEN_KEY, token);
-    localStorage.setItem(this.USER_KEY, JSON.stringify(user));
-
-    this.currentUserSubject.next(user);
-    this.isAuthenticatedSubject.next(true);
-
-    console.log('💾 Auth subjects updated:', {
-      currentUser: this.currentUserSubject.value,
-      isAuthenticated: this.isAuthenticatedSubject.value
+  // Legacy API: { email, password } + Observable response.
+  login(donnees: { email: string; password: string }): Observable<ReponseAuthentification> {
+    return this.serviceAuthentification.connexion({
+      email: donnees.email,
+      motDePasse: donnees.password
     });
   }
 
-  public clearAuthData(): void {
-    localStorage.removeItem(this.TOKEN_KEY);
-    localStorage.removeItem(this.USER_KEY);
-
-    this.currentUserSubject.next(null);
-    this.isAuthenticatedSubject.next(false);
-  }
-
-  getToken(): string | null {
-    return localStorage.getItem(this.TOKEN_KEY);
+  logout(): void {
+    this.serviceAuthentification.deconnexion();
   }
 
   isLoggedIn(): boolean {
-    return !!this.getToken() && !this.isTokenExpired();
+    return this.serviceAuthentification.estAuthentifie();
+  }
+
+  getToken(): string | null {
+    return this.serviceAuthentification.getToken();
   }
 
   getCurrentUser(): User | null {
-    const userStr = localStorage.getItem(this.USER_KEY);
-    return userStr ? JSON.parse(userStr) : null;
+    const utilisateur = this.serviceAuthentification.getUtilisateurActuel();
+    return utilisateur ? this.toLegacyUser(utilisateur) : null;
   }
 
+  // Legacy string role used by some older guards/components.
   getUserRole(): string | null {
-    const user = this.getCurrentUser();
-    return user?.role || null;
+    const roleBrut = this.serviceAuthentification.getRole();
+    if (!roleBrut) return null;
+
+    const roleUpper = roleBrut.toUpperCase();
+    if (roleUpper === 'ADMINISTRATEUR') return 'ADMIN';
+    return roleBrut;
   }
 
-  hasRole(role: UserRole): boolean {
-    const userRole = this.getUserRole();
-    return userRole === role;
-  }
+  hasRole(
+    role: RoleUtilisateur | UserRole | string | Array<RoleUtilisateur | UserRole | string>
+  ): boolean {
+    const rolesDemandes = Array.isArray(role) ? role : [role];
+    const roleUtilisateur = this.serviceAuthentification.getRoleUtilisateur();
+    if (!roleUtilisateur) return false;
 
-  hasAnyRole(roles: UserRole[]): boolean {
-    const userRole = this.getUserRole();
-    return roles.includes(userRole as UserRole);
+    return rolesDemandes.some((r) => this.normaliserRole(String(r)) === roleUtilisateur);
   }
 
   isAdmin(): boolean {
@@ -178,47 +98,64 @@ export class AuthService {
   }
 
   isEncadrant(): boolean {
-    return this.hasAnyRole([
-      UserRole.ENCADRANT_PROFESSIONNEL,
-      UserRole.ENCADRANT_ACADEMIQUE
-    ]);
+    return this.hasRole([UserRole.ENCADRANT_ACADEMIQUE, UserRole.ENCADRANT_PROFESSIONNEL]);
   }
 
   isResponsable(): boolean {
-    return this.hasAnyRole([
+    return this.hasRole([
       UserRole.RESPONSABLE_SERVICE_STAGES,
-      UserRole.RESPONSABLE_ENTREPRISE
+      UserRole.RESPONSABLE_ENTREPRISE,
+      UserRole.RESPONSABLE_UNIVERSITAIRE_STAGES
     ]);
-  }
-
-  getAuthHeaders(): HttpHeaders {
-    const token = this.getToken();
-    return new HttpHeaders({
-      'Authorization': `Bearer ${token}`,
-      'Content-Type': 'application/json'
-    });
   }
 
   isTokenExpired(): boolean {
     const token = this.getToken();
     if (!token) return true;
 
+    const payload = this.decodeJwtPayload(token);
+    if (!payload || typeof payload.exp !== 'number') return true;
+
+    return Date.now() >= payload.exp * 1000;
+  }
+
+  private toLegacyUser(utilisateur: UtilisateurActuel): User {
+    return {
+      id: utilisateur.userId,
+      prenom: utilisateur.prenom,
+      nom: utilisateur.nom,
+      email: utilisateur.email,
+      role: utilisateur.role ? String(utilisateur.role) : ''
+    };
+  }
+
+  private normaliserRole(role: string): RoleUtilisateur | null {
+    const roleUpper = role.toUpperCase();
+
+    // Allow legacy ADMIN.
+    if (roleUpper === 'ADMIN') return RoleUtilisateur.ADMINISTRATEUR;
+
+    // Pass-through for the real enum values.
+    const valeurs = Object.values(RoleUtilisateur) as string[];
+    if (valeurs.includes(role)) return role as RoleUtilisateur;
+    if (valeurs.includes(roleUpper)) return roleUpper as RoleUtilisateur;
+
+    return null;
+  }
+
+  private decodeJwtPayload(token: string): any | null {
+    const parties = token.split('.');
+    if (parties.length !== 3) return null;
+
+    // base64url -> base64
+    let base64 = parties[1].replace(/-/g, '+').replace(/_/g, '/');
+    const padding = base64.length % 4;
+    if (padding) base64 += '='.repeat(4 - padding);
+
     try {
-      const payload = JSON.parse(atob(token.split('.')[1]));
-      const exp = payload.exp;
-      return Date.now() >= exp * 1000;
+      return JSON.parse(atob(base64));
     } catch {
-      return true;
+      return null;
     }
-  }
-
-  getLogoutMessage(): string | null {
-    const message = sessionStorage.getItem('logoutMessage');
-    sessionStorage.removeItem('logoutMessage');
-    return message;
-  }
-
-  refreshToken(): Observable<LoginResponse> {
-    return throwError(() => new Error('Token refresh not implemented'));
   }
 }

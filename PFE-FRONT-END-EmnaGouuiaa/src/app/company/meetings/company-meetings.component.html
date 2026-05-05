@@ -1,0 +1,134 @@
+<div class="company-page">
+  <header class="page-hero">
+    <div>
+      <h1>Réunions</h1>
+      <p>Consultez les réunions planifiées pour les stages rattachés à votre entreprise.</p>
+      <div class="hero-badges" *ngIf="context?.entreprise || context?.responsable">
+        <span class="hero-badge" *ngIf="context?.entreprise?.nomEntreprise">
+          Entreprise: {{ context?.entreprise?.nomEntreprise }}
+        </span>
+        <span class="hero-badge" *ngIf="context?.responsable">
+          Représentant: {{ context?.responsable?.prenom }} {{ context?.responsable?.nom }}
+        </span>
+      </div>
+    </div>
+    <div class="hero-actions">
+      <button type="button" class="btn btn-secondary" (click)="loadMeetings()" [disabled]="isLoading">Actualiser</button>
+    </div>
+  </header>
+
+  <div *ngIf="errorMessage" class="alert alert-error">{{ errorMessage }}</div>
+  <div *ngIf="isLoading" class="loading">Chargement des réunions...</div>
+
+  <section class="panel" *ngIf="!isLoading">
+      <div class="panel-header">
+        <div>
+          <h2>Liste des réunions</h2>
+          <div class="panel-subtitle">Les réunions affichées proviennent directement de l’API entreprise.</div>
+        </div>
+        <span class="status-pill status-neutral">{{ meetings.length }} réunion(s)</span>
+      </div>
+
+      <div class="empty-card" *ngIf="meetings.length === 0 && !errorMessage">
+        Aucune réunion n’est actuellement retournée pour cette entreprise.
+      </div>
+
+      <div class="info-list" *ngIf="meetings.length > 0">
+        <article
+          class="info-item"
+          *ngFor="let meeting of meetings"
+        >
+          <div class="panel-header">
+            <div>
+              <div class="info-title">{{ getMeetingTypeLabel(meeting) }} - {{ meeting.numReunion || 'Sans numéro' }}</div>
+              <div class="info-meta">
+                Stage: {{ meeting.stageTitre || '-' }}
+                <span *ngIf="meeting.stagiaireNom"> | Stagiaire: {{ meeting.stagiaireNom }}</span>
+              </div>
+            </div>
+            <span class="status-pill" [class.status-warning]="meeting.source === 'FINALE'" [class.status-neutral]="meeting.source !== 'FINALE'">
+              {{ meeting.source }}
+            </span>
+          </div>
+
+          <div class="offer-card-meta compact-grid">
+            <div class="offer-meta-item">
+              <span class="label">Date</span>
+              <span class="value">{{ meeting.date || '-' }}</span>
+            </div>
+            <div class="offer-meta-item">
+              <span class="label">Heure</span>
+              <span class="value">{{ meeting.heure || '-' }}</span>
+            </div>
+            <div class="offer-meta-item">
+              <span class="label">Compte rendu</span>
+              <span class="value">{{ meeting.compteRendu ? 'Disponible' : 'Non renseigné' }}</span>
+            </div>
+          </div>
+
+          <div class="inline-actions">
+            <button type="button" class="btn btn-secondary" (click)="openMeetingDetails(meeting)">Détails</button>
+          </div>
+        </article>
+      </div>
+  </section>
+
+  <div class="modal-overlay" *ngIf="selectedMeeting" (click)="closeMeetingDetails()">
+    <article class="modal" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h2>Détails de la réunion</h2>
+        <button type="button" class="btn-close" (click)="closeMeetingDetails()">x</button>
+      </div>
+
+      <div class="form">
+        <div class="panel-subtitle">{{ getMeetingTypeLabel(selectedMeeting) }}</div>
+        <div class="detail-grid">
+          <div class="detail-item">
+            <span class="label">Type</span>
+            <span class="value">{{ getMeetingTypeLabel(selectedMeeting) }}</span>
+          </div>
+          <div class="detail-item">
+            <span class="label">Numéro</span>
+            <span class="value">{{ selectedMeeting.numReunion || '-' }}</span>
+          </div>
+          <div class="detail-item">
+            <span class="label">Stage</span>
+            <span class="value">{{ selectedMeeting.stageTitre || '-' }}</span>
+          </div>
+          <div class="detail-item">
+            <span class="label">Stagiaire</span>
+            <span class="value">{{ selectedMeeting.stagiaireNom || '-' }}</span>
+          </div>
+          <div class="detail-item">
+            <span class="label">Date</span>
+            <span class="value">{{ selectedMeeting.date || '-' }}</span>
+          </div>
+          <div class="detail-item">
+            <span class="label">Heure</span>
+            <span class="value">{{ selectedMeeting.heure || '-' }}</span>
+          </div>
+          <div class="detail-item full-width">
+            <span class="label">Observation</span>
+            <span class="value">{{ selectedMeeting.observation || '-' }}</span>
+          </div>
+          <div class="detail-item full-width">
+            <span class="label">Compte rendu</span>
+            <span class="value">{{ selectedMeeting.compteRendu || 'Aucun compte rendu disponible.' }}</span>
+          </div>
+          <div class="detail-item" *ngIf="selectedMeeting.source === 'FINALE'">
+            <span class="label">Note</span>
+            <span class="value">{{ selectedMeeting.note ?? '-' }}</span>
+          </div>
+          <div class="detail-item" *ngIf="selectedMeeting.source === 'FINALE'">
+            <span class="label">Formulaire d’évaluation</span>
+            <span class="value">{{ selectedMeeting.urlFormEvaluation || '-' }}</span>
+          </div>
+        </div>
+
+        <div class="inline-actions">
+          <button type="button" class="btn btn-secondary" (click)="closeMeetingDetails()">Fermer</button>
+        </div>
+      </div>
+    </article>
+  </div>
+</div>

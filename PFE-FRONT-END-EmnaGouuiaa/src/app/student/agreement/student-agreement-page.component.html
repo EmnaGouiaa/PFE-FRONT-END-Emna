@@ -1,0 +1,101 @@
+<div class="company-page student-page">
+  <section class="page-hero">
+    <div>
+      <h1>Convention de stage</h1>
+      <p>Consultez la convention generee par le backend et suivez l etat des signatures.</p>
+    </div>
+  </section>
+
+  <div class="message-success" *ngIf="successMessage">{{ successMessage }}</div>
+  <div class="message-error" *ngIf="errorMessage">{{ errorMessage }}</div>
+
+  <section class="panel" *ngIf="internships.length">
+    <div class="panel-header">
+      <div>
+        <h2>Choix du stage</h2>
+        <p class="panel-subtitle">Une convention est liee au stage selectionne</p>
+      </div>
+    </div>
+
+    <select class="select stage-selector" [ngModel]="selectedStageId" (ngModelChange)="onStageChange($event)">
+      <option *ngFor="let internship of internships" [ngValue]="internship.id">
+        {{ internship.titre || internship.sujet || ('Stage #' + internship.id) }}
+      </option>
+    </select>
+  </section>
+
+  <div class="empty-card" *ngIf="isLoadingInternships">Chargement des stages...</div>
+  <div class="empty-card" *ngIf="!isLoadingInternships && !internships.length">Aucun stage disponible pour afficher une convention.</div>
+
+  <div class="content-grid" *ngIf="selectedInternship">
+    <section class="panel">
+      <div class="panel-header">
+        <div>
+          <h2>Detail de la convention</h2>
+          <p class="panel-subtitle">Informations generees automatiquement par le backend</p>
+        </div>
+      </div>
+
+      <div class="empty-card" *ngIf="isLoadingData">Chargement de la convention...</div>
+      <div class="empty-card" *ngIf="!isLoadingData && !agreement">Aucune convention disponible pour ce stage.</div>
+
+      <div class="detail-grid" *ngIf="agreement">
+        <div class="detail-item">
+          <span class="label">Numero</span>
+          <span class="value">{{ agreement.numConv || 'Non renseigne' }}</span>
+        </div>
+        <div class="detail-item">
+          <span class="label">Periode</span>
+          <span class="value">{{ formatDate(agreement.dateDebut) }} -> {{ formatDate(agreement.dateFin) }}</span>
+        </div>
+        <div class="detail-item">
+          <span class="label">Stage</span>
+          <span class="value">{{ agreement.stageTitre || selectedInternship.titre || 'Non renseigne' }}</span>
+        </div>
+        <div class="detail-item">
+          <span class="label">Statut global</span>
+          <span class="value">{{ agreement.statutSignatures ? 'Signatures completes' : 'En cours de signature' }}</span>
+        </div>
+      </div>
+
+      <div class="button-row" style="margin-top: 16px;" *ngIf="agreement">
+        <button type="button" class="btn btn-primary" [disabled]="agreement.signeeStagiaire || isSigning" (click)="signAgreement()">
+          {{ isSigning ? 'Signature...' : 'Signer la convention' }}
+        </button>
+        <a [routerLink]="['/stages/convention', agreement.id]" class="btn btn-secondary">Voir la convention detaillee</a>
+      </div>
+    </section>
+
+    <section class="panel" *ngIf="agreement">
+      <div class="panel-header">
+        <div>
+          <h2>Etat des signatures</h2>
+          <p class="panel-subtitle">Suivi acteur par acteur</p>
+        </div>
+      </div>
+
+      <div class="status-grid">
+        <div class="status-card">
+          <h4>Stagiaire</h4>
+          <p>{{ agreement.signeeStagiaire ? 'Signee' : 'En attente' }}</p>
+        </div>
+        <div class="status-card">
+          <h4>Encadrant academique</h4>
+          <p>{{ agreement.signeeEncAca ? 'Signee' : 'En attente' }}</p>
+        </div>
+        <div class="status-card">
+          <h4>Encadrant professionnel</h4>
+          <p>{{ agreement.signeeEncPro ? 'Signee' : 'En attente' }}</p>
+        </div>
+        <div class="status-card">
+          <h4>Entreprise</h4>
+          <p>{{ agreement.signeeEntreprise ? 'Signee' : 'En attente' }}</p>
+        </div>
+        <div class="status-card">
+          <h4>Responsable universitaire</h4>
+          <p>{{ agreement.signeeResp ? 'Signee' : 'En attente' }}</p>
+        </div>
+      </div>
+    </section>
+  </div>
+</div>

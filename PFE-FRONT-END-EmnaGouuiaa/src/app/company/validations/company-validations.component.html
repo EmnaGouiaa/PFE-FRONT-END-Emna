@@ -1,0 +1,163 @@
+<div class="company-page">
+  <header class="page-hero">
+    <div>
+      <h1>Documents de stage</h1>
+      <p>
+        Retrouvez ici uniquement les documents de stage qui attendent une signature côté entreprise.
+      </p>
+      <div class="hero-badges">
+        <span class="hero-badge">{{ pendingItems.length }} en attente</span>
+        <span class="hero-badge">{{ validatedCount }} validés</span>
+        <span class="hero-badge">{{ refusedCount }} refusés</span>
+      </div>
+    </div>
+
+    <div class="hero-actions">
+      <button type="button" class="btn btn-secondary" (click)="loadItems()" [disabled]="isLoading || isActing">
+        Actualiser
+      </button>
+    </div>
+  </header>
+
+  <div *ngIf="successMessage" class="alert alert-success">{{ successMessage }}</div>
+  <div *ngIf="errorMessage" class="alert alert-error">{{ errorMessage }}</div>
+
+  <section class="stats-grid">
+    <article class="stat-card">
+      <div class="stat-label">En attente</div>
+      <span class="stat-value">{{ pendingItems.length }}</span>
+      <div class="stat-subtitle">Éléments à traiter</div>
+    </article>
+
+    <article class="stat-card">
+      <div class="stat-label">Validés</div>
+      <span class="stat-value">{{ validatedCount }}</span>
+      <div class="stat-subtitle">Décisions positives</div>
+    </article>
+
+    <article class="stat-card">
+      <div class="stat-label">Refusés</div>
+      <span class="stat-value">{{ refusedCount }}</span>
+      <div class="stat-subtitle">Décisions négatives</div>
+    </article>
+  </section>
+
+  <div *ngIf="isLoading" class="loading">Chargement des documents...</div>
+
+  <section class="validation-layout" *ngIf="!isLoading">
+    <article class="panel">
+      <div class="panel-header">
+        <div>
+          <h2>Documents à signer</h2>
+          <div class="panel-subtitle">Convention et cahier de stage rattachés à votre entreprise.</div>
+        </div>
+      </div>
+
+      <div class="empty-card" *ngIf="items.length === 0">
+        Aucun document à signer pour le moment.
+      </div>
+
+      <div class="table-wrap" *ngIf="items.length > 0">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>Élément</th>
+              <th>Stage</th>
+              <th>Stagiaire</th>
+              <th>Statut</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let item of items" [class.active-row]="item.key === selectedItem?.key">
+              <td>
+                <div class="cell-title">{{ item.title }}</div>
+                <div class="cell-sub">{{ item.description }}</div>
+              </td>
+              <td>{{ item.stageTitle || '-' }}</td>
+              <td>{{ item.studentName || '-' }}</td>
+              <td>
+                <span class="status-pill" [ngClass]="'status-' + item.status">{{ statusLabel(item.status) }}</span>
+              </td>
+              <td>
+                <div class="table-actions">
+                  <button type="button" class="btn btn-secondary" (click)="selectItem(item)">Voir détails</button>
+                  <button type="button" class="btn btn-primary" (click)="approveSelected(item)" [disabled]="isActing || !item.pending">Valider</button>
+                  <button type="button" class="btn btn-danger" (click)="selectItem(item)" [disabled]="isActing || !item.pending">Refuser</button>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </article>
+
+    <article class="panel">
+      <div class="panel-header">
+        <div>
+          <h2>Détails</h2>
+          <div class="panel-subtitle">Consultez l’élément puis validez ou refusez avec un commentaire.</div>
+        </div>
+      </div>
+
+      <div class="empty-card" *ngIf="!selectedItem">
+        Sélectionnez une validation pour afficher ses détails.
+      </div>
+
+      <div class="detail-copy" *ngIf="selectedItem">
+        <div class="detail-grid">
+          <div class="detail-item">
+            <span class="label">Type</span>
+            <span class="value">{{ selectedItem.title }}</span>
+          </div>
+          <div class="detail-item">
+            <span class="label">Statut</span>
+            <span class="value">{{ statusLabel(selectedItem.status) }}</span>
+          </div>
+          <div class="detail-item">
+            <span class="label">Stage</span>
+            <span class="value">{{ selectedItem.stageTitle || '-' }}</span>
+          </div>
+          <div class="detail-item">
+            <span class="label">Stagiaire</span>
+            <span class="value">{{ selectedItem.studentName || '-' }}</span>
+          </div>
+          <div class="detail-item">
+            <span class="label">Début</span>
+            <span class="value">{{ selectedItem.dateDebut || '-' }}</span>
+          </div>
+          <div class="detail-item">
+            <span class="label">Fin</span>
+            <span class="value">{{ selectedItem.dateFin || '-' }}</span>
+          </div>
+        </div>
+
+        <div class="detail-card">
+          <div class="info-title">Description</div>
+          <div class="info-meta">{{ selectedItem.description }}</div>
+        </div>
+
+        <label for="refusalComment">Motif du refus</label>
+        <textarea
+          id="refusalComment"
+          class="input comment-box"
+          [(ngModel)]="refusalComment"
+          [disabled]="isActing || !selectedItem.pending"
+          placeholder="Expliquez la raison du refus si vous ne validez pas cet élément."
+        ></textarea>
+
+        <div class="detail-actions">
+          <button type="button" class="btn btn-primary" (click)="approveSelected()" [disabled]="isActing || !selectedItem.pending">
+            {{ isActing ? 'Traitement...' : 'Valider' }}
+          </button>
+          <button type="button" class="btn btn-danger" (click)="rejectSelected()" [disabled]="isActing || !selectedItem.pending">
+            {{ isActing ? 'Traitement...' : 'Refuser' }}
+          </button>
+          <a *ngIf="selectedItem.stageId" class="btn btn-secondary" [routerLink]="['/entreprise/stages']">
+            Voir détails
+          </a>
+        </div>
+      </div>
+    </article>
+  </section>
+</div>

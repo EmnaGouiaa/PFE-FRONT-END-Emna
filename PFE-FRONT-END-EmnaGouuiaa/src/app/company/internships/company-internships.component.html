@@ -1,0 +1,278 @@
+<div class="company-page">
+  <header class="page-hero">
+    <div>
+      <h1>Stages de l’entreprise</h1>
+      <p>
+        Liste détaillée des stages rattachés à l’entreprise, avec les informations stagiaire,
+        sujet, durée, encadrants et statut.
+      </p>
+    </div>
+    <div class="hero-actions">
+      <button type="button" class="btn btn-secondary" (click)="loadInternships()" [disabled]="isLoading">Actualiser</button>
+    </div>
+  </header>
+
+  <div *ngIf="errorMessage" class="alert alert-error">{{ errorMessage }}</div>
+  <div *ngIf="successMessage" class="alert alert-success">{{ successMessage }}</div>
+  <div *ngIf="isLoading" class="loading">Chargement des stages...</div>
+
+  <section class="content-grid" *ngIf="!isLoading">
+    <article class="panel">
+      <div class="panel-header">
+        <div>
+          <h2>Liste des stages</h2>
+          <div class="panel-subtitle">{{ internships.length }} stage(s) trouvé(s)</div>
+        </div>
+      </div>
+
+      <div class="empty-card" *ngIf="internships.length === 0">Aucun stage rattaché à cette entreprise.</div>
+
+      <div class="table-wrap" *ngIf="internships.length > 0">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>Titre</th>
+              <th>Stagiaire</th>
+              <th>Période</th>
+              <th>Convention</th>
+              <th>Statut</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let internship of internships" (click)="selectInternship(internship)">
+              <td>
+                <div class="cell-title">{{ internship.titre || internship.sujet || 'Stage sans titre' }}</div>
+                <div class="cell-sub">{{ internship.sujet || 'Sujet non précisé' }}</div>
+              </td>
+              <td>{{ internship.stagiaireNom || '-' }}</td>
+              <td>{{ internship.dateDebut || '-' }} → {{ internship.dateFin || '-' }}</td>
+              <td>
+                <ng-container *ngIf="getAgreement(internship.id) as agreement; else noAgreement">
+                  <span class="status-pill" [ngClass]="agreement.statutSignatures ? 'status-positive' : 'status-warning'">
+                    {{ agreement.statutSignatures ? 'Complète' : 'Incomplète' }}
+                  </span>
+                </ng-container>
+                <ng-template #noAgreement>
+                  <span class="status-pill status-neutral">Absente</span>
+                </ng-template>
+              </td>
+              <td>
+                <span class="status-pill" [ngClass]="'status-' + internship.statut">{{ internship.statut }}</span>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </article>
+
+    <article class="panel">
+      <div class="panel-header">
+        <div>
+          <h2>Détails du stage</h2>
+          <div class="panel-subtitle">Informations du stage</div>
+        </div>
+      </div>
+
+      <div class="empty-card" *ngIf="!selectedInternship">Sélectionnez un stage pour afficher ses détails.</div>
+
+      <div class="stack" *ngIf="selectedInternship">
+        <div class="detail-grid">
+          <div class="detail-item">
+            <span class="label">Titre</span>
+            <span class="value">{{ selectedInternship.titre || '-' }}</span>
+          </div>
+          <div class="detail-item">
+            <span class="label">Sujet</span>
+            <span class="value">{{ selectedInternship.sujet || '-' }}</span>
+          </div>
+          <div class="detail-item">
+            <span class="label">Stagiaire</span>
+            <span class="value">{{ selectedInternship.stagiaireNom || '-' }}</span>
+          </div>
+          <div class="detail-item">
+            <span class="label">Email stagiaire</span>
+            <span class="value">{{ selectedInternship.stagiaireEmail || '-' }}</span>
+          </div>
+          <div class="detail-item">
+            <span class="label">Encadrant académique</span>
+            <span class="value">{{ selectedInternship.encadrantAcademiqueNom || '-' }}</span>
+          </div>
+          <div class="detail-item">
+            <span class="label">Encadrant professionnel</span>
+            <span class="value">{{ selectedInternship.encadrantProfessionnelNom || '-' }}</span>
+          </div>
+          <div class="detail-item">
+            <span class="label">Durée</span>
+            <span class="value">{{ selectedInternship.duree || '-' }} mois</span>
+          </div>
+          <div class="detail-item">
+            <span class="label">Nombre de semaines</span>
+            <span class="value">{{ selectedInternship.nbSemaine || '-' }}</span>
+          </div>
+          <div class="detail-item">
+            <span class="label">Statut</span>
+            <span class="value">
+              <span class="status-pill" [ngClass]="'status-' + selectedInternship.statut">{{ selectedInternship.statut }}</span>
+            </span>
+          </div>
+          <div class="detail-item">
+            <span class="label">Validation du sujet</span>
+            <span class="value">{{ selectedInternship.statutSujet || '-' }}</span>
+          </div>
+          <div class="detail-item">
+            <span class="label">Convention de stage</span>
+            <span class="value">
+              <ng-container *ngIf="areAgreementsLoading">Chargement des conventions…</ng-container>
+              <ng-container *ngIf="!areAgreementsLoading && isAgreementLoading">Chargement de la convention…</ng-container>
+              <ng-container *ngIf="!isAgreementLoading && selectedAgreement">
+                #{{ selectedAgreement.numConv || selectedAgreement.id }}
+                <span class="status-pill" [ngClass]="selectedAgreement.statutSignatures ? 'status-positive' : 'status-warning'">
+                  {{ selectedAgreement.statutSignatures ? 'Complète' : 'Incomplète' }}
+                </span>
+              </ng-container>
+              <ng-container *ngIf="!isAgreementLoading && !selectedAgreement">Aucune convention associée</ng-container>
+            </span>
+          </div>
+        </div>
+
+        <div class="detail-card">
+          <div class="panel-header">
+            <div>
+              <h3>Encadrement professionnel</h3>
+              <div class="panel-subtitle">Affectez un encadrant professionnel à ce stage.</div>
+            </div>
+          </div>
+
+          <div class="empty-card" *ngIf="professionalSupervisors.length === 0">
+            Aucun encadrant professionnel n’est disponible pour votre entreprise.
+          </div>
+
+          <div class="form" *ngIf="professionalSupervisors.length > 0">
+            <label>Encadrant professionnel</label>
+            <select class="select" [(ngModel)]="selectedProfessionalSupervisorId">
+              <option [ngValue]="null">Sélectionner un encadrant</option>
+              <option *ngFor="let supervisor of professionalSupervisors" [ngValue]="supervisor.id">
+                {{ supervisor.prenom }} {{ supervisor.nom }} <ng-container *ngIf="supervisor.poste">· {{ supervisor.poste }}</ng-container>
+              </option>
+            </select>
+
+            <div class="form-actions">
+              <button
+                type="button"
+                class="btn btn-secondary"
+                (click)="assignProfessionalSupervisor(selectedInternship)"
+                [disabled]="
+                  isAssigningSupervisor ||
+                  !selectedProfessionalSupervisorId ||
+                  selectedProfessionalSupervisorId === selectedInternship.encadrantProfessionnelId
+                "
+              >
+                {{ isAssigningSupervisor ? 'Affectation…' : 'Affecter' }}
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="detail-card">
+          <div class="panel-header">
+            <div>
+              <h3>Absences / présence</h3>
+              <div class="panel-subtitle">Déclarez les absences du stagiaire pour alimenter la feuille de présence du cahier de stage.</div>
+            </div>
+            <span class="status-pill" [ngClass]="absences.length ? 'status-warning' : 'status-positive'">
+              {{ absences.length }} absence(s)
+            </span>
+          </div>
+
+          <div class="empty-card" *ngIf="isLoadingAbsences">Chargement des absences...</div>
+          <div class="message-info" *ngIf="!isLoadingAbsences && absences.length === 0">
+            Aucune absence enregistrée. Le stagiaire est considéré présent sur toute la période.
+          </div>
+
+          <div class="form">
+            <div class="detail-grid">
+              <div class="detail-item">
+                <label class="label" for="absence-date">Date d'absence</label>
+                <input id="absence-date" class="input" type="date" [(ngModel)]="absenceDraft.dateAbsence" />
+              </div>
+              <div class="detail-item">
+                <label class="label" for="absence-count">Nombre</label>
+                <input id="absence-count" class="input" type="number" min="1" [(ngModel)]="absenceDraft.nbAbsence" />
+              </div>
+              <div class="detail-item full-width">
+                <label class="label" for="absence-justification">Justification</label>
+                <input id="absence-justification" class="input" type="text" [(ngModel)]="absenceDraft.justification" placeholder="Motif ou justification de l'absence" />
+              </div>
+              <div class="detail-item">
+                <label class="label" for="absence-status">Statut</label>
+                <input id="absence-status" class="input" type="text" [(ngModel)]="absenceDraft.statut" placeholder="Justifiée, non justifiée..." />
+              </div>
+              <div class="detail-item">
+                <label class="label" for="absence-comment">Commentaire</label>
+                <input id="absence-comment" class="input" type="text" [(ngModel)]="absenceDraft.commentaire" placeholder="Commentaire optionnel" />
+              </div>
+            </div>
+
+            <div class="form-actions">
+              <button type="button" class="btn btn-primary" (click)="saveAbsence()" [disabled]="isSavingAbsence">
+                {{ isSavingAbsence ? 'Enregistrement...' : 'Enregistrer l\'absence' }}
+              </button>
+            </div>
+          </div>
+
+          <div class="table-wrap" *ngIf="absences.length > 0">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>Nombre</th>
+                  <th>Justification</th>
+                  <th>Statut</th>
+                  <th>Commentaire</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let absence of absences">
+                  <td>{{ absence.dateAbsence || '-' }}</td>
+                  <td>{{ absence.nbAbsence || 1 }}</td>
+                  <td>{{ absence.justification || '-' }}</td>
+                  <td>{{ absence.statut || '-' }}</td>
+                  <td>{{ absence.commentaire || '-' }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="support-banner" *ngIf="selectedAgreement && !isAgreementLoading">
+          <a class="btn btn-secondary" [routerLink]="['/stages/convention', selectedAgreement.id]">Afficher la convention</a>
+        </div>
+
+        <div class="support-banner" *ngIf="selectedInternship.statut === 'EN_ATTENTE'">
+          Vous pouvez valider ce stage côté entreprise.
+        </div>
+
+        <div class="inline-actions">
+          <button
+            type="button"
+            class="btn btn-primary"
+            *ngIf="selectedInternship.statut === 'EN_ATTENTE'"
+            (click)="validateByEntreprise(selectedInternship)"
+            [disabled]="isUpdatingStatus"
+          >
+            {{ isUpdatingStatus ? 'Validation…' : 'Valider côté entreprise' }}
+          </button>
+          <a
+            *ngIf="selectedInternship.trelloBoardUrl"
+            class="btn btn-secondary"
+            [href]="selectedInternship.trelloBoardUrl"
+            target="_blank"
+            rel="noreferrer"
+          >
+            Ouvrir Trello
+          </a>
+        </div>
+      </div>
+    </article>
+  </section>
+</div>

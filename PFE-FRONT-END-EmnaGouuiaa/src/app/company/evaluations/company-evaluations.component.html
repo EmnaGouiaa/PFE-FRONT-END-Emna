@@ -1,0 +1,95 @@
+<div class="company-page">
+  <header class="page-hero">
+    <div>
+      <h1>Évaluations</h1>
+      <p>
+        Renseignez votre partie de la fiche d’évaluation et suivez l’état des signatures.
+      </p>
+    </div>
+    <div class="hero-actions">
+      <button type="button" class="btn btn-secondary" (click)="loadEvaluations()" [disabled]="isLoading">Actualiser</button>
+    </div>
+  </header>
+
+  <div *ngIf="errorMessage" class="alert alert-error">{{ errorMessage }}</div>
+  <div *ngIf="successMessage" class="alert alert-success">{{ successMessage }}</div>
+  <div *ngIf="isLoading" class="loading">Chargement des évaluations...</div>
+
+  <section class="content-grid" *ngIf="!isLoading">
+    <article class="panel">
+      <div class="table-wrap" *ngIf="evaluations.length > 0">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>Stage</th>
+              <th>Note finale</th>
+              <th>Complet</th>
+              <th>Signature</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let evaluation of evaluations" (click)="selectEvaluation(evaluation)">
+              <td>{{ evaluation.stageTitre || ('Stage #' + evaluation.stageId) }}</td>
+              <td>{{ evaluation.noteFinale ?? '-' }}</td>
+              <td>
+                <span class="status-pill" [ngClass]="evaluation.complete ? 'status-positive' : 'status-warning'">
+                  {{ evaluation.complete ? 'Complète' : 'Partielle' }}
+                </span>
+              </td>
+              <td>
+                <span class="status-pill" [ngClass]="evaluation.signatureRepresentantEntreprise ? 'status-positive' : 'status-neutral'">
+                  {{ evaluation.signatureRepresentantEntreprise ? 'Signée' : 'À signer' }}
+                </span>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="empty-card" *ngIf="evaluations.length === 0">Aucune évaluation n’est encore disponible pour vos stages.</div>
+    </article>
+
+    <article class="panel">
+      <div class="panel-header">
+        <div>
+          <h2>Saisie</h2>
+          <div class="panel-subtitle">Vous renseignez uniquement la partie “entreprise”.</div>
+        </div>
+      </div>
+
+      <form [formGroup]="evaluationForm" class="form">
+        <label>Stage</label>
+        <select class="select" formControlName="stageId">
+          <option [ngValue]="null">Sélectionner un stage</option>
+          <option *ngFor="let internship of internships" [ngValue]="internship.id">
+            {{ internship.titre || internship.sujet || ('Stage #' + internship.id) }}
+          </option>
+        </select>
+
+        <label>Points forts</label>
+        <textarea class="textarea" formControlName="pointFortResponsableEntreprise"></textarea>
+
+        <label>Axes d’amélioration</label>
+        <textarea class="textarea" formControlName="axeAmeliorationResponsableEntreprise"></textarea>
+
+        <div class="support-banner warning-banner" *ngIf="selectedEvaluation && isReadOnly(selectedEvaluation)">
+          Cette évaluation est verrouillée et ne peut plus être modifiée.
+        </div>
+
+        <div class="form-actions">
+          <button type="button" class="btn btn-primary" (click)="saveEvaluation()" [disabled]="isSaving || (selectedEvaluation && isReadOnly(selectedEvaluation))">
+            {{ isSaving ? 'Enregistrement...' : 'Enregistrer' }}
+          </button>
+          <button
+            type="button"
+            class="btn btn-secondary"
+            *ngIf="selectedEvaluation && !isReadOnly(selectedEvaluation)"
+            (click)="signEvaluation(selectedEvaluation)"
+          >
+            Signer l’évaluation
+          </button>
+        </div>
+      </form>
+    </article>
+  </section>
+</div>

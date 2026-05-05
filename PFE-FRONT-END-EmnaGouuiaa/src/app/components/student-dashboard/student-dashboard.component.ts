@@ -188,7 +188,7 @@ import { AuthService, UserRole, User } from '../../services/auth.service';
             </div>
             <div class="form-group">
               <label for="update-content">Content</label>
-              <textarea id="update-content" class="form-control" rows="4" 
+              <textarea id="update-content" class="form-control" rows="4"
                         placeholder="Describe your progress, achievements, or any issues..."></textarea>
             </div>
             <div class="form-group">

@@ -1,0 +1,188 @@
+<div class="company-page">
+  <header class="page-hero company-dashboard-hero dashboard-top-header">
+    <div>
+      <span class="dashboard-kicker">Pilotage entreprise</span>
+      <h1>Tableau de bord</h1>
+      <p>
+        Meme palette, memes cartes et meme logique visuelle que l espace admin pour piloter
+        {{ context?.entreprise?.nomEntreprise || context?.responsable?.entrepriseNom || 'votre entreprise' }}.
+      </p>
+      <div class="hero-badges" *ngIf="context">
+        <span class="hero-badge">{{ context.responsable.prenom }} {{ context.responsable.nom }}</span>
+        <span class="hero-badge" *ngIf="context.entreprise?.secteurActivite">{{ context.entreprise?.secteurActivite }}</span>
+        <span class="hero-badge" *ngIf="context.entreprise?.emailEntreprise">{{ context.entreprise?.emailEntreprise }}</span>
+      </div>
+    </div>
+
+    <div class="hero-actions">
+      <button type="button" class="btn btn-secondary" (click)="loadDashboard()" [disabled]="isLoading">
+        Actualiser
+      </button>
+      <a routerLink="/entreprise/offres" class="btn btn-primary">Gerer les offres</a>
+    </div>
+  </header>
+
+  <div *ngIf="errorMessage" class="alert alert-error">{{ errorMessage }}</div>
+  <div *ngIf="isLoading" class="loading">Chargement du tableau de bord...</div>
+
+  <ng-container *ngIf="!isLoading && !errorMessage">
+    <section class="signature-reminder-card" *ngIf="showProfileCompletionReminder">
+      <div class="signature-reminder-copy">
+        <span class="dashboard-kicker">Profil incomplet</span>
+        <h2>{{ profileCompletionService.alertTitle }}</h2>
+        <p>{{ profileCompletionService.alertMessage }}</p>
+        <div class="missing-fields-list" aria-label="Informations manquantes">
+          <span class="missing-field-chip" *ngFor="let field of profileCompletionMissingFields">{{ field }}</span>
+        </div>
+      </div>
+      <a routerLink="/entreprise/profil" class="btn btn-primary">Compléter mon profil</a>
+    </section>
+
+    <app-satisfaction-survey-section></app-satisfaction-survey-section>
+
+    <section class="stats-grid">
+      <article class="stat-card dashboard-stat-card">
+        <div class="dashboard-stat-head">
+          <span class="dashboard-stat-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="2" y="7" width="20" height="14" rx="2" />
+              <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16" />
+            </svg>
+          </span>
+          <span class="stat-label">Offres de stage</span>
+        </div>
+        <span class="stat-value">{{ stats.totalOffers }}</span>
+        <div class="stat-subtitle">Total publie ou en preparation</div>
+      </article>
+
+      <article class="stat-card dashboard-stat-card">
+        <div class="dashboard-stat-head">
+          <span class="dashboard-stat-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M3 3v18h18" />
+              <path d="M7 14l3-3 4 4 6-8" />
+            </svg>
+          </span>
+          <span class="stat-label">Offres actives</span>
+        </div>
+        <span class="stat-value">{{ stats.activeOffers }}</span>
+        <div class="stat-subtitle">Statut PUBLIEE ou VALIDEE</div>
+      </article>
+
+      <article class="stat-card dashboard-stat-card">
+        <div class="dashboard-stat-head">
+          <span class="dashboard-stat-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M22 10v6M2 10l10-5 10 5-10 5z" />
+              <path d="M6 12v5c3 2 6 2 9 0v-5" />
+            </svg>
+          </span>
+          <span class="stat-label">Stages rattaches</span>
+        </div>
+        <span class="stat-value">{{ stats.assignedInterns }}</span>
+        <div class="stat-subtitle">Nombre de stages lies a l entreprise</div>
+      </article>
+
+      <article class="stat-card dashboard-stat-card">
+        <div class="dashboard-stat-head">
+          <span class="dashboard-stat-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="10" />
+              <path d="M12 8v4l3 3" />
+            </svg>
+          </span>
+          <span class="stat-label">Stages en cours</span>
+        </div>
+        <span class="stat-value">{{ stats.ongoingInternships }}</span>
+        <div class="stat-subtitle">Dossiers toujours actifs</div>
+      </article>
+    </section>
+
+    <section class="stack">
+      <article class="panel">
+        <div class="panel-header">
+          <div>
+            <h2>Stages recents</h2>
+            <div class="panel-subtitle">Les derniers stages associes a votre entreprise</div>
+          </div>
+          <a routerLink="/entreprise/stages" class="link-button">Consulter</a>
+        </div>
+
+        <div class="empty-card" *ngIf="recentInternships.length === 0">Aucun stage pour le moment.</div>
+
+        <div class="info-list" *ngIf="recentInternships.length > 0">
+          <div class="info-item" *ngFor="let internship of recentInternships">
+            <div class="panel-header">
+              <div>
+                <div class="info-title">{{ internship.titre || internship.sujet || 'Stage sans titre' }}</div>
+                <div class="info-meta">
+                  Stagiaire :
+                  <span class="student-highlight">{{ internship.stagiaireNom || 'Stagiaire non affecte' }}</span>
+                </div>
+              </div>
+              <span class="status-pill" [ngClass]="'status-' + internship.statut">{{ internship.statut }}</span>
+            </div>
+
+            <div class="offer-card-meta compact-grid">
+              <div class="offer-meta-item">
+                <span class="label">Debut</span>
+                <span class="value">{{ internship.dateDebut || '-' }}</span>
+              </div>
+              <div class="offer-meta-item">
+                <span class="label">Fin</span>
+                <span class="value">{{ internship.dateFin || '-' }}</span>
+              </div>
+              <div class="offer-meta-item">
+                <span class="label">Encadrant academique</span>
+                <span class="value">{{ internship.encadrantAcademiqueNom || '-' }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </article>
+
+      <article class="panel">
+        <div class="panel-header">
+          <div>
+            <h2>Offres de stage</h2>
+            <div class="panel-subtitle">Les offres recentes affichees sous forme de cards</div>
+          </div>
+          <a routerLink="/entreprise/offres" class="link-button">Voir tout</a>
+        </div>
+
+        <div class="empty-card" *ngIf="recentOffers.length === 0">Aucune offre disponible.</div>
+
+        <div class="offer-card-grid" *ngIf="recentOffers.length > 0">
+          <article class="offer-card" *ngFor="let offer of recentOffers">
+            <div class="offer-card-top">
+              <div>
+                <h3>{{ offer.titre || 'Offre sans titre' }}</h3>
+                <p>{{ offer.profilRecherche || 'Profil non precise' }}</p>
+              </div>
+              <span class="status-pill" [ngClass]="'status-' + offer.statut">{{ offer.statut }}</span>
+            </div>
+
+            <p class="offer-card-description">
+              {{ offer.descriptionMissions || 'Aucune description renseignee pour cette offre.' }}
+            </p>
+
+            <div class="offer-card-meta">
+              <div class="offer-meta-item">
+                <span class="label">Debut prevu</span>
+                <span class="value">{{ offer.dateDebutPrevue || '-' }}</span>
+              </div>
+              <div class="offer-meta-item">
+                <span class="label">Duree</span>
+                <span class="value">{{ offer.duree || '-' }} mois</span>
+              </div>
+              <div class="offer-meta-item">
+                <span class="label">Publication</span>
+                <span class="value">{{ offer.datePublication || '-' }}</span>
+              </div>
+            </div>
+          </article>
+        </div>
+      </article>
+    </section>
+  </ng-container>
+</div>

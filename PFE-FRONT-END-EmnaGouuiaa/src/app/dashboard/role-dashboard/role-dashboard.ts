@@ -60,6 +60,7 @@ export class RoleDashboard implements OnInit {
         }
         break;
       case UserRole.RESPONSABLE_SERVICE_STAGES:
+      case UserRole.RESPONSABLE_UNIVERSITAIRE_STAGES:
         if (!currentPath.startsWith('/responsable')) {
           this.router.navigate(['/responsable/dashboard']);
         }
@@ -99,6 +100,7 @@ export class RoleDashboard implements OnInit {
               averageRating: 4.2
             };
           case UserRole.RESPONSABLE_SERVICE_STAGES:
+          case UserRole.RESPONSABLE_UNIVERSITAIRE_STAGES:
             return {
               totalInternships: 45,
               activeStudents: 38,
@@ -140,6 +142,7 @@ export class RoleDashboard implements OnInit {
       [UserRole.ENCADRANT_PROFESSIONNEL]: 'Professional Supervisor',
       [UserRole.ENCADRANT_ACADEMIQUE]: 'Academic Supervisor',
       [UserRole.RESPONSABLE_SERVICE_STAGES]: 'Internship Service Manager',
+      [UserRole.RESPONSABLE_UNIVERSITAIRE_STAGES]: 'University Internship Manager',
       [UserRole.RESPONSABLE_ENTREPRISE]: 'Company Manager'
     };
     return roleNames[role] || 'User';
@@ -154,6 +157,7 @@ export class RoleDashboard implements OnInit {
       [UserRole.ENCADRANT_PROFESSIONNEL]: 'fas fa-chalkboard-teacher',
       [UserRole.ENCADRANT_ACADEMIQUE]: 'fas fa-university',
       [UserRole.RESPONSABLE_SERVICE_STAGES]: 'fas fa-briefcase',
+      [UserRole.RESPONSABLE_UNIVERSITAIRE_STAGES]: 'fas fa-school',
       [UserRole.RESPONSABLE_ENTREPRISE]: 'fas fa-building'
     };
     return roleIcons[role] || 'fas fa-user';

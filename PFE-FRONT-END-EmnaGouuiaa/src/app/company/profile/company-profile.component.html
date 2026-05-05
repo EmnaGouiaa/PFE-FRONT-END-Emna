@@ -1,0 +1,161 @@
+<div class="company-page">
+  <header class="page-hero">
+    <div>
+      <h1>Profil & entreprise</h1>
+      <p>
+        Consultez et mettez à jour vos informations de compte et celles de votre entreprise.
+      </p>
+    </div>
+    <div class="hero-actions">
+      <button type="button" class="btn btn-secondary" (click)="loadContext()" [disabled]="isLoading || isSavingProfile || isSavingEmail || isSavingCompany">
+        Recharger
+      </button>
+    </div>
+  </header>
+
+  <div *ngIf="errorMessage" class="alert alert-error">{{ errorMessage }}</div>
+  <div *ngIf="successMessage" class="alert alert-success">{{ successMessage }}</div>
+  <div *ngIf="isLoading" class="loading">Chargement du profil...</div>
+
+  <section class="content-grid" *ngIf="!isLoading && context">
+    <article class="panel">
+      <div class="panel-header">
+        <div>
+          <h2>Représentant d’entreprise</h2>
+          <div class="panel-subtitle">{{ isEditingProfile ? 'Édition du compte' : 'Informations du compte en lecture seule' }}</div>
+        </div>
+      </div>
+
+      <form [formGroup]="profileForm" class="form-grid" (ngSubmit)="saveProfile()">
+        <div class="full-width">
+          <label>Adresse e-mail</label>
+          <input class="input" type="email" formControlName="email" [readonly]="!isEditingProfile" [class.readonly-input]="!isEditingProfile" />
+          <div class="field-error" *ngIf="isProfileInvalid('email')">Saisissez une adresse e-mail valide.</div>
+        </div>
+        <div>
+          <label>Prénom</label>
+          <input class="input" formControlName="prenom" [readonly]="!isEditingProfile" [class.readonly-input]="!isEditingProfile" />
+          <div class="field-error" *ngIf="isProfileInvalid('prenom')">Le prénom est requis.</div>
+        </div>
+        <div>
+          <label>Nom</label>
+          <input class="input" formControlName="nom" [readonly]="!isEditingProfile" [class.readonly-input]="!isEditingProfile" />
+          <div class="field-error" *ngIf="isProfileInvalid('nom')">Le nom est requis.</div>
+        </div>
+        <div>
+          <label>Téléphone</label>
+          <input class="input" formControlName="telephone" [readonly]="!isEditingProfile" [class.readonly-input]="!isEditingProfile" />
+        </div>
+        <div>
+          <label>Poste</label>
+          <input class="input" formControlName="poste" [readonly]="!isEditingProfile" [class.readonly-input]="!isEditingProfile" />
+        </div>
+        <div>
+          <label>Service</label>
+          <input class="input" formControlName="service" [readonly]="!isEditingProfile" [class.readonly-input]="!isEditingProfile" />
+        </div>
+        <div class="full-width">
+          <label>URL ou nom du fichier de signature</label>
+          <input
+            class="input"
+            formControlName="nomFichierSignature"
+            placeholder="https://.../signature.png ou signature.png"
+            [readonly]="!isEditingProfile"
+            [class.readonly-input]="!isEditingProfile"
+          />
+          <div class="panel-subtitle">Cette signature sera utilisée pour les conventions et évaluations à signer.</div>
+          <div class="field-error" *ngIf="isProfileInvalid('nomFichierSignature')">La référence de signature est trop longue.</div>
+        </div>
+      </form>
+
+      <div class="form-actions">
+        <button type="button" class="btn btn-secondary" *ngIf="!isEditingProfile" (click)="startProfileEditing()">
+          Modifier
+        </button>
+        <button type="button" class="btn btn-primary" *ngIf="isEditingProfile" (click)="saveProfile()" [disabled]="isSavingProfile || isSavingEmail">
+          {{ isSavingProfile ? 'Enregistrement...' : 'Enregistrer le profil' }}
+        </button>
+        <button type="button" class="btn btn-secondary" *ngIf="isEditingProfile" (click)="cancelProfileEditing()" [disabled]="isSavingProfile || isSavingEmail">
+          Annuler
+        </button>
+      </div>
+    </article>
+
+    <article class="panel">
+      <div class="panel-header">
+        <div>
+          <h2>Entreprise</h2>
+          <div class="panel-subtitle">{{ isEditingCompany ? 'Édition des informations générales' : 'Informations générales en lecture seule' }}</div>
+        </div>
+      </div>
+
+      <form [formGroup]="companyForm" class="form-grid" (ngSubmit)="saveCompany()">
+        <div class="full-width">
+          <label>Nom de l’entreprise</label>
+          <input class="input" formControlName="nomEntreprise" [readonly]="!isEditingCompany" [class.readonly-input]="!isEditingCompany" />
+          <div class="field-error" *ngIf="isCompanyInvalid('nomEntreprise')">Le nom de l’entreprise est requis.</div>
+        </div>
+        <div class="full-width">
+          <label>Adresse</label>
+          <input class="input" formControlName="adresseEntreprise" [readonly]="!isEditingCompany" [class.readonly-input]="!isEditingCompany" />
+        </div>
+        <div>
+          <label>E-mail</label>
+          <input class="input" type="email" formControlName="emailEntreprise" [readonly]="!isEditingCompany" [class.readonly-input]="!isEditingCompany" />
+          <div class="field-error" *ngIf="isCompanyInvalid('emailEntreprise')">Saisissez une adresse e-mail valide.</div>
+        </div>
+        <div>
+          <label>Téléphone</label>
+          <input class="input" formControlName="telephoneEntreprise" [readonly]="!isEditingCompany" [class.readonly-input]="!isEditingCompany" />
+        </div>
+        <div class="full-width">
+          <label>Secteur d’activité</label>
+          <input class="input" formControlName="secteurActivite" [readonly]="!isEditingCompany" [class.readonly-input]="!isEditingCompany" />
+        </div>
+      </form>
+
+      <div class="form-actions">
+        <button type="button" class="btn btn-secondary" *ngIf="!isEditingCompany" (click)="startCompanyEditing()">
+          Modifier
+        </button>
+        <button type="button" class="btn btn-primary" *ngIf="isEditingCompany" (click)="saveCompany()" [disabled]="isSavingCompany">
+          {{ isSavingCompany ? 'Enregistrement...' : 'Enregistrer l’entreprise' }}
+        </button>
+        <button type="button" class="btn btn-secondary" *ngIf="isEditingCompany" (click)="cancelCompanyEditing()" [disabled]="isSavingCompany">
+          Annuler
+        </button>
+      </div>
+    </article>
+  </section>
+
+  <div class="modal-overlay" *ngIf="showEmailConfirmation" (click)="cancelEmailChange()">
+    <section class="modal confirmation-modal" role="dialog" aria-modal="true" aria-labelledby="company-confirmation-email-title" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <div>
+          <h2 id="company-confirmation-email-title">Confirmation requise</h2>
+          <p>Veuillez saisir votre mot de passe pour confirmer la modification de votre adresse e-mail.</p>
+        </div>
+        <button type="button" class="btn-close" (click)="cancelEmailChange()" [disabled]="isSavingEmail">×</button>
+      </div>
+
+      <form [formGroup]="emailConfirmationForm" class="form" (ngSubmit)="confirmEmailChange()">
+        <div>
+          <label>Mot de passe</label>
+          <input class="input" type="password" formControlName="motDePasse" autocomplete="current-password" />
+          <div class="field-error" *ngIf="isEmailConfirmationInvalid()">Le mot de passe est requis.</div>
+        </div>
+
+        <div *ngIf="emailConfirmationError" class="alert alert-error">{{ emailConfirmationError }}</div>
+
+        <div class="form-actions modal-actions">
+          <button type="submit" class="btn btn-primary" [disabled]="isSavingEmail">
+            {{ isSavingEmail ? 'Confirmation...' : 'Confirmer' }}
+          </button>
+          <button type="button" class="btn btn-secondary" (click)="cancelEmailChange()" [disabled]="isSavingEmail">
+            Annuler
+          </button>
+        </div>
+      </form>
+    </section>
+  </div>
+</div>

@@ -13,11 +13,17 @@ import { AuthService, UserRole, User } from '../../services/auth.service';
     <div class="dashboard-container">
       <!-- Header -->
       <div class="dashboard-header">
-        <h1>
-          <i [class]="getRoleIcon((userRole$ | async))" class="me-3"></i>
-          {{ getRoleDisplayName((userRole$ | async)) }} Dashboard
-        </h1>
-        <p class="text-muted">{{ welcomeMessage$ | async }}</p>
+        <div class="dashboard-heading">
+          <h1>
+            <i [class]="getRoleIcon((userRole$ | async))" class="me-3"></i>
+            {{ getRoleDisplayName((userRole$ | async)) }} Dashboard
+          </h1>
+          <p class="text-muted">{{ welcomeMessage$ | async }}</p>
+        </div>
+        <button class="logout-btn" type="button" (click)="logout()">
+          <i class="fas fa-sign-out-alt"></i>
+          Deconnexion
+        </button>
       </div>
 
       <!-- Admin Dashboard -->
@@ -56,6 +62,11 @@ import { AuthService, UserRole, User } from '../../services/auth.service';
             <i class="fas fa-chart-bar"></i>
             <h4>Reports</h4>
             <p>Generate system reports</p>
+          </div>
+          <div class="action-card" (click)="router.navigate(['/admin/demandes-stage'])">
+            <i class="fas fa-file-signature"></i>
+            <h4>Internship Requests</h4>
+            <p>Process and validate internship requests</p>
           </div>
         </div>
       </div>
@@ -181,7 +192,7 @@ import { AuthService, UserRole, User } from '../../services/auth.service';
       </div>
 
       <!-- Internship Service Dashboard -->
-      <div *ngIf="(userRole$ | async) === 'RESPONSABLE_SERVICE_STAGES'" class="service-dashboard">
+      <div *ngIf="(userRole$ | async) === 'RESPONSABLE_SERVICE_STAGES' || (userRole$ | async) === 'RESPONSABLE_UNIVERSITAIRE_STAGES'" class="service-dashboard">
         <div class="stats-grid">
           <div class="stat-card">
             <h3>{{ (dashboardStats$ | async)?.totalInternships || 0 }}</h3>
@@ -217,6 +228,11 @@ import { AuthService, UserRole, User } from '../../services/auth.service';
             <h4>Companies</h4>
             <p>Manage partner companies</p>
           </div>
+          <div class="action-card" (click)="router.navigate(['/admin/demandes-stage'])">
+            <i class="fas fa-file-signature"></i>
+            <h4>Internship Requests</h4>
+            <p>Process and validate internship requests</p>
+          </div>
         </div>
       </div>
     </div>
@@ -229,13 +245,42 @@ import { AuthService, UserRole, User } from '../../services/auth.service';
     }
 
     .dashboard-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 1rem;
       margin-bottom: 2rem;
+    }
+
+    .dashboard-heading {
+      flex: 1;
       text-align: center;
     }
 
     .dashboard-header h1 {
       color: #2c3e50;
       margin-bottom: 0.5rem;
+    }
+
+    .logout-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      border: none;
+      border-radius: 999px;
+      padding: 0.85rem 1.2rem;
+      background: #104778;
+      color: #ffffff;
+      font: inherit;
+      font-weight: 700;
+      cursor: pointer;
+      transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+      box-shadow: 0 12px 24px rgba(16, 71, 120, 0.18);
+    }
+
+    .logout-btn:hover {
+      background: #2596be;
+      transform: translateY(-2px);
     }
 
     .stats-grid {
@@ -306,6 +351,15 @@ import { AuthService, UserRole, User } from '../../services/auth.service';
       .dashboard-container {
         padding: 1rem;
       }
+
+      .dashboard-header {
+        flex-direction: column;
+        align-items: stretch;
+      }
+
+      .dashboard-heading {
+        text-align: left;
+      }
       
       .stats-grid,
       .actions-grid {
@@ -363,6 +417,7 @@ export class RoleBasedDashboard implements OnInit {
               averageRating: 4.2
             };
           case UserRole.RESPONSABLE_SERVICE_STAGES:
+          case UserRole.RESPONSABLE_UNIVERSITAIRE_STAGES:
             return {
               totalInternships: 45,
               activeStudents: 38,
@@ -392,6 +447,7 @@ export class RoleBasedDashboard implements OnInit {
       [UserRole.ENCADRANT_PROFESSIONNEL]: 'fas fa-chalkboard-teacher',
       [UserRole.ENCADRANT_ACADEMIQUE]: 'fas fa-university',
       [UserRole.RESPONSABLE_SERVICE_STAGES]: 'fas fa-briefcase',
+      [UserRole.RESPONSABLE_UNIVERSITAIRE_STAGES]: 'fas fa-school',
       [UserRole.RESPONSABLE_ENTREPRISE]: 'fas fa-building'
     };
     return roleIcons[role] || 'fas fa-user';
@@ -406,8 +462,14 @@ export class RoleBasedDashboard implements OnInit {
       [UserRole.ENCADRANT_PROFESSIONNEL]: 'Professional Supervisor',
       [UserRole.ENCADRANT_ACADEMIQUE]: 'Academic Supervisor',
       [UserRole.RESPONSABLE_SERVICE_STAGES]: 'Internship Service Manager',
+      [UserRole.RESPONSABLE_UNIVERSITAIRE_STAGES]: 'University Internship Manager',
       [UserRole.RESPONSABLE_ENTREPRISE]: 'Company Manager'
     };
     return roleNames[role] || 'User';
+  }
+
+  logout(): void {
+    this.authService.logout();
+    this.router.navigate(['/connexion']);
   }
 }

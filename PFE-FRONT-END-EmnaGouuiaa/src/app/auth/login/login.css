@@ -105,6 +105,23 @@
   }
 }
 
+.forgot-password-row {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 0.5rem;
+}
+
+.forgot-password-link {
+  color: var(--text-accent);
+  text-decoration: none;
+  font-size: 0.92rem;
+  font-weight: 600;
+}
+
+.forgot-password-link:hover {
+  text-decoration: underline;
+}
+
 .login-container {
   display: flex;
   justify-content: center;

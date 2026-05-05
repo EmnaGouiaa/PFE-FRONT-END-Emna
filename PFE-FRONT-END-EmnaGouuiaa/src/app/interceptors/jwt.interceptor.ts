@@ -1,73 +1,70 @@
 import { Injectable } from '@angular/core';
 import {
-  HttpRequest,
-  HttpHandler,
+  HttpErrorResponse,
   HttpEvent,
+  HttpHandler,
   HttpInterceptor,
-  HttpErrorResponse
+  HttpRequest
 } from '@angular/common/http';
+import { Router } from '@angular/router';
 import { Observable, throwError } from 'rxjs';
 import { catchError } from 'rxjs/operators';
-import { AuthService } from '../services/auth.service';
-import { Router } from '@angular/router';
+import { AuthentificationService } from '../services/authentification.service';
 
 @Injectable()
 export class JwtInterceptor implements HttpInterceptor {
   constructor(
-    private authService: AuthService,
+    private serviceAuthentification: AuthentificationService,
     private router: Router
-  ) {}
+  ) { }
 
   intercept(request: HttpRequest<any>, next: HttpHandler): Observable<HttpEvent<any>> {
-    // Skip token for login and register endpoints
-    if (this.isAuthEndpoint(request.url)) {
+    // Ne pas ajouter de jeton pour les endpoints publics d'authentification.
+    if (this.estPointEntreeAuthentification(request.url)) {
       return next.handle(request);
     }
 
-    const token = this.authService.getToken();
-    
-    if (token) {
-      request = this.addTokenToRequest(request, token);
-    }
+    const token = this.serviceAuthentification.getToken();
+    const requestAvecJeton = token ? this.ajouterJetonALaRequete(request, token) : request;
 
-    return next.handle(request).pipe(
-      catchError((error: HttpErrorResponse) => {
-        if (error.status === 401) {
-          // Token expired or invalid
-          console.warn('JWT Token expired or invalid');
-          
-          // Check if token is actually expired
-          if (this.authService.isTokenExpired()) {
-            // Auto-logout with message
-            this.authService.logout(true);
-            return throwError(() => new Error('Session expired. Please login again.'));
-          } else {
-            // Token is invalid, logout without message
-            this.authService.logout(false);
-            return throwError(() => new Error('Authentication failed. Please login again.'));
-          }
-        } else if (error.status === 403) {
-          // Forbidden - insufficient permissions
-          console.warn('Access forbidden: Insufficient permissions');
-          return throwError(() => new Error('You do not have permission to perform this action.'));
-        } else {
-          return throwError(() => error);
+    return next.handle(requestAvecJeton).pipe(
+      catchError((erreur: HttpErrorResponse) => {
+        if (erreur.status === 401) {
+          console.warn('Jeton JWT expiré ou invalide');
+          this.serviceAuthentification.effacerDonneesAuthentification();
+          this.router.navigate(['/connexion']);
+          return throwError(() => new Error('Session expirée. Veuillez vous reconnecter.'));
         }
+
+        if (erreur.status === 403) {
+          // Important: ne pas transformer l’erreur en message générique, sinon les pages admin ne peuvent
+          // pas afficher la vraie cause (403 backend) et cela ressemble à un “échec silencieux”.
+          console.warn('Accès interdit : permissions insuffisantes');
+          return throwError(() => erreur);
+        }
+
+        return throwError(() => erreur);
       })
     );
   }
 
-  private addTokenToRequest(request: HttpRequest<any>, token: string): HttpRequest<any> {
-    return request.clone({
+  private ajouterJetonALaRequete(requete: HttpRequest<any>, jeton: string): HttpRequest<any> {
+    return requete.clone({
       setHeaders: {
-        Authorization: `Bearer ${token}`
+        Authorization: `Bearer ${jeton}`
       }
     });
   }
 
-  private isAuthEndpoint(url: string): boolean {
-    return url.includes('/auth/authenticate') || 
-           url.includes('/auth/register') || 
-           url.includes('/auth/refresh');
+  private estPointEntreeAuthentification(url: string): boolean {
+    // Accepte URLs absolues et relatives.
+    return (
+      url.includes('/api/auth/login') ||
+      url.includes('/api/v1/authentification/login') ||
+      url.includes('/auth/login') ||
+      url.includes('/authentification/connexion') ||
+      url.includes('/authentification/inscription')
+    );
   }
 }
+

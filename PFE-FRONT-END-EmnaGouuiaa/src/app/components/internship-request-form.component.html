@@ -1,0 +1,171 @@
+<div class="internship-request-container">
+  <div class="header">
+    <h1>📋 Formulaire de Demande de Stage</h1>
+    <p>Veuillez remplir les informations suivantes pour soumettre votre demande de stage</p>
+  </div>
+
+  <!-- Barre de Progression -->
+  <div class="progress-container">
+    <div class="progress-bar">
+      <div class="progress-fill" [style.width.%]="(etapeActuelle / totalEtapes) * 100"></div>
+    </div>
+    <div class="step-indicators">
+      <div *ngFor="let etape of [1, 2, 3, 4]" 
+           class="step-indicator" 
+           [class.active]="etapeActuelle === etape"
+           [class.completed]="etapeActuelle > etape">
+        {{ etape }}
+      </div>
+    </div>
+  </div>
+
+  <div class="form-container">
+    
+    <!-- Étape 1 : Informations sur l'Entreprise -->
+    <div *ngIf="etapeActuelle === 1" class="step-content">
+      <h2>🏢 Informations sur l'Entreprise</h2>
+      <form [formGroup]="infoEntreprise" class="step-form">
+        <div class="form-grid">
+          <div class="form-group full-width">
+            <label for="nomEntreprise">Nom de l'entreprise *</label>
+            <input type="text" id="nomEntreprise" formControlName="nomEntreprise" 
+                   class="form-control" placeholder="Entrez le nom de l'entreprise">
+          </div>
+
+          <div class="form-group full-width">
+            <label for="adresseEntreprise">Adresse de l'entreprise *</label>
+            <textarea id="adresseEntreprise" formControlName="adresseEntreprise" 
+                      class="form-control" placeholder="Entrez l'adresse complète" rows="3"></textarea>
+          </div>
+
+          <div class="form-group">
+            <label for="telephoneEntreprise">Téléphone</label>
+            <input type="tel" id="telephoneEntreprise" formControlName="telephoneEntreprise" 
+                   class="form-control" placeholder="+216 -- --- ---">
+          </div>
+
+          <div class="form-group">
+            <label for="emailEntreprise">Email Entreprise</label>
+            <input type="email" id="emailEntreprise" formControlName="emailEntreprise" 
+                   class="form-control" placeholder="entreprise@exemple.com">
+          </div>
+        </div>
+      </form>
+    </div>
+
+    <!-- Étape 2 : Informations sur l'Encadrant -->
+    <div *ngIf="etapeActuelle === 2" class="step-content">
+      <h2>👤 Informations sur l'Encadrant Professionnel</h2>
+      <form [formGroup]="infoEncadrant" class="step-form">
+        <div class="form-grid">
+          <div class="form-group full-width">
+            <label for="nomEncadrant">Nom de l'encadrant *</label>
+            <input type="text" id="nomEncadrant" formControlName="nomEncadrant" 
+                   class="form-control" placeholder="Nom complet de l'encadrant">
+          </div>
+
+          <div class="form-group full-width">
+            <label for="emailEncadrant">Email de l'encadrant *</label>
+            <input type="email" id="emailEncadrant" formControlName="emailEncadrant" 
+                   class="form-control" placeholder="encadrant@entreprise.com">
+          </div>
+
+          <div class="form-group">
+            <label for="telephoneEncadrant">Téléphone de l'encadrant</label>
+            <input type="tel" id="telephoneEncadrant" formControlName="telephoneEncadrant" 
+                   class="form-control" placeholder="+216 -- --- ---">
+          </div>
+
+          <div class="form-group">
+            <label for="posteEncadrant">Poste occupé</label>
+            <input type="text" id="posteEncadrant" formControlName="posteEncadrant" 
+                   class="form-control" placeholder="Ex: Chef de projet, DRH">
+          </div>
+        </div>
+      </form>
+    </div>
+
+    <!-- Étape 3 : Détails du Stage -->
+    <div *ngIf="etapeActuelle === 3" class="step-content">
+      <h2>📚 Détails du Stage</h2>
+      <form [formGroup]="detailsStage" class="step-form">
+        <div class="form-grid">
+          <div class="form-group full-width">
+            <label for="sujetStage">Sujet du stage *</label>
+            <input type="text" id="sujetStage" formControlName="sujetStage" 
+                   class="form-control" placeholder="Ex: Développement Web, Analyse de données">
+          </div>
+
+          <div class="form-group full-width">
+            <label for="descriptionStage">Description du stage</label>
+            <textarea id="descriptionStage" formControlName="descriptionStage" 
+                      class="form-control" placeholder="Décrivez les activités et responsabilités" 
+                      rows="4"></textarea>
+          </div>
+
+          <div class="form-group">
+            <label for="dateDebut">Date de début *</label>
+            <input type="date" id="dateDebut" formControlName="dateDebut" class="form-control">
+          </div>
+
+          <div class="form-group">
+            <label for="dateFin">Date de fin *</label>
+            <input type="date" id="dateFin" formControlName="dateFin" class="form-control">
+          </div>
+        </div>
+      </form>
+    </div>
+
+    <!-- Étape 4 : Récapitulatif -->
+    <div *ngIf="etapeActuelle === 4" class="step-content">
+      <h2>📋 Récapitulatif de vos informations</h2>
+      
+      <div class="review-section">
+        <div class="review-card">
+          <h3>🏢 Entreprise</h3>
+          <p><strong>Nom :</strong> {{ infoEntreprise.value.nomEntreprise }}</p>
+          <p><strong>Adresse :</strong> {{ infoEntreprise.value.adresseEntreprise }}</p>
+        </div>
+
+        <div class="review-card">
+          <h3>👤 Encadrant</h3>
+          <p><strong>Nom :</strong> {{ infoEncadrant.value.nomEncadrant }}</p>
+          <p><strong>Email :</strong> {{ infoEncadrant.value.emailEncadrant }}</p>
+        </div>
+
+        <div class="review-card">
+          <h3>📚 Stage</h3>
+          <p><strong>Sujet :</strong> {{ detailsStage.value.sujetStage }}</p>
+          <p><strong>Période :</strong> Du {{ detailsStage.value.dateDebut | date:'dd/MM/yyyy' }} au {{ detailsStage.value.dateFin | date:'dd/MM/yyyy' }}</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Boutons de Navigation -->
+  <div class="form-navigation">
+    <button *ngIf="etapeActuelle > 1" type="button" class="btn btn-secondary" (click)="previousStep()">
+      ← Précédent
+    </button>
+    
+    <button *ngIf="etapeActuelle < 4" type="button" class="btn btn-primary" 
+            [disabled]="etapeActuelle === 1 ? infoEntreprise.invalid : (etapeActuelle === 2 ? infoEncadrant.invalid : detailsStage.invalid)" 
+            (click)="nextStep()">
+      Suivant →
+    </button>
+    
+    <div *ngIf="etapeActuelle === 4" class="final-actions">
+      <button type="button" class="btn btn-success" 
+              [disabled]="soumissionEnCours" (click)="onSubmit()">
+        {{ soumissionEnCours ? '⏳ Envoi en cours...' : '📤 Soumettre la Demande' }}
+      </button>
+    </div>
+  </div>
+
+  <!-- Bouton Annuler -->
+  <div class="form-actions">
+    <button type="button" class="btn btn-danger" (click)="onCancel()">
+      🚪 Annuler
+    </button>
+  </div>
+</div>

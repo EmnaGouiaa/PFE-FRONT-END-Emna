@@ -1,0 +1,300 @@
+<div class="admin-container profile-shell">
+  <div class="dot-pattern"></div>
+  <div class="shape-1"></div>
+  <div class="shape-2"></div>
+
+  <div class="admin-wrapper">
+    <header class="admin-header">
+      <div class="header-top">
+        <div class="header-content">
+          <h1>Gérer le profil</h1>
+          <p class="header-subtitle">
+            Consultez vos informations, activez l’édition, puis enregistrez uniquement les champs à modifier.
+          </p>
+        </div>
+
+        <div class="header-actions">
+          <button
+            type="button"
+            class="refresh-btn"
+            (click)="chargerProfil()"
+            [disabled]="enChargement || enregistrementEnCours || modificationEmailEnCours || modificationMotDePasseEnCours"
+          >
+            Actualiser
+          </button>
+          <button
+            type="button"
+            class="refresh-btn primary-action"
+            (click)="mettreAJourProfil()"
+            [disabled]="enChargement || enregistrementEnCours || modificationEmailEnCours"
+          >
+            {{ modeEditionProfil ? (enregistrementEnCours ? 'Enregistrement...' : 'Enregistrer') : 'Modifier' }}
+          </button>
+          <button
+            *ngIf="modeEditionProfil"
+            type="button"
+            class="refresh-btn"
+            (click)="annulerEditionProfil()"
+            [disabled]="enregistrementEnCours || modificationEmailEnCours"
+          >
+            Annuler
+          </button>
+        </div>
+      </div>
+
+      <div class="header-kpis" *ngIf="profil">
+        <div class="mini-kpi">
+          <span class="mini-label">Nom</span>
+          <span class="mini-value">{{ profil.prenom }} {{ profil.nom }}</span>
+        </div>
+        <div class="mini-kpi">
+          <span class="mini-label">Rôle</span>
+          <span class="mini-value">{{ roleLabel }}</span>
+        </div>
+        <div class="mini-kpi">
+          <span class="mini-label">Signature</span>
+          <span class="mini-value">{{ signatureStatusLabel }}</span>
+        </div>
+      </div>
+    </header>
+
+    <div class="dashboard-error" *ngIf="messageErreur">{{ messageErreur }}</div>
+    <div class="alert alert-success supervisor-alert" *ngIf="messageSucces">{{ messageSucces }}</div>
+    <div class="empty-inline" *ngIf="enChargement">Chargement du profil...</div>
+
+    <ng-container *ngIf="!enChargement && profil">
+      <section class="recent-users-section signature-reminder-card" *ngIf="showSignatureReminder">
+        <div class="signature-reminder-copy">
+          <div class="section-header">
+            <h2>Signature manquante</h2>
+          </div>
+          <p>Veuillez ajouter votre signature afin de pouvoir signer les documents liés au stage.</p>
+        </div>
+        <button type="button" class="btn btn-primary" (click)="preparerAjoutSignature()">
+          Ajouter ma signature
+        </button>
+      </section>
+
+      <div class="analytics-grid profile-grid">
+        <section class="analytics-card">
+          <div class="card-header">
+            <h2>Aperçu du compte</h2>
+            <span class="pill">{{ roleLabel }}</span>
+          </div>
+
+          <div class="detail-grid">
+            <div class="detail-item">
+              <span class="label">Adresse e-mail</span>
+              <span class="value">{{ profil.email }}</span>
+            </div>
+            <div class="detail-item">
+              <span class="label">Téléphone</span>
+              <span class="value">{{ profil.telephone || 'Non renseigné' }}</span>
+            </div>
+            <div class="detail-item">
+              <span class="label">Adresse</span>
+              <span class="value">{{ profil.adresse || 'Non renseignée' }}</span>
+            </div>
+
+            <div class="detail-item" *ngIf="afficherChampSpecifique('dateNaiss')">
+              <span class="label">Date de naissance</span>
+              <span class="value">{{ profil.dateNaiss || 'Non renseignée' }}</span>
+            </div>
+            <div class="detail-item" *ngIf="afficherChampSpecifique('matricule')">
+              <span class="label">Matricule</span>
+              <span class="value">{{ profil.matricule || 'Non renseigné' }}</span>
+            </div>
+            <div class="detail-item" *ngIf="afficherChampSpecifique('grade')">
+              <span class="label">Grade</span>
+              <span class="value">{{ profil.grade || 'Non renseigné' }}</span>
+            </div>
+            <div class="detail-item" *ngIf="afficherChampSpecifique('poste')">
+              <span class="label">Poste</span>
+              <span class="value">{{ profil.poste || 'Non renseigné' }}</span>
+            </div>
+            <div class="detail-item" *ngIf="afficherChampSpecifique('service')">
+              <span class="label">Service</span>
+              <span class="value">{{ profil.service || 'Non renseigné' }}</span>
+            </div>
+            <div class="detail-item" *ngIf="afficherChampSpecifique('specialite')">
+              <span class="label">Spécialité</span>
+              <span class="value">{{ profil.specialite || 'Non renseignée' }}</span>
+            </div>
+            <div class="detail-item full-width">
+              <span class="label">Signature</span>
+              <span class="value">{{ profil.nomFichierSignature || 'Non renseignée' }}</span>
+            </div>
+          </div>
+        </section>
+
+        <section class="analytics-card">
+          <div class="card-header">
+            <h2>Informations du profil</h2>
+            <span class="pill soft">{{ modeEditionProfil ? 'Édition' : 'Lecture seule' }}</span>
+          </div>
+
+          <form [formGroup]="formulaireProfil" class="profile-form" (ngSubmit)="mettreAJourProfil()">
+            <div class="profile-form-grid">
+              <label class="profile-field profile-field-full">
+                <span class="profile-field-label">Adresse e-mail</span>
+                <input
+                  type="email"
+                  class="input"
+                  formControlName="email"
+                  autocomplete="email"
+                  [readonly]="!modeEditionProfil"
+                  [class.readonly-input]="!modeEditionProfil"
+                />
+                <span class="field-error" *ngIf="champInvalide(formulaireProfil, 'email')">
+                  Saisissez une adresse e-mail valide.
+                </span>
+              </label>
+
+              <label class="profile-field">
+                <span class="profile-field-label">Prénom</span>
+                <input type="text" class="input" formControlName="prenom" [readonly]="!modeEditionProfil" [class.readonly-input]="!modeEditionProfil" />
+                <span class="field-error" *ngIf="champInvalide(formulaireProfil, 'prenom')">Le prénom doit contenir au moins 2 caractères.</span>
+              </label>
+
+              <label class="profile-field">
+                <span class="profile-field-label">Nom</span>
+                <input type="text" class="input" formControlName="nom" [readonly]="!modeEditionProfil" [class.readonly-input]="!modeEditionProfil" />
+                <span class="field-error" *ngIf="champInvalide(formulaireProfil, 'nom')">Le nom doit contenir au moins 2 caractères.</span>
+              </label>
+
+              <label class="profile-field">
+                <span class="profile-field-label">Téléphone</span>
+                <input type="tel" class="input" formControlName="telephone" [readonly]="!modeEditionProfil" [class.readonly-input]="!modeEditionProfil" />
+                <span class="field-error" *ngIf="champInvalide(formulaireProfil, 'telephone')">Le téléphone est trop long.</span>
+              </label>
+
+              <label class="profile-field profile-field-full">
+                <span class="profile-field-label">Adresse</span>
+                <input type="text" class="input" formControlName="adresse" [readonly]="!modeEditionProfil" [class.readonly-input]="!modeEditionProfil" />
+              </label>
+
+              <label class="profile-field" *ngIf="afficherChampSpecifique('dateNaiss')">
+                <span class="profile-field-label">Date de naissance</span>
+                <input type="date" class="input" formControlName="dateNaiss" [readonly]="!modeEditionProfil" [class.readonly-input]="!modeEditionProfil" />
+              </label>
+
+              <label class="profile-field" *ngIf="afficherChampSpecifique('matricule')">
+                <span class="profile-field-label">Matricule</span>
+                <input type="text" class="input" formControlName="matricule" [readonly]="!modeEditionProfil" [class.readonly-input]="!modeEditionProfil" />
+              </label>
+
+              <label class="profile-field" *ngIf="afficherChampSpecifique('grade')">
+                <span class="profile-field-label">Grade</span>
+                <input type="text" class="input" formControlName="grade" [readonly]="!modeEditionProfil" [class.readonly-input]="!modeEditionProfil" />
+              </label>
+
+              <label class="profile-field" *ngIf="afficherChampSpecifique('poste')">
+                <span class="profile-field-label">Poste</span>
+                <input type="text" class="input" formControlName="poste" [readonly]="!modeEditionProfil" [class.readonly-input]="!modeEditionProfil" />
+              </label>
+
+              <label class="profile-field" *ngIf="afficherChampSpecifique('service')">
+                <span class="profile-field-label">Service</span>
+                <input type="text" class="input" formControlName="service" [readonly]="!modeEditionProfil" [class.readonly-input]="!modeEditionProfil" />
+              </label>
+
+              <label class="profile-field" *ngIf="afficherChampSpecifique('specialite')">
+                <span class="profile-field-label">Spécialité</span>
+                <input type="text" class="input" formControlName="specialite" [readonly]="!modeEditionProfil" [class.readonly-input]="!modeEditionProfil" />
+              </label>
+
+              <label class="profile-field profile-field-full">
+                <span class="profile-field-label">URL ou nom du fichier de signature</span>
+                <input
+                  type="text"
+                  class="input"
+                  formControlName="nomFichierSignature"
+                  placeholder="https://.../signature.png ou signature.png"
+                  [readonly]="!modeEditionProfil"
+                  [class.readonly-input]="!modeEditionProfil"
+                />
+                <span class="field-hint">Cette signature sera utilisée pour les documents liés à votre rôle.</span>
+                <span class="field-error" *ngIf="champInvalide(formulaireProfil, 'nomFichierSignature')">La référence de signature est trop longue.</span>
+              </label>
+            </div>
+
+            <div class="form-actions">
+              <button type="button" class="btn btn-secondary" *ngIf="!modeEditionProfil" (click)="activerEditionProfil()">
+                Modifier
+              </button>
+              <button type="submit" class="btn btn-primary" *ngIf="modeEditionProfil" [disabled]="enregistrementEnCours || modificationEmailEnCours">
+                {{ enregistrementEnCours ? 'Enregistrement...' : 'Enregistrer les modifications' }}
+              </button>
+              <button type="button" class="btn btn-secondary" *ngIf="modeEditionProfil" (click)="annulerEditionProfil()" [disabled]="enregistrementEnCours || modificationEmailEnCours">
+                Annuler
+              </button>
+            </div>
+          </form>
+        </section>
+      </div>
+
+      <div class="analytics-grid profile-grid secondary-grid">
+        <section class="analytics-card">
+          <div class="card-header">
+            <h2>Sécurité</h2>
+            <span class="pill">Mot de passe</span>
+          </div>
+
+          <form [formGroup]="formulaireMotDePasse" class="profile-form" (ngSubmit)="mettreAJourMotDePasse()">
+            <div class="profile-form-grid single-column">
+              <label class="profile-field">
+                <span class="profile-field-label">Mot de passe actuel</span>
+                <input type="password" class="input" formControlName="motDePasseActuel" autocomplete="current-password" />
+                <span class="field-error" *ngIf="champInvalide(formulaireMotDePasse, 'motDePasseActuel')">Le mot de passe actuel est requis.</span>
+              </label>
+
+              <label class="profile-field">
+                <span class="profile-field-label">Nouveau mot de passe</span>
+                <input type="password" class="input" formControlName="nouveauMotDePasse" autocomplete="new-password" />
+                <span class="field-error" *ngIf="champInvalide(formulaireMotDePasse, 'nouveauMotDePasse')">Le mot de passe doit contenir au moins 8 caractères.</span>
+              </label>
+
+              <label class="profile-field">
+                <span class="profile-field-label">Confirmation du mot de passe</span>
+                <input type="password" class="input" formControlName="confirmationMotDePasse" autocomplete="new-password" />
+                <span class="field-error" *ngIf="champInvalide(formulaireMotDePasse, 'confirmationMotDePasse')">La confirmation est requise.</span>
+              </label>
+            </div>
+
+            <div class="form-actions">
+              <button type="submit" class="btn btn-primary" [disabled]="modificationMotDePasseEnCours">
+                {{ modificationMotDePasseEnCours ? 'Mise à jour...' : 'Mettre à jour le mot de passe' }}
+              </button>
+            </div>
+          </form>
+        </section>
+      </div>
+    </ng-container>
+  </div>
+
+  <div class="modal-backdrop" *ngIf="afficherConfirmationEmail" (click)="annulerModificationEmail()">
+    <section class="confirmation-modal" role="dialog" aria-modal="true" aria-labelledby="confirmation-email-title" (click)="$event.stopPropagation()">
+      <h2 id="confirmation-email-title">Confirmation requise</h2>
+      <p>Veuillez saisir votre mot de passe pour confirmer la modification de votre adresse e-mail.</p>
+
+      <form [formGroup]="formulaireConfirmationEmail" (ngSubmit)="confirmerModificationEmail()" class="profile-form">
+        <label class="profile-field">
+          <span class="profile-field-label">Mot de passe</span>
+          <input type="password" class="input" formControlName="motDePasse" autocomplete="current-password" />
+          <span class="field-error" *ngIf="champInvalide(formulaireConfirmationEmail, 'motDePasse')">Le mot de passe est requis.</span>
+        </label>
+
+        <div class="dashboard-error modal-error" *ngIf="messageErreurConfirmationEmail">{{ messageErreurConfirmationEmail }}</div>
+
+        <div class="form-actions modal-actions">
+          <button type="submit" class="btn btn-primary" [disabled]="modificationEmailEnCours">
+            {{ modificationEmailEnCours ? 'Confirmation...' : 'Confirmer' }}
+          </button>
+          <button type="button" class="btn btn-secondary" (click)="annulerModificationEmail()" [disabled]="modificationEmailEnCours">
+            Annuler
+          </button>
+        </div>
+      </form>
+    </section>
+  </div>
+</div>
