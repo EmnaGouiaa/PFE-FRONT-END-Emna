@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
-import { Observable, throwError } from 'rxjs';
+import { forkJoin, Observable, throwError } from 'rxjs';
 import { catchError, map, switchMap } from 'rxjs/operators';
 import { API_BASE_URL } from '../api.config';
 import {
@@ -50,6 +50,8 @@ export class StudentPortalService {
       prenom: this.normalizeOptionalString(payload.prenom),
       telephone: this.normalizeOptionalString(payload.telephone),
       adresse: this.normalizeOptionalString(payload.adresse),
+      matricule: this.normalizeOptionalString(payload.matricule),
+      dateNaiss: this.normalizeOptionalString(payload.dateNaiss),
       nomFichierSignature: this.normalizeOptionalString(payload.nomFichierSignature)
     };
 
@@ -156,6 +158,17 @@ export class StudentPortalService {
         map((response) => this.extractCollection(response).map((item) => this.normalizeMeeting(item, 'HEBDOMADAIRE'))),
         catchError((error) => this.handleError(error))
       );
+  }
+
+  listMeetingsForStage(stageId: number): Observable<StudentMeeting[]> {
+    return forkJoin([
+      this.listMeetingsByStage(stageId),
+      this.listFinalMeetingsByStage(stageId)
+    ]).pipe(
+      map(([weeklyMeetings, finalMeetings]) =>
+        [...weeklyMeetings, ...finalMeetings].sort((a, b) => `${b.date} ${b.heure}`.localeCompare(`${a.date} ${a.heure}`))
+      )
+    );
   }
 
   listFinalMeetingsByStage(stageId: number): Observable<StudentMeeting[]> {
@@ -317,8 +330,11 @@ export class StudentPortalService {
       nomResponsable: String(raw?.nomResponsable ?? ''),
       prenomResponsable: String(raw?.prenomResponsable ?? ''),
       emailResponsable: String(raw?.emailResponsable ?? ''),
+      telephoneResponsable: String(raw?.telephoneResponsable ?? ''),
       statutAdmin: String(raw?.statutAdmin ?? raw?.statutValidationAdmin ?? ''),
-      statutResponsableStages: String(raw?.statutResponsableStages ?? raw?.statutValidationResponsableStages ?? '')
+      statutResponsableStages: String(raw?.statutResponsableStages ?? raw?.statutValidationResponsableStages ?? ''),
+      commentaireAdmin: String(raw?.commentaireAdmin ?? raw?.motifRefusAdmin ?? ''),
+      commentaireResponsableStages: String(raw?.commentaireResponsableStages ?? raw?.motifRefusResponsableStages ?? '')
     };
   }
 
@@ -359,6 +375,9 @@ export class StudentPortalService {
       stageTitre: String(raw?.stageTitre ?? ''),
       stagiaireNom: String(raw?.stagiaireNom ?? ''),
       entrepriseNom: String(raw?.entrepriseNom ?? ''),
+      typeEncadrantCreateur: String(raw?.typeEncadrantCreateur ?? ''),
+      nomEncadrantCreateur: String(raw?.nomEncadrantCreateur ?? ''),
+      encadrantCreateurId: this.normalizeId(raw?.encadrantCreateurId),
       participantIds: Array.isArray(raw?.participantIds) ? raw.participantIds.map((item: unknown) => Number(item)) : [],
       note: this.normalizeNumber(raw?.note),
       urlFormEvaluation: String(raw?.urlFormEvaluation ?? ''),

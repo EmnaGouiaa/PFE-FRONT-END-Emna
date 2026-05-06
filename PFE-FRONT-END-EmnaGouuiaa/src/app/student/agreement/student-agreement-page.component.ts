@@ -62,7 +62,7 @@ export class StudentAgreementPageComponent implements OnInit {
     this.studentPortalService.signAgreementAsStudent(this.agreement.id).subscribe({
       next: (agreement) => {
         this.agreement = agreement;
-        this.successMessage = 'La convention a ete signee avec succes.';
+        this.successMessage = 'La convention a été signée avec succès.';
         this.isSigning = false;
       },
       error: (error) => {
@@ -73,7 +73,7 @@ export class StudentAgreementPageComponent implements OnInit {
   }
 
   formatDate(value: string): string {
-    if (!value) return 'Non renseignee';
+    if (!value) return 'Non renseignée';
     const date = new Date(value);
     if (Number.isNaN(date.getTime())) return value;
     return date.toLocaleDateString('fr-FR');

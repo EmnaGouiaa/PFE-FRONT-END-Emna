@@ -4,7 +4,7 @@ import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angula
 import { Router } from '@angular/router';
 import { RouterModule } from '@angular/router';
 import { finalize } from 'rxjs/operators';
-import { AuthentificationService, RoleUtilisateur } from '../../services/authentification.service';
+import { AuthentificationService } from '../../services/authentification.service';
 
 @Component({
   selector: 'app-login',
@@ -18,13 +18,6 @@ export class Login implements OnInit {
   enChargement = false;
   messageErreur = '';
   messageSucces = '';
-  comptesDemo = [
-    { email: 'admin@test.com', motDePasse: 'admin123', role: 'Administrateur' },
-    { email: 'stagiaire@test.com', motDePasse: '123456', role: 'Étudiant' },
-    { email: 'acad@test.com', motDePasse: '123456', role: 'Encadrant académique' },
-    { email: 'pro@test.com', motDePasse: '123456', role: 'Encadrant professionnel' },
-    { email: 'resp@test.com', motDePasse: '123456', role: 'Responsable d’entreprise' }
-  ];
 
   constructor(
     private fb: FormBuilder,
@@ -37,9 +30,7 @@ export class Login implements OnInit {
     });
   }
 
-  ngOnInit(): void {
-    // Vérifier les messages de déconnexion si nécessaire.
-  }
+  ngOnInit(): void {}
 
   onSubmit(): void {
     if (this.formulaireConnexion.invalid) {
@@ -69,13 +60,17 @@ export class Login implements OnInit {
       });
   }
 
-  private gererConnexionReussie(reponse: any): void {
-    // Backend login returns the role both in the response body and in the JWT "role" claim.
-    // The auth service resolves JWT first and falls back to the stored role if needed.
+  private gererConnexionReussie(reponse: unknown): void {
+    void reponse;
     const role = this.serviceAuthentification.getRoleUtilisateur();
 
     if (!role) {
       this.messageErreur = 'Connexion réussie, mais le rôle utilisateur est introuvable.';
+      return;
+    }
+
+    if (this.serviceAuthentification.doitChangerMotDePasse()) {
+      this.router.navigate(['/premiere-connexion']);
       return;
     }
 
@@ -94,7 +89,7 @@ export class Login implements OnInit {
     }
 
     if (erreur?.status === 401 || erreur?.status === 403) {
-      this.messageErreur = messageBackend || 'Email ou mot de passe invalide.';
+      this.messageErreur = messageBackend || 'E-mail ou mot de passe invalide.';
       return;
     }
 

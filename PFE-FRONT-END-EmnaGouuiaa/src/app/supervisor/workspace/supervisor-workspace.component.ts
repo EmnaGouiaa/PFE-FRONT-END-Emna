@@ -21,6 +21,7 @@ import {
   SupervisorStageDocumentsOverview,
   SupervisorTrelloSummary
 } from '../../services/supervisor/supervisor.models';
+import { PdfWindowService } from '../../services/pdf-window.service';
 import { SupervisorPortalService } from '../../services/supervisor/supervisor-portal.service';
 
 type SupervisorSection =
@@ -87,6 +88,7 @@ export class SupervisorWorkspaceComponent implements OnInit {
     private supervisorService: SupervisorPortalService,
     private notificationService: NotificationService,
     private currentUserProfileService: CurrentUserProfileService,
+    private pdfWindowService: PdfWindowService,
     public profileCompletionService: ProfileCompletionService
   ) {}
 
@@ -227,8 +229,32 @@ export class SupervisorWorkspaceComponent implements OnInit {
   }
 
   canModifyMeeting(meeting: SupervisorMeeting): boolean {
-    const sixHoursInMs = 6 * 60 * 60 * 1000;
-    return this.toMeetingTimestamp(meeting) - Date.now() >= sixHoursInMs;
+    const twentyFourHoursInMs = 24 * 60 * 60 * 1000;
+    return this.toMeetingTimestamp(meeting) - Date.now() >= twentyFourHoursInMs;
+  }
+
+  canCancelMeeting(meeting: SupervisorMeeting): boolean {
+    return this.canModifyMeeting(meeting);
+  }
+
+  getMeetingTypeLabel(meeting: SupervisorMeeting): string {
+    return meeting.source === 'FINALE' ? 'Réunion finale' : 'Réunion hebdomadaire';
+  }
+
+  getMeetingTypeBadgeClass(meeting: SupervisorMeeting): string {
+    return meeting.source === 'FINALE' ? 'status-final-meeting' : 'status-weekly-meeting';
+  }
+
+  getMeetingSupervisorLabel(meeting: SupervisorMeeting): string {
+    const explicitType = String(meeting.typeEncadrantCreateur ?? '').trim().toUpperCase();
+    const explicitName = String(meeting.nomEncadrantCreateur ?? '').trim();
+    if (explicitType === 'ACADEMIQUE') {
+      return `Encadrant académique${explicitName ? ' : ' + explicitName : ''}`;
+    }
+    if (explicitType === 'PROFESSIONNEL') {
+      return `Encadrant professionnel${explicitName ? ' : ' + explicitName : ''}`;
+    }
+    return explicitName ? `Encadrant : ${explicitName}` : 'Encadrant non renseigné';
   }
 
   get followUpProgressPercent(): number {
@@ -530,6 +556,27 @@ export class SupervisorWorkspaceComponent implements OnInit {
     });
   }
 
+  deleteMeeting(meeting: SupervisorMeeting): void {
+    if (!this.canCancelMeeting(meeting)) {
+      this.errorMessage = 'Vous ne pouvez pas annuler une réunion moins de 24 heures avant son horaire.';
+      return;
+    }
+
+    if (!window.confirm('Confirmer l’annulation de cette réunion ?')) {
+      return;
+    }
+
+    this.supervisorService.deleteMeeting(meeting.id).pipe(timeout(15000)).subscribe({
+      next: () => {
+        this.successMessage = 'Réunion annulée avec succès.';
+        this.loadAll();
+      },
+      error: (error) => {
+        this.errorMessage = this.extractErrorMessage(error, "Impossible d'annuler la réunion.");
+      }
+    });
+  }
+
   markNotificationRead(notification: UserNotification): void {
     this.notificationService.markAsRead(notification.id, this.userId).pipe(timeout(15000)).subscribe({
       next: () => {
@@ -553,13 +600,20 @@ export class SupervisorWorkspaceComponent implements OnInit {
       return;
     }
 
+    const title =
+      type === 'convention'
+        ? 'Convention de stage'
+        : type === 'fiche-evaluation'
+          ? "Fiche d'évaluation"
+          : 'Cahier de stage';
+    const pdfWindow = this.pdfWindowService.openPlaceholder(title);
+
     this.supervisorService.downloadDocument(stageId, type).pipe(timeout(15000)).subscribe({
       next: (blob) => {
-        const url = URL.createObjectURL(blob);
-        window.open(url, '_blank');
-        setTimeout(() => URL.revokeObjectURL(url), 1000);
+        this.pdfWindowService.showPdf(pdfWindow, blob, { title });
       },
       error: (error) => {
+        pdfWindow?.close();
         this.errorMessage = error?.error?.message ?? "Impossible d'ouvrir le PDF.";
       }
     });

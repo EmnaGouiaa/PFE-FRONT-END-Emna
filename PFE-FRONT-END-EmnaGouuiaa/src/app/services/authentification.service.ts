@@ -28,6 +28,7 @@ export interface ReponseAuthentification {
   prenom: string;
   email: string;
   role: RoleUtilisateur | string;
+  doitChangerMotDePasse?: boolean;
 }
 
 export interface ForgotPasswordRequest {
@@ -51,6 +52,7 @@ export interface UtilisateurActuel {
   prenom: string;
   email: string;
   role: RoleUtilisateur | null;
+  doitChangerMotDePasse: boolean;
 }
 
 @Injectable({
@@ -64,6 +66,7 @@ export class AuthentificationService {
   private readonly cleNom = 'nom';
   private readonly clePrenom = 'prenom';
   private readonly cleEmail = 'email';
+  private readonly cleDoitChangerMotDePasse = 'doitChangerMotDePasse';
 
   private readonly estAuthentifieSubject = new BehaviorSubject<boolean>(this.estAuthentifie());
   readonly estAuthentifie$ = this.estAuthentifieSubject.asObservable();
@@ -125,6 +128,7 @@ export class AuthentificationService {
     localStorage.removeItem(this.cleNom);
     localStorage.removeItem(this.clePrenom);
     localStorage.removeItem(this.cleEmail);
+    localStorage.removeItem(this.cleDoitChangerMotDePasse);
 
     // Legacy keys that can cause stale auth mixing.
     localStorage.removeItem('jwtToken');
@@ -169,6 +173,21 @@ export class AuthentificationService {
 
   getEmail(): string | null {
     return localStorage.getItem(this.cleEmail);
+  }
+
+  doitChangerMotDePasse(): boolean {
+    return localStorage.getItem(this.cleDoitChangerMotDePasse) === 'true';
+  }
+
+  marquerMotDePasseModifie(): void {
+    localStorage.setItem(this.cleDoitChangerMotDePasse, 'false');
+    const current = this.utilisateurActuelSubject.value;
+    if (current) {
+      this.utilisateurActuelSubject.next({
+        ...current,
+        doitChangerMotDePasse: false
+      });
+    }
   }
 
   aRole(role: RoleUtilisateur): boolean {
@@ -239,6 +258,7 @@ export class AuthentificationService {
     localStorage.setItem(this.cleNom, reponse.nom);
     localStorage.setItem(this.clePrenom, reponse.prenom);
     localStorage.setItem(this.cleEmail, reponse.email);
+    localStorage.setItem(this.cleDoitChangerMotDePasse, String(Boolean(reponse.doitChangerMotDePasse)));
 
     this.estAuthentifieSubject.next(true);
     this.utilisateurActuelSubject.next(this.construireUtilisateurActuel(reponse));
@@ -253,7 +273,14 @@ export class AuthentificationService {
     const role = this.getRoleUtilisateur();
     const userId = this.getUserId();
 
-    return { userId, nom, prenom, email, role };
+    return {
+      userId,
+      nom,
+      prenom,
+      email,
+      role,
+      doitChangerMotDePasse: this.doitChangerMotDePasse()
+    };
   }
 
   private construireUtilisateurActuel(reponse: ReponseAuthentification): UtilisateurActuel {
@@ -265,7 +292,8 @@ export class AuthentificationService {
       nom: reponse.nom,
       prenom: reponse.prenom,
       email: reponse.email,
-      role: roleDepuisToken ?? roleDepuisReponse
+      role: roleDepuisToken ?? roleDepuisReponse,
+      doitChangerMotDePasse: Boolean(reponse.doitChangerMotDePasse)
     };
   }
 
@@ -293,6 +321,7 @@ export class AuthentificationService {
       this.cleNom,
       this.clePrenom,
       this.cleEmail,
+      this.cleDoitChangerMotDePasse,
       'jwtToken',
       'userRole'
     ];

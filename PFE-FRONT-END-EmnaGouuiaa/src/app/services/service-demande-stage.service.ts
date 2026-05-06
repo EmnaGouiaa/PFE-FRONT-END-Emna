@@ -182,7 +182,7 @@ export class ServiceDemandeStageService {
   }
 
   refuserAdmin(demandeId: number, adminId: number, commentaire?: string): Observable<DemandeStage> {
-    const body = commentaire ? { commentaire } : {};
+    const body = { commentaire: String(commentaire ?? '').trim() };
     return this.http.put<any>(`${this.API_URL}/${demandeId}/refuser-admin/${adminId}`, body).pipe(
       map((r) => this.normalizeDemande(this.unwrapObject<any>(r))),
       catchError(error => throwError(() => error))
@@ -197,7 +197,7 @@ export class ServiceDemandeStageService {
   }
 
   refuserResponsableStages(demandeId: number, commentaire?: string): Observable<DemandeStage> {
-    const body = commentaire ? { commentaire } : {};
+    const body = { commentaire: String(commentaire ?? '').trim() };
     return this.http.put<any>(`${this.API_URL}/${demandeId}/refuser-responsable-stages`, body).pipe(
       map((r) => this.normalizeDemande(this.unwrapObject<any>(r))),
       catchError(error => throwError(() => error))

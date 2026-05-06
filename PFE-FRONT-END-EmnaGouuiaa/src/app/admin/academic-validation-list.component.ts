@@ -23,7 +23,7 @@ import { AcademicValidationDialogComponent } from './academic-validation-dialog.
   ],
   template: `
     <div class="validation-container">
-      <h2>Academic Validation - Internship Requests</h2>
+      <h2>Validation académique des demandes de stage</h2>
 
       <div *ngIf="isLoading" class="loading">
         <mat-spinner diameter="40"></mat-spinner>
@@ -33,31 +33,31 @@ import { AcademicValidationDialogComponent } from './academic-validation-dialog.
         <table mat-table [dataSource]="requests" class="validation-table">
           <!-- Student Name -->
           <ng-container matColumnDef="studentName">
-            <th mat-header-cell *matHeaderCellDef>Student Name</th>
+            <th mat-header-cell *matHeaderCellDef>Étudiant</th>
             <td mat-cell *matCellDef="let element">{{ element.studentName }}</td>
           </ng-container>
 
           <!-- Subject -->
           <ng-container matColumnDef="subject">
-            <th mat-header-cell *matHeaderCellDef>Internship Subject</th>
+            <th mat-header-cell *matHeaderCellDef>Sujet du stage</th>
             <td mat-cell *matCellDef="let element">{{ element.internshipSubject }}</td>
           </ng-container>
 
           <!-- Company -->
           <ng-container matColumnDef="company">
-            <th mat-header-cell *matHeaderCellDef>Company</th>
+            <th mat-header-cell *matHeaderCellDef>Entreprise</th>
             <td mat-cell *matCellDef="let element">{{ element.companyName }}</td>
           </ng-container>
 
           <!-- Submitted Date -->
           <ng-container matColumnDef="submittedDate">
-            <th mat-header-cell *matHeaderCellDef>Submitted Date</th>
+            <th mat-header-cell *matHeaderCellDef>Date de soumission</th>
             <td mat-cell *matCellDef="let element">{{ element.submittedDate | date: 'short' }}</td>
           </ng-container>
 
           <!-- Status -->
           <ng-container matColumnDef="status">
-            <th mat-header-cell *matHeaderCellDef>Status</th>
+            <th mat-header-cell *matHeaderCellDef>Statut</th>
             <td mat-cell *matCellDef="let element">
               <span [ngClass]="'status-badge ' + element.academicValidationStatus.toLowerCase()">
                 {{ element.academicValidationStatus }}
@@ -69,11 +69,11 @@ import { AcademicValidationDialogComponent } from './academic-validation-dialog.
           <ng-container matColumnDef="actions">
             <th mat-header-cell *matHeaderCellDef>Actions</th>
             <td mat-cell *matCellDef="let element">
-              <button mat-raised-button color="primary" (click)="onView(element)">View</button>
+              <button mat-raised-button color="primary" (click)="onView(element)">Voir</button>
               <button mat-raised-button color="accent" (click)="onApprove(element)"
-                *ngIf="element.academicValidationStatus === 'PENDING'">Approve</button>
+                *ngIf="element.academicValidationStatus === 'PENDING'">Approuver</button>
               <button mat-raised-button color="warn" (click)="onReject(element)"
-                *ngIf="element.academicValidationStatus === 'PENDING'">Reject</button>
+                *ngIf="element.academicValidationStatus === 'PENDING'">Refuser</button>
             </td>
           </ng-container>
 
@@ -83,7 +83,7 @@ import { AcademicValidationDialogComponent } from './academic-validation-dialog.
       </div>
 
       <div *ngIf="!isLoading && requests.length === 0" class="no-data">
-        <p>No pending academic validations</p>
+        <p>Aucune validation académique en attente.</p>
       </div>
     </div>
   `,

@@ -63,9 +63,9 @@ export class StudentEvaluationPageComponent implements OnInit {
       },
       error: (error) => {
         if (error instanceof HttpErrorResponse && error.status === 403) {
-          this.infoMessage = 'La fiche d evaluation n est pas encore exposee au role stagiaire par l API actuelle.';
+          this.infoMessage = "La fiche d'évaluation n'est pas encore exposée au rôle stagiaire par l'API actuelle.";
         } else {
-          this.errorMessage = this.studentPortalService.describeError(error, 'Impossible de charger la fiche d evaluation.');
+          this.errorMessage = this.studentPortalService.describeError(error, "Impossible de charger la fiche d'évaluation.");
         }
         this.isLoadingData = false;
       }

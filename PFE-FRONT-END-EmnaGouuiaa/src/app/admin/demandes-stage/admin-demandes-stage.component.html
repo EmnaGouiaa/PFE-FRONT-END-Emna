@@ -128,7 +128,7 @@
             <div class="cell-title">{{ d.nomEncadrant }}</div>
             <div class="cell-sub">{{ d.emailEncadrant }}</div>
           </td>
-          <td><span [class]="badgeClass(d.statutValidationAdmin)">{{ d.statutValidationAdmin }}</span></td>
+          <td><span [class]="badgeClass(getEffectiveAdminStatus(d))">{{ getEffectiveAdminStatus(d) }}</span></td>
           <td>
             <span [class]="badgeClass(d.statutValidationResponsableStages || StatutValidation.EN_ATTENTE)">
               {{ d.statutValidationResponsableStages || StatutValidation.EN_ATTENTE }}
@@ -148,5 +148,46 @@
         </tr>
       </tbody>
     </table>
+  </div>
+
+  <div class="refusal-modal-backdrop" *ngIf="rejectModalOpen" (click)="fermerFenetreRefus()">
+    <section class="refusal-modal" (click)="$event.stopPropagation()">
+      <div class="refusal-hero">
+        <div class="refusal-icon" aria-hidden="true">!</div>
+        <div>
+          <div class="refusal-kicker">Refus de la demande</div>
+          <h2>Motif du refus</h2>
+          <p>Expliquez clairement au stagiaire pourquoi la demande d’ajout d’entreprise est refusée.</p>
+        </div>
+      </div>
+
+      <div class="refusal-context" *ngIf="demandeEnCoursDeRefus">
+        <div><strong>Entreprise :</strong> {{ demandeEnCoursDeRefus.nomEntreprise }}</div>
+        <div><strong>Étudiant :</strong> {{ demandeEnCoursDeRefus.etudiant?.prenom || '-' }} {{ demandeEnCoursDeRefus.etudiant?.nom || '' }}</div>
+      </div>
+
+      <label class="refusal-label" for="admin-refusal-comment">Motif du refus</label>
+      <textarea
+        id="admin-refusal-comment"
+        class="refusal-textarea"
+        [(ngModel)]="rejectComment"
+        [ngModelOptions]="{ standalone: true }"
+        rows="7"
+        maxlength="1000"
+        placeholder="Saisissez ici la raison du refus..."
+      ></textarea>
+
+      <div class="refusal-help">
+        <span>{{ rejectComment.trim().length }}/1000</span>
+        <span *ngIf="rejectValidationMessage" class="refusal-error">{{ rejectValidationMessage }}</span>
+      </div>
+
+      <div class="refusal-actions">
+        <button type="button" class="btn btn-secondary" (click)="fermerFenetreRefus()">Annuler</button>
+        <button type="button" class="btn btn-danger" (click)="confirmerRefusAdmin()" [disabled]="isLoading">
+          Confirmer le refus
+        </button>
+      </div>
+    </section>
   </div>
 </div>

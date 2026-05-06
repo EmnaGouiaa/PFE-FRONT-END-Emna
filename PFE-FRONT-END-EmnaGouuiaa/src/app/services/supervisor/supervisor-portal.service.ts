@@ -21,6 +21,7 @@ import {
 export class SupervisorPortalService {
   private readonly stagesUrl = `${API_BASE_URL}/stages`;
   private readonly meetingsUrl = `${API_BASE_URL}/reunions`;
+  private readonly finalMeetingsUrl = `${API_BASE_URL}/reunions-finales`;
   private readonly agreementsUrl = `${API_BASE_URL}/conventions-stage`;
   private readonly logbooksUrl = `${API_BASE_URL}/cahiers-stage`;
   private readonly evaluationsUrl = `${API_BASE_URL}/fiches-evaluation`;
@@ -83,8 +84,13 @@ export class SupervisorPortalService {
 
     return forkJoin(
       internships.map((internship) =>
-        this.http.get<any[]>(`${this.meetingsUrl}/stage/${internship.id}`).pipe(
-          map((items) => (items ?? []).map((item) => this.normalizeMeeting(item))),
+        forkJoin([
+          this.http.get<any[]>(`${this.meetingsUrl}/stage/${internship.id}`).pipe(catchError(() => of([]))),
+          this.http.get<any[]>(`${this.finalMeetingsUrl}/stage/${internship.id}`).pipe(catchError(() => of([])))
+        ]).pipe(
+          map(([weeklyMeetings, finalMeetings]) =>
+            [...(weeklyMeetings ?? []), ...(finalMeetings ?? [])].map((item) => this.normalizeMeeting(item))
+          ),
           catchError(() => of([]))
         )
       )
@@ -110,6 +116,10 @@ export class SupervisorPortalService {
     return this.http
       .patch<any>(`${this.meetingsUrl}/${meetingId}/compte-rendu`, compteRendu.trim())
       .pipe(map((item) => this.normalizeMeeting(item)));
+  }
+
+  deleteMeeting(meetingId: number): Observable<void> {
+    return this.http.delete<void>(`${this.meetingsUrl}/${meetingId}`);
   }
 
   getAgreementByStage(stageId: number): Observable<SupervisorAgreement> {
@@ -203,7 +213,12 @@ export class SupervisorPortalService {
       stageTitre: String(raw?.stageTitre ?? ''),
       studentName: String(raw?.stagiaireNom ?? ''),
       companyName: String(raw?.entrepriseNom ?? ''),
-      participantIds: Array.isArray(raw?.participantIds) ? raw.participantIds.map((item: unknown) => Number(item)) : []
+      typeEncadrantCreateur: String(raw?.typeEncadrantCreateur ?? ''),
+      nomEncadrantCreateur: String(raw?.nomEncadrantCreateur ?? ''),
+      participantIds: Array.isArray(raw?.participantIds) ? raw.participantIds.map((item: unknown) => Number(item)) : [],
+      note: this.normalizeNullableNumber(raw?.note),
+      urlFormEvaluation: String(raw?.urlFormEvaluation ?? ''),
+      urlFormSatisfaction: String(raw?.urlFormSatisfaction ?? '')
     };
   }
 

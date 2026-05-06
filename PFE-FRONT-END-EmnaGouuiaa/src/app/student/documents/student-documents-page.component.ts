@@ -6,6 +6,7 @@ import {
   StudentStageDocumentStatus,
   StudentStageDocumentsOverview
 } from '../../services/student/student.models';
+import { PdfWindowService } from '../../services/pdf-window.service';
 import { StudentPortalService } from '../../services/student/student-portal.service';
 
 type StudentDocumentType = 'convention' | 'fiche-evaluation' | 'cahier-stage';
@@ -19,7 +20,7 @@ type StudentDocumentType = 'convention' | 'fiche-evaluation' | 'cahier-stage';
       <section class="page-hero">
         <div>
           <h1>Documents de stage</h1>
-          <p>Convention, evaluation et cahier de stage accessibles selon votre role.</p>
+          <p>Retrouvez les documents du stage, leur statut actuel et les actions autorisées pour votre profil.</p>
         </div>
         <button type="button" class="btn btn-secondary" (click)="reload()" [disabled]="isLoading || isActing">
           Actualiser
@@ -33,7 +34,7 @@ type StudentDocumentType = 'convention' | 'fiche-evaluation' | 'cahier-stage';
         <div class="panel-header">
           <div>
             <h2>Stage</h2>
-            <p class="panel-subtitle">Les documents affiches sont filtres par votre role.</p>
+            <p class="panel-subtitle">Les documents affichés reflètent l'état réel de votre convention, de la fiche d'évaluation et du cahier.</p>
           </div>
         </div>
 
@@ -52,14 +53,37 @@ type StudentDocumentType = 'convention' | 'fiche-evaluation' | 'cahier-stage';
 
       <section class="documents-grid" *ngIf="!isLoading && documentEntries.length">
         <article class="panel document-card" *ngFor="let doc of documentEntries">
-          <div class="panel-header">
+          <div class="document-card__top">
             <div>
+              <div class="document-card__eyebrow">{{ getDocumentTypeLabel(doc.type) }}</div>
               <h2>{{ doc.status.libelle }}</h2>
-              <p class="panel-subtitle">{{ doc.status.disponible ? 'PDF disponible' : (doc.status.raisonAbsence || 'Document non disponible') }}</p>
+              <p class="panel-subtitle">{{ getDocumentDescription(doc.type, doc.status) }}</p>
             </div>
-            <span class="status-pill" [ngClass]="doc.status.disponible ? 'status-positive' : 'status-warning'">
-              {{ doc.status.disponible ? 'Disponible' : doc.status.statut || 'En attente' }}
+            <span class="status-pill" [ngClass]="getStatusBadgeClass(doc.status)">
+              {{ getStatusLabel(doc.status) }}
             </span>
+          </div>
+
+          <div class="document-card__meta">
+            <div class="meta-item">
+              <span class="label">Statut</span>
+              <strong>{{ getStatusLabel(doc.status) }}</strong>
+            </div>
+            <div class="meta-item">
+              <span class="label">Accès</span>
+              <strong>{{ doc.status.disponible ? 'Consultation autorisée' : 'En attente' }}</strong>
+            </div>
+            <div class="meta-item" *ngIf="doc.status.raisonAbsence">
+              <span class="label">Détail</span>
+              <strong>{{ doc.status.raisonAbsence }}</strong>
+            </div>
+          </div>
+
+          <div class="document-card__progress" *ngIf="doc.type === 'fiche-evaluation'">
+            <div class="progress-item" [ngClass]="selectedDocuments?.ficheEvaluation?.disponible ? 'progress-ok' : 'progress-pending'">
+              Consultation du document final
+            </div>
+            <div class="progress-note">La fiche devient visible lorsqu'elle est suffisamment complétée et disponible au téléchargement.</div>
           </div>
 
           <div class="detail-actions">
@@ -79,11 +103,11 @@ type StudentDocumentType = 'convention' | 'fiche-evaluation' | 'cahier-stage';
               (click)="generateLogbook()"
               [disabled]="isActing || !doc.status.generationAutorisee"
             >
-              Generer le cahier
+              Générer le cahier
             </button>
 
             <button
-              *ngIf="doc.type === 'convention' && doc.status.documentId"
+              *ngIf="doc.type === 'convention' && doc.status.documentId && !doc.status.disponible"
               type="button"
               class="btn btn-primary"
               (click)="signConvention(doc.status)"
@@ -93,7 +117,7 @@ type StudentDocumentType = 'convention' | 'fiche-evaluation' | 'cahier-stage';
             </button>
 
             <button
-              *ngIf="doc.type === 'cahier-stage' && doc.status.documentId"
+              *ngIf="doc.type === 'cahier-stage' && doc.status.documentId && !doc.status.disponible"
               type="button"
               class="btn btn-primary"
               (click)="signLogbook(doc.status)"
@@ -116,6 +140,74 @@ type StudentDocumentType = 'convention' | 'fiche-evaluation' | 'cahier-stage';
     .document-card {
       align-content: start;
       gap: 16px;
+      border: 1px solid rgba(15, 23, 42, 0.08);
+      border-radius: 24px;
+      background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
+      box-shadow: 0 18px 42px rgba(15, 23, 42, 0.08);
+    }
+
+    .document-card__top {
+      display: flex;
+      justify-content: space-between;
+      gap: 1rem;
+      align-items: flex-start;
+    }
+
+    .document-card__eyebrow {
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: #b45309;
+      margin-bottom: 0.35rem;
+      font-weight: 700;
+    }
+
+    .document-card__meta {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      gap: 0.75rem;
+    }
+
+    .meta-item {
+      padding: 0.85rem 0.95rem;
+      border-radius: 16px;
+      background: #f8fafc;
+      border: 1px solid rgba(148, 163, 184, 0.18);
+    }
+
+    .meta-item .label {
+      display: block;
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: #64748b;
+      margin-bottom: 0.3rem;
+    }
+
+    .document-card__progress {
+      border-radius: 18px;
+      background: linear-gradient(135deg, #fff7ed 0%, #fff1f2 100%);
+      border: 1px solid rgba(251, 146, 60, 0.18);
+      padding: 1rem;
+      display: grid;
+      gap: 0.55rem;
+    }
+
+    .progress-item {
+      font-weight: 700;
+    }
+
+    .progress-ok {
+      color: #166534;
+    }
+
+    .progress-pending {
+      color: #b45309;
+    }
+
+    .progress-note {
+      color: #6b7280;
+      line-height: 1.45;
     }
   `],
   styleUrls: ['../../company/company-shared.css', '../student-shared.css']
@@ -130,7 +222,10 @@ export class StudentDocumentsPageComponent implements OnInit {
   errorMessage = '';
   successMessage = '';
 
-  constructor(private studentPortalService: StudentPortalService) {}
+  constructor(
+    private studentPortalService: StudentPortalService,
+    private pdfWindowService: PdfWindowService
+  ) {}
 
   get documentEntries(): Array<{ type: StudentDocumentType; status: StudentStageDocumentStatus }> {
     if (!this.selectedDocuments) return [];
@@ -184,15 +279,15 @@ export class StudentDocumentsPageComponent implements OnInit {
     if (!this.selectedStageId) return;
     this.isActing = true;
     this.errorMessage = '';
+    const pdfWindow = this.pdfWindowService.openPlaceholder(label);
 
     this.studentPortalService.downloadStageDocumentPdf(this.selectedStageId, type).subscribe({
       next: (blob) => {
-        const url = URL.createObjectURL(blob);
-        window.open(url, '_blank', 'noopener');
-        window.setTimeout(() => URL.revokeObjectURL(url), 60_000);
+        this.pdfWindowService.showPdf(pdfWindow, blob, { title: label });
         this.isActing = false;
       },
       error: (error) => {
+        pdfWindow?.close();
         this.errorMessage = this.studentPortalService.describeError(error, `Impossible d'ouvrir ${label}.`);
         this.isActing = false;
       }
@@ -248,5 +343,40 @@ export class StudentDocumentsPageComponent implements OnInit {
         this.isActing = false;
       }
     });
+  }
+
+  getDocumentTypeLabel(type: StudentDocumentType): string {
+    if (type === 'convention') return 'Convention';
+    if (type === 'fiche-evaluation') return "Fiche d'évaluation";
+    return 'Cahier de stage';
+  }
+
+  getStatusLabel(status: StudentStageDocumentStatus): string {
+    if (status.disponible && status.genere) return 'Généré';
+    if (status.disponible) return 'Signé';
+    if (status.generationAutorisee && !status.genere) return 'Prêt à générer';
+    if (status.documentId && !status.disponible) return 'En attente';
+    return status.statut || 'À remplir';
+  }
+
+  getStatusBadgeClass(status: StudentStageDocumentStatus): string {
+    const label = this.getStatusLabel(status);
+    if (label === 'Signé' || label === 'Généré') return 'status-positive';
+    if (label === 'Prêt à générer') return 'status-info';
+    if (label === 'À remplir') return 'status-neutral';
+    return 'status-warning';
+  }
+
+  getDocumentDescription(type: StudentDocumentType, status: StudentStageDocumentStatus): string {
+    if (status.disponible) {
+      return 'Le document final est disponible à la consultation et au téléchargement.';
+    }
+    if (status.raisonAbsence) {
+      return status.raisonAbsence;
+    }
+    if (type === 'fiche-evaluation') {
+      return "La fiche d'évaluation sera visible dès qu'elle sera suffisamment finalisée.";
+    }
+    return 'Le document est encore en cours de préparation.';
   }
 }

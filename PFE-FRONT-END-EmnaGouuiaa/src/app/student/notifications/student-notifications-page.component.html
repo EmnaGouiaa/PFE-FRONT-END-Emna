@@ -4,7 +4,7 @@
       <span class="dashboard-kicker">Centre de notifications</span>
       <h1>Mes notifications</h1>
       <p>
-        Retrouve ici les validations importantes et les affectations de stage creees par les vrais evenements backend.
+        Retrouvez ici les validations importantes et les affectations de stage générées par les événements du backend.
       </p>
       <div class="hero-badges">
         <span class="hero-badge">{{ unreadCount }} non lue(s)</span>
@@ -24,8 +24,8 @@
   <section class="panel dashboard-panel" *ngIf="!isLoading">
     <div class="panel-header">
       <div>
-        <h2>Activite recente</h2>
-        <p class="panel-subtitle">Les nouvelles arrivees sont affichees en premier.</p>
+        <h2>Activité récente</h2>
+        <p class="panel-subtitle">Les nouvelles arrivées sont affichées en premier.</p>
       </div>
     </div>
 
@@ -49,8 +49,8 @@
         <div class="notification-copy">
           <div class="notification-topline">
             <h3>{{ notification.title }}</h3>
-            <span class="status-pill" [ngClass]="notification.read ? 'status-VALIDEE' : 'status-EN_ATTENTE'">
-              {{ notification.read ? 'Lue' : 'Non lue' }}
+            <span class="status-pill" [ngClass]="getNotificationBadgeClass(notification)">
+              {{ getNotificationBadgeLabel(notification) }}
             </span>
           </div>
           <p>{{ notification.message }}</p>
@@ -68,7 +68,7 @@
           [disabled]="notification.read || markingId === notification.id"
           (click)="markAsRead(notification)"
         >
-          {{ notification.read ? 'Deja lue' : (markingId === notification.id ? 'Traitement...' : 'Marquer comme lue') }}
+          {{ notification.read ? 'Déjà lue' : (markingId === notification.id ? 'Traitement...' : 'Marquer comme lue') }}
         </button>
       </article>
     </div>

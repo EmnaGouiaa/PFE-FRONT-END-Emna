@@ -588,8 +588,155 @@
   font-weight: 800;
 }
 
+.absence-management-card {
+  display: grid;
+  gap: 18px;
+  background:
+    radial-gradient(circle at top right, rgba(37, 150, 190, 0.12), transparent 34%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.97), rgba(247, 250, 252, 0.95));
+}
+
+.absence-header-status {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.absence-state-banner {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 14px;
+  padding: 18px;
+  border-radius: 20px;
+  border: 1px solid rgba(16, 71, 120, 0.12);
+  background: rgba(16, 71, 120, 0.04);
+}
+
+.absence-state-allowed {
+  background: linear-gradient(135deg, rgba(37, 150, 190, 0.14), rgba(255, 255, 255, 0.96));
+  border-color: rgba(37, 150, 190, 0.24);
+}
+
+.absence-state-revision {
+  background: linear-gradient(135deg, rgba(203, 216, 18, 0.18), rgba(255, 255, 255, 0.96));
+  border-color: rgba(203, 216, 18, 0.32);
+}
+
+.absence-state-blocked-pre-stage,
+.absence-state-blocked-expired {
+  background: linear-gradient(135deg, rgba(16, 71, 120, 0.12), rgba(255, 255, 255, 0.96));
+  border-color: rgba(16, 71, 120, 0.2);
+}
+
+.absence-state-icon {
+  width: 52px;
+  height: 52px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.88);
+  border: 1px solid rgba(16, 71, 120, 0.14);
+  color: var(--primary-color);
+  font-weight: 900;
+  letter-spacing: 0.06em;
+}
+
+.absence-state-copy strong {
+  display: block;
+  color: var(--text-main);
+  font-size: 1rem;
+  font-weight: 900;
+}
+
+.absence-state-copy p {
+  margin: 6px 0 0;
+  color: var(--text-muted);
+  line-height: 1.55;
+  font-weight: 650;
+}
+
+.absence-meta-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.absence-meta-card,
+.absence-form-card,
+.absence-history-card {
+  padding: 18px;
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.86);
+  border: 1px solid rgba(16, 71, 120, 0.08);
+  box-shadow: var(--shadow-sm);
+}
+
+.absence-meta-card .label {
+  display: block;
+  color: var(--text-muted);
+  font-size: 0.78rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.absence-meta-card strong {
+  display: block;
+  margin-top: 8px;
+  color: var(--text-main);
+  font-size: 1rem;
+  font-weight: 900;
+}
+
+.absence-workspace {
+  display: grid;
+  grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr);
+  gap: 16px;
+}
+
+.absence-workspace-blocked .absence-form-card {
+  opacity: 0.78;
+}
+
+.absence-section-head {
+  margin-bottom: 14px;
+}
+
+.absence-section-head h4 {
+  margin: 0;
+  color: var(--text-main);
+  font-size: 1rem;
+  font-weight: 900;
+}
+
+.absence-section-head p {
+  margin: 6px 0 0;
+  color: var(--text-muted);
+  line-height: 1.5;
+  font-weight: 600;
+}
+
+.absence-form-actions {
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.absence-inline-hint {
+  color: var(--text-muted);
+  font-size: 0.88rem;
+  font-weight: 700;
+}
+
 @media (max-width: 1100px) {
   .content-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .absence-workspace {
     grid-template-columns: 1fr;
   }
 }
@@ -609,7 +756,8 @@
 
   .detail-grid,
   .form-grid,
-  .offer-card-meta {
+  .offer-card-meta,
+  .absence-meta-grid {
     grid-template-columns: 1fr;
   }
 

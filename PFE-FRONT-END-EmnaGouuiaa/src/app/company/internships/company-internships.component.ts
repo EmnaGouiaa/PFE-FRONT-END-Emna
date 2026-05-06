@@ -19,6 +19,7 @@ import { CompanyAbsence, CompanyAgreement, CompanyContext, CompanyInternship, Pr
   styleUrls: ['../company-shared.css']
 })
 export class CompanyInternshipsPageComponent implements OnInit {
+  private readonly absenceRevisionPeriodDays = 7;
   context: CompanyContext | null = null;
   internships: CompanyInternship[] = [];
   selectedInternship: CompanyInternship | null = null;
@@ -225,6 +226,10 @@ export class CompanyInternshipsPageComponent implements OnInit {
 
   saveAbsence(): void {
     if (!this.selectedInternship) return;
+    if (!this.isAbsenceRegistrationAllowed) {
+      this.errorMessage = this.absenceAvailabilityMessage;
+      return;
+    }
     if (!this.absenceDraft.dateAbsence || !this.absenceDraft.justification.trim()) {
       this.errorMessage = "La date et la justification de l'absence sont obligatoires.";
       return;
@@ -278,5 +283,138 @@ export class CompanyInternshipsPageComponent implements OnInit {
       commentaire: '',
       statut: ''
     };
+  }
+
+  get absenceAvailabilityState(): 'allowed' | 'revision' | 'blocked-pre-stage' | 'blocked-expired' | 'unknown' {
+    if (!this.selectedInternship) {
+      return 'unknown';
+    }
+
+    const today = this.toDateOnly(new Date());
+    const dateDebut = this.parseDateOnly(this.selectedInternship.dateDebut);
+    const dateFin = this.parseDateOnly(this.selectedInternship.dateFin);
+
+    if (!today || !dateDebut || !dateFin) {
+      return 'unknown';
+    }
+
+    if (today < dateDebut) {
+      return 'blocked-pre-stage';
+    }
+
+    if (today <= dateFin) {
+      return 'allowed';
+    }
+
+    const revisionEnd = this.addDays(dateFin, this.absenceRevisionPeriodDays);
+    if (today <= revisionEnd) {
+      return 'revision';
+    }
+
+    return 'blocked-expired';
+  }
+
+  get isAbsenceRegistrationAllowed(): boolean {
+    return this.absenceAvailabilityState === 'allowed' || this.absenceAvailabilityState === 'revision';
+  }
+
+  get absenceAvailabilityLabel(): string {
+    switch (this.absenceAvailabilityState) {
+      case 'allowed':
+        return 'Autorise';
+      case 'revision':
+        return 'Revision';
+      case 'blocked-pre-stage':
+        return 'Bloque avant debut';
+      case 'blocked-expired':
+        return 'Periode expiree';
+      default:
+        return 'Verification indisponible';
+    }
+  }
+
+  get absenceAvailabilityClass(): string {
+    switch (this.absenceAvailabilityState) {
+      case 'allowed':
+        return 'status-positive';
+      case 'revision':
+        return 'status-warning';
+      case 'blocked-pre-stage':
+      case 'blocked-expired':
+        return 'status-negative';
+      default:
+        return 'status-neutral';
+    }
+  }
+
+  get absenceAvailabilityMessage(): string {
+    if (!this.selectedInternship) {
+      return "Selectionnez un stage pour gerer les absences.";
+    }
+
+    const dateDebut = this.formatDate(this.selectedInternship.dateDebut);
+    const dateFin = this.formatDate(this.selectedInternship.dateFin);
+    const revisionEnd = this.absenceRevisionEndLabel;
+
+    switch (this.absenceAvailabilityState) {
+      case 'allowed':
+        return `Les absences peuvent etre enregistrees pendant la periode du stage, du ${dateDebut} au ${dateFin}.`;
+      case 'revision':
+        return `Le stage est termine, mais la periode de revision reste ouverte jusqu'au ${revisionEnd}. Vous pouvez encore enregistrer une absence.`;
+      case 'blocked-pre-stage':
+        return `Les absences ne peuvent pas etre enregistrees avant le debut du stage prevu le ${dateDebut}.`;
+      case 'blocked-expired':
+        return `La periode d'enregistrement des absences est expiree. La revision s'est terminee le ${revisionEnd}.`;
+      default:
+        return "La verification des regles d'absence est indisponible pour ce stage.";
+    }
+  }
+
+  get absenceStagePeriodLabel(): string {
+    if (!this.selectedInternship) {
+      return '-';
+    }
+
+    return `${this.formatDate(this.selectedInternship.dateDebut)} -> ${this.formatDate(this.selectedInternship.dateFin)}`;
+  }
+
+  get absenceRevisionEndLabel(): string {
+    const endDate = this.parseDateOnly(this.selectedInternship?.dateFin);
+    if (!endDate) {
+      return '-';
+    }
+
+    return this.formatDate(this.toIsoDate(this.addDays(endDate, this.absenceRevisionPeriodDays)));
+  }
+
+  private parseDateOnly(value: string | null | undefined): Date | null {
+    const normalized = String(value ?? '').trim();
+    if (!normalized) {
+      return null;
+    }
+
+    const date = new Date(`${normalized}T00:00:00`);
+    return Number.isNaN(date.getTime()) ? null : this.toDateOnly(date);
+  }
+
+  private toDateOnly(date: Date): Date {
+    return new Date(date.getFullYear(), date.getMonth(), date.getDate());
+  }
+
+  private addDays(date: Date, days: number): Date {
+    const result = new Date(date);
+    result.setDate(result.getDate() + days);
+    return this.toDateOnly(result);
+  }
+
+  private toIsoDate(date: Date): string {
+    const month = `${date.getMonth() + 1}`.padStart(2, '0');
+    const day = `${date.getDate()}`.padStart(2, '0');
+    return `${date.getFullYear()}-${month}-${day}`;
+  }
+
+  private formatDate(value: string | null | undefined): string {
+    const date = this.parseDateOnly(value);
+    return date ? date.toLocaleDateString('fr-FR') : '-';
   }
 }

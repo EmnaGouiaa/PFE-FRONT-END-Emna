@@ -20,6 +20,8 @@ export interface StudentProfileUpdateRequest {
   prenom: string;
   telephone?: string;
   adresse?: string;
+  matricule?: string;
+  dateNaiss?: string;
   nomFichierSignature?: string;
 }
 
@@ -53,8 +55,11 @@ export interface StudentCompanyRequest {
   nomResponsable: string;
   prenomResponsable: string;
   emailResponsable: string;
+  telephoneResponsable: string;
   statutAdmin: string;
   statutResponsableStages: string;
+  commentaireAdmin: string;
+  commentaireResponsableStages: string;
 }
 
 export interface StudentUserRef {
@@ -106,6 +111,9 @@ export interface StudentMeeting {
   stageTitre: string;
   stagiaireNom?: string;
   entrepriseNom?: string;
+  typeEncadrantCreateur: string;
+  nomEncadrantCreateur: string;
+  encadrantCreateurId: number | null;
   participantIds: number[];
   note: number | null;
   urlFormEvaluation: string;
@@ -228,4 +236,5 @@ export interface StudentCompanyRequestPayload {
   nomResponsable: string;
   prenomResponsable: string;
   emailResponsable: string;
+  telephoneResponsable: string;
 }

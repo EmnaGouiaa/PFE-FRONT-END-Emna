@@ -234,58 +234,12 @@
           </article>
 
           <div class="teacher-side-stack">
-            <article class="panel teacher-panel">
-              <div class="panel-header teacher-panel-header">
-                <div>
-                  <h2>Priorites</h2>
-                  <div class="panel-subtitle">Les sujets qui meritent une action rapide.</div>
-                </div>
-              </div>
+            
 
-              <div class="priority-list" *ngIf="pendingTopicStages.length > 0; else noPendingTopics">
-                <div class="priority-card" *ngFor="let stage of pendingTopicStages">
-                  <div class="priority-top">
-                    <div class="priority-title">{{ stage.titre || ('Stage #' + stage.id) }}</div>
-                    <span class="status-pill status-warning">En attente</span>
-                  </div>
-                  <div class="priority-meta">{{ getStagiaireNom(stage) }} - {{ stage.entreprise?.nom || 'Entreprise non renseignee' }}</div>
-                  <p class="priority-text">{{ stage.sujet }}</p>
-                </div>
-              </div>
-
-              <ng-template #noPendingTopics>
-                <div class="empty-card compact-empty">Aucun sujet en attente pour le moment.</div>
-              </ng-template>
-            </article>
-
-            <article class="panel teacher-panel">
-              <div class="panel-header teacher-panel-header">
-                <div>
-                  <h2>Actions rapides</h2>
-                  <div class="panel-subtitle">Acces direct aux sections utiles.</div>
-                </div>
-              </div>
-
-              <div class="quick-actions-grid">
-                <a routerLink="/stages" class="quick-action-card">
-                  <span class="quick-action-title">Liste complete</span>
-                  <span class="quick-action-text">Parcourir tous les stages rattaches a votre compte.</span>
-                </a>
-
-                <a routerLink="/profil" class="quick-action-card">
-                  <span class="quick-action-title">Gérer profil</span>
-                  <span class="quick-action-text">Verifier vos informations personnelles et votre compte.</span>
-                </a>
-
-                <button type="button" class="quick-action-card quick-action-button" (click)="loadStages()">
-                  <span class="quick-action-title">Rafraichir les donnees</span>
-                  <span class="quick-action-text">Relancer le chargement du tableau de bord.</span>
-                </button>
-              </div>
-            </article>
           </div>
         </section>
       </ng-container>
     </div>
   </main>
 </div>
+

@@ -33,6 +33,11 @@ export const routes: Routes = [
     path: 'mot-de-passe-oublie',
     loadComponent: () => import('./auth/forgot-password/forgot-password.component').then(m => m.ForgotPasswordComponent)
   },
+  {
+    path: 'premiere-connexion',
+    loadComponent: () => import('./auth/first-login-password-change/first-login-password-change.component').then(m => m.FirstLoginPasswordChangeComponent),
+    canActivate: [AuthGuard]
+  },
 
   // Gestion du profil (tous les utilisateurs authentifiés)
   {

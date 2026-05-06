@@ -2,7 +2,7 @@ import { Injectable } from '@angular/core';
 import { CanActivate, ActivatedRouteSnapshot, RouterStateSnapshot, Router, UrlTree } from '@angular/router';
 import { Observable } from 'rxjs';
 import { map, take } from 'rxjs/operators';
-import { AuthentificationService, RoleUtilisateur } from '../services/authentification.service';
+import { AuthentificationService } from '../services/authentification.service';
 
 @Injectable({
   providedIn: 'root'
@@ -21,23 +21,24 @@ export class AuthGuard implements CanActivate {
       take(1),
       map(estAuthentifie => {
         const destinationUrl = state.url;
+        const premiereConnexionUrl = '/premiere-connexion';
 
         if (!estAuthentifie) {
-          console.warn('AuthGuard: Non authentifié, redirection vers connexion depuis :', destinationUrl);
+          console.warn('AuthGuard: Non authentifie, redirection vers connexion depuis :', destinationUrl);
           this.serviceAuthentification.effacerDonneesAuthentification();
           return this.router.createUrlTree(['/connexion'], {
             queryParams: { retourUrl: destinationUrl }
           });
         }
 
-        console.log('AuthGuard: Authentifié, accès autorisé à :', destinationUrl);
+        if (this.serviceAuthentification.doitChangerMotDePasse() && !destinationUrl.startsWith(premiereConnexionUrl)) {
+          return this.router.createUrlTree([premiereConnexionUrl], {
+            queryParams: { retourUrl: destinationUrl }
+          });
+        }
+
         return true;
       })
     );
-  }
-
-  private getRedirectionSelonRole(): UrlTree {
-    const role = this.serviceAuthentification.getRoleUtilisateur();
-    return this.router.parseUrl(this.serviceAuthentification.getRouteTableauDeBord(role));
   }
 }

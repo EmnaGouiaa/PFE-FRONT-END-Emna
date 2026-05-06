@@ -1,7 +1,8 @@
 import { CommonModule } from '@angular/common';
-import { Component } from '@angular/core';
+import { Component, OnDestroy, OnInit } from '@angular/core';
 import { Router, RouterModule } from '@angular/router';
 import { AuthentificationService } from '../../services/authentification.service';
+import { NotificationService } from '../../services/notification.service';
 
 @Component({
   selector: 'app-student-layout',
@@ -103,6 +104,17 @@ import { AuthentificationService } from '../../services/authentification.service
             </span>
             <span>Documents de stage</span>
           </a>
+
+          <a routerLink="/etudiant/notifications" routerLinkActive="active" class="nav-item nav-item-notifications">
+            <span class="nav-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9" />
+                <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+              </svg>
+            </span>
+            <span>Notifications</span>
+            <span class="nav-badge" *ngIf="unreadNotifications > 0">{{ unreadNotifications }}</span>
+          </a>
         </nav>
 
         <div class="sidebar-footer">
@@ -136,14 +148,47 @@ import { AuthentificationService } from '../../services/authentification.service
   `,
   styleUrls: ['../../admin/layout/admin-layout.component.css', './student-layout.component.css']
 })
-export class StudentLayoutComponent {
+export class StudentLayoutComponent implements OnInit, OnDestroy {
+  unreadNotifications = 0;
+  private refreshHandle: ReturnType<typeof setInterval> | null = null;
+
   constructor(
     private authService: AuthentificationService,
-    private router: Router
+    private router: Router,
+    private notificationService: NotificationService
   ) {}
+
+  ngOnInit(): void {
+    this.refreshUnreadNotifications();
+    this.refreshHandle = setInterval(() => this.refreshUnreadNotifications(), 30000);
+  }
+
+  ngOnDestroy(): void {
+    if (this.refreshHandle) {
+      clearInterval(this.refreshHandle);
+      this.refreshHandle = null;
+    }
+  }
 
   logout(): void {
     this.authService.deconnexion();
     this.router.navigate(['/connexion']);
+  }
+
+  private refreshUnreadNotifications(): void {
+    const userId = this.authService.getUserId();
+    if (!userId) {
+      this.unreadNotifications = 0;
+      return;
+    }
+
+    this.notificationService.countUnread(userId).subscribe({
+      next: (count) => {
+        this.unreadNotifications = count;
+      },
+      error: () => {
+        this.unreadNotifications = 0;
+      }
+    });
   }
 }

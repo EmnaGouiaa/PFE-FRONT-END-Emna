@@ -1,6 +1,6 @@
 import { Component, Inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup } from '@angular/forms';
 import { MatDialogModule, MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
 import { MatButtonModule } from '@angular/material/button';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -48,15 +48,15 @@ export class AdminValidationDialogComponent implements OnInit {
 
   onApprove(): void {
     this.isProcessing = true;
-    const comment = this.validationForm.get('comment')?.value || 'Assignment officially confirmed.';
-    
+    const comment = this.validationForm.get('comment')?.value || 'Affectation officiellement confirmée.';
+
     this.validationService.approveRequest(this.request.id, comment).subscribe({
       next: (updatedRequest) => {
         this.isProcessing = false;
         this.dialogRef.close({ status: InternshipStatus.OFFICIAL, request: updatedRequest });
       },
       error: (error) => {
-        console.error('Approval failed:', error);
+        console.error("Échec de l'approbation :", error);
         this.isProcessing = false;
       }
     });
@@ -64,7 +64,7 @@ export class AdminValidationDialogComponent implements OnInit {
 
   onReject(): void {
     const comment = this.validationForm.get('comment')?.value;
-    
+
     if (!comment || comment.trim().length < 5) {
       this.validationForm.get('comment')?.setErrors({ required: true });
       return;
@@ -77,7 +77,7 @@ export class AdminValidationDialogComponent implements OnInit {
         this.dialogRef.close({ status: InternshipStatus.ADMIN_REJECTED, request: updatedRequest });
       },
       error: (error) => {
-        console.error('Rejection failed:', error);
+        console.error('Échec du refus :', error);
         this.isProcessing = false;
       }
     });

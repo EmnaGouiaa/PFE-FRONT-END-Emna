@@ -13,6 +13,7 @@ export interface User {
     actif: boolean;
     matricule?: string;
     filiere?: string;
+    filiereNom?: string;
     niveau?: string;
     niveauStage?: string;
     grade?: string;
@@ -86,10 +87,14 @@ export class UserManagementService {
     }
 
     private normalizeRole(value: unknown): string {
-        if (typeof value === 'string') return value;
+        if (typeof value === 'string') {
+            const normalized = value.trim();
+            return normalized.startsWith('ROLE_') ? normalized.slice('ROLE_'.length) : normalized;
+        }
         if (value && typeof value === 'object') {
             const obj = value as any;
-            return String(obj.role ?? obj.name ?? obj.code ?? obj.libelle ?? '');
+            const raw = String(obj.role ?? obj.name ?? obj.code ?? obj.libelle ?? '').trim();
+            return raw.startsWith('ROLE_') ? raw.slice('ROLE_'.length) : raw;
         }
         return '';
     }
@@ -112,7 +117,8 @@ export class UserManagementService {
             role,
             actif,
             matricule: raw?.matricule,
-            filiere: raw?.filiere,
+            filiere: raw?.filiere ?? raw?.filiereNom,
+            filiereNom: raw?.filiereNom ?? raw?.filiere,
             niveau: raw?.niveau,
             niveauStage: raw?.niveauStage,
             grade: raw?.grade,

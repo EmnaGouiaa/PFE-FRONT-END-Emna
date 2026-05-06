@@ -174,26 +174,6 @@ interface RecentActivityItem {
           </article>
         </section>
 
-        <section class="dashboard-section">
-          <div class="section-head">
-            <div>
-              <h2>Actions rapides</h2>
-              <p>Acces direct aux sections importantes avec des reperes simples.</p>
-            </div>
-          </div>
-
-          <div class="actions-grid">
-            <a class="action-card" *ngFor="let action of primaryActions" [routerLink]="action.route" [ngClass]="'tone-' + action.tone">
-              <div class="action-body">
-                <div class="action-title-row">
-                  <div class="action-title">{{ action.title }}</div>
-                  <span class="action-badge">{{ action.badge }}</span>
-                </div>
-                <div class="action-subtitle">{{ action.subtitle }}</div>
-              </div>
-            </a>
-          </div>
-        </section>
 
         <section class="dashboard-section dashboard-split">
           <article class="section-card">

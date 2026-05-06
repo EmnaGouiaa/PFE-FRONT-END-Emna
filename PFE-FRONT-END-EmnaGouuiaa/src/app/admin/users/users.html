@@ -30,8 +30,33 @@
         />
       </div>
 
-      <select [(ngModel)]="selectedRole" (change)="filterUsers()" class="role-filter">
+      <select [(ngModel)]="selectedRole" (change)="onRoleFilterChange()" class="role-filter">
         <option *ngFor="let role of roles" [value]="role.value">{{ role.label }}</option>
+      </select>
+
+      <select [(ngModel)]="selectedSort" (change)="filterUsers()" class="role-filter">
+        <option value="ALPHA_ASC">Nom A a Z</option>
+        <option value="ALPHA_DESC">Nom Z a A</option>
+      </select>
+
+      <select
+        *ngIf="shouldShowFiliereFilter()"
+        [(ngModel)]="selectedFiliere"
+        (change)="filterUsers()"
+        class="role-filter"
+      >
+        <option value="ALL">Toutes les filieres</option>
+        <option *ngFor="let filiere of availableFilieres" [value]="filiere">{{ filiere }}</option>
+      </select>
+
+      <select
+        *ngIf="shouldShowGradeFilter()"
+        [(ngModel)]="selectedGrade"
+        (change)="filterUsers()"
+        class="role-filter"
+      >
+        <option value="ALL">Tous les grades</option>
+        <option *ngFor="let grade of availableGrades" [value]="grade">{{ grade }}</option>
       </select>
     </div>
 
@@ -105,7 +130,7 @@
 
       <ng-template #emptyState>
         <div class="empty-state">
-          <p>Aucun utilisateur</p>
+          <p>Aucun utilisateur ne correspond aux filtres selectionnes.</p>
           <button class="btn-primary" (click)="openCreateForm()" [disabled]="isLoading || isSubmitting">Ajouter</button>
         </div>
       </ng-template>

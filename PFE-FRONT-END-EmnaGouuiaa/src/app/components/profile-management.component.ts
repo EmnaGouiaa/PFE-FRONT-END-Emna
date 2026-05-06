@@ -229,6 +229,12 @@ export class ProfileManagementComponent implements OnInit {
       return;
     }
 
+    const erreursValidationMotDePasse = this.serviceProfil.validerMotDePasse(donneesPass.nouveauMotDePasse);
+    if (!erreursValidationMotDePasse.estValide) {
+      this.messageErreur = erreursValidationMotDePasse.erreurs[0];
+      return;
+    }
+
     this.modificationMotDePasseEnCours = true;
     this.messageErreur = null;
     this.messageSucces = null;

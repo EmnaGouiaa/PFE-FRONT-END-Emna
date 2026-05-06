@@ -1,11 +1,9 @@
 <div class="login-container">
-  <!-- Éléments de fond -->
   <div class="dot-pattern"></div>
   <div class="shape-1"></div>
   <div class="shape-2"></div>
 
   <div class="login-wrapper">
-    <!-- Section Photo - Gauche -->
     <div class="photo-section">
       <div class="photo-content">
         <img src="/assets/testt.png" alt="Diplôme">
@@ -14,12 +12,11 @@
             <path d="M22 10v6M2 10l10-5 10 5-10 5z"/>
             <path d="M6 12v5c3 2 6 2 9 0v-5"/>
           </svg>
-          Gestion des Stages Universitaires
+          Gestion des stages universitaires
         </div>
       </div>
     </div>
 
-    <!-- Carte de Connexion - Droite -->
     <div class="login-card">
       <div class="header">
         <h2>Connexion</h2>
@@ -34,7 +31,7 @@
 
       <form [formGroup]="formulaireConnexion" (ngSubmit)="onSubmit()" class="login-form">
         <div class="form-group">
-          <label for="email">Adresse email</label>
+          <label for="email">Adresse e-mail</label>
           <div class="input-wrapper">
             <input
               type="email"
@@ -45,7 +42,7 @@
             />
           </div>
           <div class="error-message" *ngIf="formulaireConnexion.get('email')?.invalid && formulaireConnexion.get('email')?.touched">
-            L'adresse email est requise
+            L'adresse e-mail est requise.
           </div>
         </div>
 
@@ -61,16 +58,16 @@
             >
           </div>
           <div class="error-message" *ngIf="formulaireConnexion.get('motDePasse')?.invalid && formulaireConnexion.get('motDePasse')?.touched">
-            Minimum 6 caractères
+            Minimum 6 caractères.
           </div>
         </div>
 
         <div class="info-message">
-           Accès réservé aux utilisateurs autorisés
+          Accès réservé aux utilisateurs autorisés.
         </div>
 
         <div class="forgot-password-row">
-          <a routerLink="/mot-de-passe-oublie" class="forgot-password-link">Mot de passe oublie ?</a>
+          <a routerLink="/mot-de-passe-oublie" class="forgot-password-link">Mot de passe oublié ?</a>
         </div>
 
         <div class="success-banner" *ngIf="messageSucces">
@@ -85,23 +82,6 @@
           {{ enChargement ? 'Connexion en cours…' : 'Se connecter' }}
         </button>
       </form>
-    </div>
-  </div>
-</div>
-
-<!-- Section Comptes de Démo -->
-<div class="demo-accounts">
-  <div class="demo-header">
-    <h4>Comptes de démonstration</h4>
-    <p>Utilisez ces comptes pour tester l'application</p>
-  </div>
-  <div class="demo-list">
-    <div class="demo-item" *ngFor="let compte of comptesDemo">
-      <div class="demo-role">{{ compte.role }}</div>
-      <div class="demo-credentials">
-        <strong>Email :</strong> {{ compte.email }}<br>
-        <strong>Mot de passe :</strong> {{ compte.motDePasse }}
-      </div>
     </div>
   </div>
 </div>

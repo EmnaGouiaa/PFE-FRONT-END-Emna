@@ -25,6 +25,8 @@ type FieldErrors = Record<string, string>;
 export class Users implements OnInit {
   users: User[] = [];
   filteredUsers: User[] = [];
+  availableFilieres: string[] = [];
+  availableGrades: string[] = [];
   isLoading = false;
   isSubmitting = false;
   errorMessage = '';
@@ -33,6 +35,9 @@ export class Users implements OnInit {
   isEditMode = false;
   searchQuery = '';
   selectedRole = 'ALL';
+  selectedFiliere = 'ALL';
+  selectedGrade = 'ALL';
+  selectedSort = 'ALPHA_ASC';
   userForm!: FormGroup;
   editingUserId: number | null = null;
   selectedUser: User | null = null;
@@ -78,8 +83,14 @@ export class Users implements OnInit {
   }
 
   private extractErrorMessage(error: any, fallback: string): string {
+    const details = typeof error?.error?.details === 'string' ? error.error.details.trim() : '';
+    const message = typeof error?.error?.message === 'string' ? error.error.message.trim() : '';
+
+    if (message && details) {
+      return `${message} ${details}`;
+    }
     if (typeof error?.error === 'string' && error.error.trim()) return error.error;
-    if (typeof error?.error?.message === 'string' && error.error.message.trim()) return error.error.message;
+    if (message) return message;
     if (error?.error && typeof error.error === 'object') {
       const firstValue = Object.values(error.error).find(
         (value) => typeof value === 'string' && value.trim().length > 0
@@ -135,10 +146,14 @@ export class Users implements OnInit {
   }
 
   private normalizeRole(value: unknown): string {
-    if (typeof value === 'string') return value;
+    if (typeof value === 'string') {
+      const normalized = value.trim();
+      return normalized.startsWith('ROLE_') ? normalized.slice('ROLE_'.length) : normalized;
+    }
     if (value && typeof value === 'object') {
       const obj = value as any;
-      return String(obj.role ?? obj.name ?? obj.code ?? obj.libelle ?? '');
+      const raw = String(obj.role ?? obj.name ?? obj.code ?? obj.libelle ?? '').trim();
+      return raw.startsWith('ROLE_') ? raw.slice('ROLE_'.length) : raw;
     }
     return '';
   }
@@ -161,7 +176,40 @@ export class Users implements OnInit {
 
   private replaceUsers(items: User[] | null | undefined): void {
     this.users = Array.isArray(items) ? [...items] : [];
+    this.availableFilieres = this.extractDistinctValues(this.users, (user) => user.filiereNom ?? user.filiere);
+    this.availableGrades = this.extractDistinctValues(this.users, (user) => user.grade);
     this.filteredUsers = [...this.users];
+    this.filterUsers();
+  }
+
+  private normalizeText(value: unknown): string {
+    return String(value ?? '')
+      .trim()
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '');
+  }
+
+  private extractDistinctValues(items: User[], selector: (user: User) => string | null | undefined): string[] {
+    const values = items
+      .map(selector)
+      .map((value) => String(value ?? '').trim())
+      .filter((value) => value.length > 0);
+
+    return Array.from(new Set(values)).sort((left, right) =>
+      this.normalizeText(left).localeCompare(this.normalizeText(right), 'fr')
+    );
+  }
+
+  onRoleFilterChange(): void {
+    if (this.selectedRole !== RoleUtilisateur.STAGIAIRE) {
+      this.selectedFiliere = 'ALL';
+    }
+
+    if (this.selectedRole !== RoleUtilisateur.ENCADRANT_ACADEMIQUE) {
+      this.selectedGrade = 'ALL';
+    }
+
     this.filterUsers();
   }
 
@@ -201,18 +249,46 @@ export class Users implements OnInit {
   }
 
   filterUsers(): void {
-    const q = (this.searchQuery ?? '').trim().toLowerCase();
-    this.filteredUsers = this.users.filter((user) => {
-      const prenom = (user.prenom ?? '').toLowerCase();
-      const nom = (user.nom ?? '').toLowerCase();
-      const email = (user.email ?? '').toLowerCase();
-      const telephone = (user.telephone ?? '').toLowerCase();
-      const role = this.normalizeRole((user as any).role);
+    const q = this.normalizeText(this.searchQuery);
+    const selectedFiliere = this.normalizeText(this.selectedFiliere);
+    const selectedGrade = this.normalizeText(this.selectedGrade);
+    const selectedRole = this.normalizeRole(this.selectedRole);
 
-      const matchesSearch = !q || prenom.includes(q) || nom.includes(q) || email.includes(q) || telephone.includes(q);
-      const matchesRole = this.selectedRole === 'ALL' || role === this.selectedRole;
-      return matchesSearch && matchesRole;
-    });
+    this.filteredUsers = this.users
+      .filter((user) => {
+        const prenom = this.normalizeText(user.prenom);
+        const nom = this.normalizeText(user.nom);
+        const email = this.normalizeText(user.email);
+        const telephone = this.normalizeText(user.telephone);
+        const role = this.normalizeRole((user as any).role);
+        const filiere = this.normalizeText(user.filiereNom ?? user.filiere);
+        const grade = this.normalizeText(user.grade);
+
+        const matchesSearch = !q || prenom.includes(q) || nom.includes(q) || email.includes(q) || telephone.includes(q);
+        const matchesRole = selectedRole === 'ALL' || role === selectedRole;
+        const matchesFiliere = selectedRole !== RoleUtilisateur.STAGIAIRE
+          || this.selectedFiliere === 'ALL'
+          || filiere === selectedFiliere;
+        const matchesGrade = selectedRole !== RoleUtilisateur.ENCADRANT_ACADEMIQUE
+          || this.selectedGrade === 'ALL'
+          || grade === selectedGrade;
+
+        return matchesSearch && matchesRole && matchesFiliere && matchesGrade;
+      })
+      .sort((left, right) => {
+        const leftLabel = this.normalizeText(`${left.prenom ?? ''} ${left.nom ?? ''}`);
+        const rightLabel = this.normalizeText(`${right.prenom ?? ''} ${right.nom ?? ''}`);
+        const comparison = leftLabel.localeCompare(rightLabel, 'fr');
+        return this.selectedSort === 'ALPHA_DESC' ? -comparison : comparison;
+      });
+  }
+
+  shouldShowFiliereFilter(): boolean {
+    return this.selectedRole === RoleUtilisateur.STAGIAIRE;
+  }
+
+  shouldShowGradeFilter(): boolean {
+    return this.selectedRole === RoleUtilisateur.ENCADRANT_ACADEMIQUE;
   }
 
   openCreateForm(): void {

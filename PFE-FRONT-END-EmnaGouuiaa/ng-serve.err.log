@@ -1,0 +1,13 @@
+[1m[31m[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2729: Property 'fb' is used before its initialization.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/auth/first-login-password-change/first-login-password-change.component.ts:59:29:
+[37m      59 │   readonly formulaire = this.[32mfb[37m.group({
+         ╵                              [32m~~[0m
+
+  'fb' is declared here.
+
+    src/app/auth/first-login-password-change/first-login-password-change.component.ts:66:4:
+[37m      66 │     [32mprivate readonly fb: FormBuilder[37m,
+         ╵     [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+[39m[22m

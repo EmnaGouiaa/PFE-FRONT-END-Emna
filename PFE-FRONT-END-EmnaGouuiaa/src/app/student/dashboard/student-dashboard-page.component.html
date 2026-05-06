@@ -111,37 +111,6 @@
       <section class="panel dashboard-panel">
         <div class="panel-header">
           <div>
-            <h2>Actions rapides</h2>
-            <p class="panel-subtitle">Les raccourcis utiles pendant votre stage.</p>
-          </div>
-        </div>
-
-        <div class="actions-grid">
-          <a routerLink="/etudiant/mon-stage" class="action-card">
-            <span class="action-title">Mon stage</span>
-            <span class="action-text">Consulter le stage affecte, son entreprise et ses encadrants.</span>
-          </a>
-
-          <a routerLink="/etudiant/reunions" class="action-card">
-            <span class="action-title">Mes reunions</span>
-            <span class="action-text">Voir les reunions programmees et leurs comptes rendus.</span>
-          </a>
-
-          <a routerLink="/etudiant/documents-stage" class="action-card">
-            <span class="action-title">Documents de stage</span>
-            <span class="action-text">Consulter convention, evaluation et cahier de stage autorises.</span>
-          </a>
-
-          <a routerLink="/etudiant/demande-entreprise" class="action-card">
-            <span class="action-title">Demande entreprise</span>
-            <span class="action-text">Declarer une entreprise absente du systeme si necessaire.</span>
-          </a>
-        </div>
-      </section>
-
-      <section class="panel dashboard-panel">
-        <div class="panel-header">
-          <div>
             <h2>Mon stage actuel</h2>
             <p class="panel-subtitle">Synthese du stage cree apres affectation.</p>
           </div>
@@ -187,6 +156,51 @@
           <div class="kv-item">
             <span class="label">Encadrant professionnel</span>
             <span class="value">{{ currentInternship.professionalSupervisor.fullName || 'Non affecte' }}</span>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel dashboard-panel">
+        <div class="panel-header">
+          <div>
+            <h2>Suivi a venir</h2>
+            <p class="panel-subtitle">Prochaine reunion planifiee et charge Trello du stage.</p>
+          </div>
+        </div>
+
+        <div class="empty-card" *ngIf="!currentInternship">
+          Les informations de suivi apparaitront des qu'un stage vous sera affecte.
+        </div>
+
+        <div class="kv-list" *ngIf="currentInternship">
+          <div class="kv-item">
+            <span class="label">Prochaine reunion</span>
+            <span class="value">{{ nextMeeting?.numReunion || (nextMeeting ? 'Reunion planifiee' : 'Aucune reunion a venir') }}</span>
+          </div>
+          <div class="kv-item">
+            <span class="label">Date et heure</span>
+            <span class="value">{{ formatMeetingDateTime(nextMeeting) }}</span>
+          </div>
+          <div class="kv-item">
+            <span class="label">Type de reunion</span>
+            <span class="value">{{ nextMeeting ? (nextMeeting.source === 'FINALE' ? 'Reunion finale' : 'Reunion de suivi') : 'Non planifie' }}</span>
+          </div>
+          <div class="kv-item">
+            <span class="label">Taches Trello</span>
+            <span class="value">{{ trelloTaskCount }}</span>
+          </div>
+          <div class="kv-item">
+            <span class="label">Taches terminees</span>
+            <span class="value">{{ trelloCompletedCount }}</span>
+          </div>
+          <div class="kv-item">
+            <span class="label">Board Trello</span>
+            <span class="value">
+              <a *ngIf="trelloSummary?.trelloBoardUrl" [href]="trelloSummary?.trelloBoardUrl" target="_blank" rel="noopener" class="link-button">
+                Ouvrir le board
+              </a>
+              <span *ngIf="!trelloSummary?.trelloBoardUrl">Aucun board disponible</span>
+            </span>
           </div>
         </div>
       </section>

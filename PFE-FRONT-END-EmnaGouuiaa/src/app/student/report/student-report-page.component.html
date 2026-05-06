@@ -2,7 +2,7 @@
   <section class="page-hero">
     <div>
       <h1>Rapport de stage</h1>
-      <p>Suivez l etat du cahier de stage et les informations generees par le backend pour votre rapport.</p>
+      <p>Suivez l’état du cahier de stage et les informations générées par le backend pour votre rapport.</p>
     </div>
   </section>
 
@@ -13,7 +13,7 @@
     <div class="panel-header">
       <div>
         <h2>Choix du stage</h2>
-        <p class="panel-subtitle">Le cahier et le rapport dependent du stage selectionne</p>
+        <p class="panel-subtitle">Le cahier et le rapport dépendent du stage sélectionné.</p>
       </div>
     </div>
 
@@ -32,12 +32,12 @@
       <div class="panel-header">
         <div>
           <h2>Cahier de stage</h2>
-          <p class="panel-subtitle">Etat reel des signatures</p>
+          <p class="panel-subtitle">État réel des signatures</p>
         </div>
       </div>
 
       <div class="message-info">
-        Le backend actuel n expose pas d upload de fichier de rapport. Cette page presente uniquement le cahier genere et son etat de signature.
+        Le backend actuel n’expose pas d’envoi de fichier de rapport. Cette page présente uniquement le cahier généré et son état de signature.
       </div>
 
       <div class="empty-card" *ngIf="isLoadingData">Chargement du cahier...</div>
@@ -45,7 +45,7 @@
 
       <div class="detail-grid" *ngIf="report">
         <div class="detail-item">
-          <span class="label">Date de generation</span>
+          <span class="label">Date de génération</span>
           <span class="value">{{ formatDate(report.dateGeneration) }}</span>
         </div>
         <div class="detail-item">
@@ -54,10 +54,10 @@
         </div>
         <div class="detail-item">
           <span class="label">Signature stagiaire</span>
-          <span class="value">{{ report.signeeStagiaire ? 'Signe' : 'En attente' }}</span>
+          <span class="value">{{ report.signeeStagiaire ? 'Signé' : 'En attente' }}</span>
         </div>
         <div class="detail-item">
-          <span class="label">Etat global</span>
+          <span class="label">État global</span>
           <span class="value">{{ report.estSigne ? 'Complet' : 'Partiel' }}</span>
         </div>
       </div>
@@ -65,19 +65,19 @@
       <div class="status-grid" *ngIf="report" style="margin-top: 16px;">
         <div class="status-card">
           <h4>Stagiaire</h4>
-          <p>{{ report.signeeStagiaire ? 'Signature enregistree' : 'Signature en attente' }}</p>
+          <p>{{ report.signeeStagiaire ? 'Signature enregistrée' : 'Signature en attente' }}</p>
         </div>
         <div class="status-card">
-          <h4>Encadrant academique</h4>
-          <p>{{ report.signeeEncAcad ? 'Signature enregistree' : 'Signature en attente' }}</p>
+          <h4>Encadrant académique</h4>
+          <p>{{ report.signeeEncAcad ? 'Signature enregistrée' : 'Signature en attente' }}</p>
         </div>
         <div class="status-card">
           <h4>Encadrant professionnel</h4>
-          <p>{{ report.signeeEncPro ? 'Signature enregistree' : 'Signature en attente' }}</p>
+          <p>{{ report.signeeEncPro ? 'Signature enregistrée' : 'Signature en attente' }}</p>
         </div>
         <div class="status-card">
           <h4>Responsable entreprise</h4>
-          <p>{{ report.signeeRespEntreprise ? 'Signature enregistree' : 'Signature en attente' }}</p>
+          <p>{{ report.signeeRespEntreprise ? 'Signature enregistrée' : 'Signature en attente' }}</p>
         </div>
       </div>
 
@@ -91,8 +91,8 @@
     <section class="panel">
       <div class="panel-header">
         <div>
-          <h2>Synthese de rapport</h2>
-          <p class="panel-subtitle">Donnees renvoyees par l endpoint de generation de rapport du stage selectionne</p>
+          <h2>Synthèse du rapport</h2>
+          <p class="panel-subtitle">Données renvoyées par le point de génération du rapport du stage sélectionné.</p>
         </div>
       </div>
 
@@ -104,7 +104,7 @@
       </div>
 
       <div class="empty-card" *ngIf="!isLoadingData && !summaryEntries.length">
-        Aucune synthese de rapport n a ete renvoyee pour ce stage.
+        Aucune synthèse de rapport n’a été renvoyée pour ce stage.
       </div>
     </section>
   </div>

@@ -10,21 +10,21 @@ import { SatisfactionSurvey, SatisfactionSurveyService } from '../services/satis
     <section *ngIf="showSurveySection" class="satisfaction-survey">
       <div class="satisfaction-header">
         <div>
-          <h3>Enquête de satisfaction</h3>
-          <div class="satisfaction-reminder">Une enquête de satisfaction est disponible aujourd’hui suite à votre réunion finale.</div>
+          <h3>Enquete de satisfaction</h3>
+          <div class="satisfaction-reminder">Une enquete de satisfaction est disponible pendant une periode limitee apres votre reunion finale.</div>
           <p>{{ survey?.titre }}</p>
         </div>
         <span class="status-pill" [ngClass]="statusClass">{{ survey?.statut }}</span>
       </div>
 
       <p class="satisfaction-description">
-        {{ survey?.description || 'Veuillez saisir votre réponse dans le formulaire externe préparé par le responsable.' }}
+        {{ survey?.description || 'Veuillez saisir votre reponse dans le formulaire externe prepare par le responsable.' }}
       </p>
 
       <div *ngIf="linkErrorMessage" class="satisfaction-error">{{ linkErrorMessage }}</div>
 
       <button type="button" class="btn btn-primary satisfaction-action" (click)="openSurvey()">
-        Répondre à l’enquête
+        Repondre a l'enquete
       </button>
     </section>
 
@@ -190,7 +190,7 @@ export class SatisfactionSurveySectionComponent implements OnChanges, OnInit {
     this.linkErrorMessage = '';
 
     if (!this.survey?.urlFormulaire || !this.isValidExternalUrl(this.survey.urlFormulaire)) {
-      this.linkErrorMessage = 'Le lien de l’enquête est indisponible.';
+      this.linkErrorMessage = 'Le lien de l\'enquete est indisponible.';
       return;
     }
 

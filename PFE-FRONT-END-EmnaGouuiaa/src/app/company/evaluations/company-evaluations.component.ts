@@ -14,7 +14,7 @@ import { CompanyContext, CompanyEvaluation, CompanyInternship } from '../../serv
   standalone: true,
   imports: [CommonModule, ReactiveFormsModule],
   templateUrl: './company-evaluations.component.html',
-  styleUrls: ['../company-shared.css']
+  styleUrls: ['../company-shared.css', './company-evaluations.component.css']
 })
 export class CompanyEvaluationsPageComponent implements OnInit {
   context: CompanyContext | null = null;
@@ -195,6 +195,21 @@ export class CompanyEvaluationsPageComponent implements OnInit {
         this.errorMessage = error?.error?.message ?? 'Impossible de signer cette évaluation.';
       }
     });
+  }
+
+  getCompletionLabel(evaluation: CompanyEvaluation): string {
+    if (evaluation.signaturesCompletes) return 'Signé';
+    if (evaluation.complete) return 'Prêt à générer';
+    if (evaluation.pointFortResponsableEntreprise || evaluation.axeAmeliorationResponsableEntreprise) return 'En attente';
+    return 'À remplir';
+  }
+
+  getCompletionBadgeClass(evaluation: CompanyEvaluation): string {
+    const label = this.getCompletionLabel(evaluation);
+    if (label === 'Signé') return 'status-positive';
+    if (label === 'Prêt à générer') return 'status-info';
+    if (label === 'À remplir') return 'status-neutral';
+    return 'status-warning';
   }
 
   private fillForm(evaluation: CompanyEvaluation): void {

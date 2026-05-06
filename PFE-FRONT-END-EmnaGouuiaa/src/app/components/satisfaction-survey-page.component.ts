@@ -13,8 +13,8 @@ import { SatisfactionSurveySectionComponent } from './satisfaction-survey-sectio
     <div class="company-page">
       <header class="page-hero">
         <div>
-          <h1>Enquête de satisfaction</h1>
-          <p>Consultez l’enquête de satisfaction disponible le jour de votre réunion finale.</p>
+          <h1>Enquete de satisfaction</h1>
+          <p>Consultez l'enquete de satisfaction disponible apres votre reunion finale pendant une periode limitee.</p>
         </div>
         <div class="hero-actions">
           <button type="button" class="btn btn-secondary" (click)="loadSurvey()" [disabled]="isLoading">
@@ -24,13 +24,13 @@ import { SatisfactionSurveySectionComponent } from './satisfaction-survey-sectio
       </header>
 
       <div *ngIf="errorMessage" class="alert alert-error">{{ errorMessage }}</div>
-      <div *ngIf="isLoading" class="loading">Chargement de l’enquête de satisfaction...</div>
+      <div *ngIf="isLoading" class="loading">Chargement de l'enquete de satisfaction...</div>
 
       <section class="panel" *ngIf="!isLoading">
         <div class="panel-header">
           <div>
-            <h2>Enquête de satisfaction</h2>
-            <div class="panel-subtitle">Formulaire externe disponible uniquement aujourd’hui si vous êtes concerné par une réunion finale.</div>
+            <h2>Enquete de satisfaction</h2>
+            <div class="panel-subtitle">Formulaire externe disponible pour les utilisateurs concernes dans la fenetre de reponse autorisee.</div>
           </div>
           <span class="status-pill" [class.status-warning]="survey?.disponible" [class.status-neutral]="!survey?.disponible">
             {{ survey?.disponible ? 'Disponible' : 'Non disponible' }}
@@ -38,7 +38,7 @@ import { SatisfactionSurveySectionComponent } from './satisfaction-survey-sectio
         </div>
 
         <article class="detail-card" *ngIf="survey?.disponible; else unavailableSurvey">
-          <div class="info-title">{{ survey?.stageTitre || 'Stage concerné' }}</div>
+          <div class="info-title">{{ survey?.stageTitre || 'Stage concerne' }}</div>
           <app-satisfaction-survey-section></app-satisfaction-survey-section>
         </article>
 
@@ -53,7 +53,7 @@ import { SatisfactionSurveySectionComponent } from './satisfaction-survey-sectio
 export class SatisfactionSurveyPageComponent implements OnInit {
   isLoading = false;
   errorMessage = '';
-  unavailableMessage = 'Aucune enquête de satisfaction disponible pour le moment.';
+  unavailableMessage = 'Aucune enquete de satisfaction disponible pour le moment.';
   survey: SatisfactionSurvey | null = null;
 
   constructor(private satisfactionSurveyService: SatisfactionSurveyService) {}
@@ -66,7 +66,7 @@ export class SatisfactionSurveyPageComponent implements OnInit {
     this.isLoading = true;
     this.errorMessage = '';
     this.survey = null;
-    this.unavailableMessage = 'Aucune enquête de satisfaction disponible pour le moment.';
+    this.unavailableMessage = 'Aucune enquete de satisfaction disponible pour le moment.';
 
     this.satisfactionSurveyService.getAvailableForCurrentUser().pipe(
       catchError(() => of(null))
@@ -79,7 +79,7 @@ export class SatisfactionSurveyPageComponent implements OnInit {
         this.isLoading = false;
       },
       error: (error) => {
-        this.errorMessage = error?.error?.message ?? error?.message ?? 'Impossible de charger l’enquête de satisfaction.';
+        this.errorMessage = error?.error?.message ?? error?.message ?? 'Impossible de charger l\'enquete de satisfaction.';
         this.isLoading = false;
       }
     });

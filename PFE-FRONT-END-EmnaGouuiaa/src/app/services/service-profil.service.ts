@@ -120,15 +120,15 @@ export class ServiceProfilService {
   }
 
   mettreAJourMotDePasse(donnees: MiseAJourMotDePasse): Observable<DonneesProfil> {
-    const userId = this.requireUserId();
     const requestBody = {
       ancienMotDePasse: donnees.motDePasseActuel,
       nouveauMotDePasse: donnees.nouveauMotDePasse,
       confirmationNouveauMotDePasse: donnees.confirmationMotDePasse
     };
 
-    return this.http.patch<any>(`${this.API_URL}/${userId}/mot-de-passe`, requestBody).pipe(
+    return this.http.patch<any>(`${this.API_URL}/me/mot-de-passe`, requestBody).pipe(
       map((response) => this.normalizeProfile(response)),
+      tap(() => this.authService.marquerMotDePasseModifie()),
       catchError(error => throwError(() => error))
     );
   }

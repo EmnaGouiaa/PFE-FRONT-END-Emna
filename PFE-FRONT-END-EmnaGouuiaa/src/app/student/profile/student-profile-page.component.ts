@@ -35,6 +35,8 @@ export class StudentProfilePageComponent implements OnInit {
     prenom: ['', [Validators.required, Validators.maxLength(100)]],
     telephone: ['', [Validators.maxLength(30)]],
     adresse: ['', [Validators.maxLength(255)]],
+    matricule: ['', [Validators.maxLength(100)]],
+    dateNaiss: [''],
     nomFichierSignature: ['', [Validators.maxLength(255)]]
   });
 
@@ -154,7 +156,7 @@ export class StudentProfilePageComponent implements OnInit {
     this.loadProfile();
   }
 
-  isInvalid(controlName: 'email' | 'nom' | 'prenom' | 'telephone' | 'adresse' | 'nomFichierSignature'): boolean {
+  isInvalid(controlName: 'email' | 'nom' | 'prenom' | 'telephone' | 'adresse' | 'matricule' | 'dateNaiss' | 'nomFichierSignature'): boolean {
     const control = this.profileForm.controls[controlName];
     return control.invalid && (control.touched || control.dirty);
   }
@@ -230,6 +232,8 @@ export class StudentProfilePageComponent implements OnInit {
       prenom: profile.prenom || '',
       telephone: profile.telephone || '',
       adresse: profile.adresse || '',
+      matricule: profile.matricule || '',
+      dateNaiss: profile.dateNaiss || '',
       nomFichierSignature: profile.nomFichierSignature || ''
     });
 
@@ -243,6 +247,8 @@ export class StudentProfilePageComponent implements OnInit {
       prenom: values.prenom,
       telephone: values.telephone,
       adresse: values.adresse,
+      matricule: values.matricule,
+      dateNaiss: values.dateNaiss,
       nomFichierSignature: values.nomFichierSignature
     };
   }

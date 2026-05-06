@@ -13,6 +13,7 @@ import { AuthentificationService } from '../../services/authentification.service
   styleUrls: ['../login/login.css', './forgot-password.component.css']
 })
 export class ForgotPasswordComponent {
+  private readonly strongPasswordPattern = /^(?=.*[A-Z])(?=.*[a-z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}$/;
   emailForm: FormGroup;
   resetForm: FormGroup;
   isSubmittingEmail = false;
@@ -33,7 +34,7 @@ export class ForgotPasswordComponent {
     this.resetForm = this.fb.group({
       email: ['', [Validators.required, Validators.email]],
       code: ['', [Validators.required, Validators.pattern(/^\d{6}$/)]],
-      newPassword: ['', [Validators.required, Validators.minLength(8)]],
+      newPassword: ['', [Validators.required, Validators.pattern(this.strongPasswordPattern)]],
       confirmPassword: ['', [Validators.required, Validators.minLength(8)]]
     });
   }
@@ -55,7 +56,7 @@ export class ForgotPasswordComponent {
         next: (response) => {
           this.currentStep = 2;
           this.resetForm.patchValue({ email });
-          this.messageSucces = response.message || 'If this email exists, a reset code has been sent.';
+          this.messageSucces = response.message || 'Si cette adresse existe, un code de reinitialisation a ete envoye.';
         },
         error: (error) => {
           this.messageErreur = this.extractErrorMessage(error, 'Impossible de lancer la reinitialisation du mot de passe.');

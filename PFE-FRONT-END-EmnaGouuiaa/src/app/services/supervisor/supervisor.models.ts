@@ -48,7 +48,12 @@ export interface SupervisorMeeting {
   stageTitre: string;
   studentName: string;
   companyName: string;
+  typeEncadrantCreateur: string;
+  nomEncadrantCreateur: string;
   participantIds: number[];
+  note: number | null;
+  urlFormEvaluation: string;
+  urlFormSatisfaction: string;
 }
 
 export interface SupervisorMeetingPayload {

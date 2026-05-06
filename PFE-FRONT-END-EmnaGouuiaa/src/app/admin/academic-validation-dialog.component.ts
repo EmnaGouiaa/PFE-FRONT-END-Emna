@@ -24,37 +24,37 @@ import { AcademicValidationRequest } from '../models/academic-validation.model';
   template: `
     <div class="dialog-container">
       <h2 mat-dialog-title>
-        <span *ngIf="isViewMode">Internship Request Details</span>
-        <span *ngIf="isApproveMode">Approve Internship Request</span>
-        <span *ngIf="isRejectMode">Reject Internship Request</span>
+        <span *ngIf="isViewMode">Détails de la demande de stage</span>
+        <span *ngIf="isApproveMode">Approuver la demande de stage</span>
+        <span *ngIf="isRejectMode">Refuser la demande de stage</span>
       </h2>
 
       <mat-dialog-content>
         <div class="request-details">
           <div class="detail-row">
-            <span class="label">Student:</span>
+            <span class="label">Étudiant :</span>
             <span class="value">{{ data.request.studentName }} ({{ data.request.studentEmail }})</span>
           </div>
 
           <div class="detail-row">
-            <span class="label">Subject:</span>
+            <span class="label">Sujet :</span>
             <span class="value">{{ data.request.internshipSubject }}</span>
           </div>
 
           <div class="detail-row">
-            <span class="label">Company:</span>
+            <span class="label">Entreprise :</span>
             <span class="value">{{ data.request.companyName }}</span>
           </div>
 
           <div class="detail-row">
-            <span class="label">Duration:</span>
+            <span class="label">Période :</span>
             <span class="value">
-              {{ data.request.startDate | date: 'short' }} to {{ data.request.endDate | date: 'short' }}
+              {{ data.request.startDate | date: 'shortDate' }} au {{ data.request.endDate | date: 'shortDate' }}
             </span>
           </div>
 
           <div class="detail-row">
-            <span class="label">Status:</span>
+            <span class="label">Statut :</span>
             <span class="value" [ngClass]="'status-' + data.request.academicValidationStatus.toLowerCase()">
               {{ data.request.academicValidationStatus }}
             </span>
@@ -65,30 +65,30 @@ import { AcademicValidationRequest } from '../models/academic-validation.model';
           <!-- Comment Field (only for approve/reject) -->
           <mat-form-field appearance="outline" *ngIf="!isViewMode" class="full-width">
             <mat-label>
-              <span *ngIf="isApproveMode">Optional Comment</span>
-              <span *ngIf="isRejectMode">Rejection Reason (required)</span>
+              <span *ngIf="isApproveMode">Commentaire facultatif</span>
+              <span *ngIf="isRejectMode">Motif du refus (obligatoire)</span>
             </mat-label>
             <textarea matInput [(ngModel)]="comment" rows="4"
               [required]="isRejectMode"
-              placeholder="Enter your comment...">
+              placeholder="Saisissez votre commentaire...">
             </textarea>
           </mat-form-field>
 
           <!-- Display comment if already validated -->
           <div *ngIf="isViewMode && data.request.academicComments" class="comment-section">
-            <span class="label">Comments:</span>
+            <span class="label">Commentaires :</span>
             <p class="comment-text">{{ data.request.academicComments }}</p>
           </div>
         </div>
       </mat-dialog-content>
 
       <mat-dialog-actions align="end">
-        <button mat-button (click)="onCancel()">Cancel</button>
+        <button mat-button (click)="onCancel()">Annuler</button>
         <button mat-raised-button color="primary" *ngIf="isApproveMode" (click)="onApprove()">
-          <mat-icon>check</mat-icon> Approve
+          <mat-icon>check</mat-icon> Approuver
         </button>
         <button mat-raised-button color="warn" *ngIf="isRejectMode" (click)="onReject()">
-          <mat-icon>close</mat-icon> Reject
+          <mat-icon>close</mat-icon> Refuser
         </button>
       </mat-dialog-actions>
     </div>
@@ -212,14 +212,14 @@ export class AcademicValidationDialogComponent {
       },
       error: (err: any) => {
         console.error('Error approving request:', err);
-        alert('Error approving request');
+        alert("Une erreur est survenue lors de l'approbation de la demande.");
       }
     });
   }
 
   onReject() {
     if (!this.comment.trim()) {
-      alert('Please enter a rejection reason');
+      alert('Veuillez saisir un motif de refus.');
       return;
     }
 
@@ -230,7 +230,7 @@ export class AcademicValidationDialogComponent {
       },
       error: (err: any) => {
         console.error('Error rejecting request:', err);
-        alert('Error rejecting request');
+        alert('Une erreur est survenue lors du refus de la demande.');
       }
     });
   }

@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnInit } from '@angular/core';
+import { Component, OnDestroy, OnInit } from '@angular/core';
 import { RouterModule } from '@angular/router';
 import { AuthentificationService } from '../../services/authentification.service';
 import { NotificationService, UserNotification } from '../../services/notification.service';
@@ -18,6 +18,7 @@ export class StudentNotificationsPageComponent implements OnInit {
   successMessage = '';
   currentUserId: number | null = null;
   markingId: number | null = null;
+  private refreshHandle: ReturnType<typeof setInterval> | null = null;
 
   constructor(
     private authService: AuthentificationService,
@@ -27,12 +28,20 @@ export class StudentNotificationsPageComponent implements OnInit {
   ngOnInit(): void {
     this.currentUserId = this.authService.getUserId();
     if (!this.currentUserId) {
-      this.errorMessage = 'Impossible de determiner le stagiaire connecte.';
+      this.errorMessage = 'Impossible de déterminer le stagiaire connecté.';
       this.isLoading = false;
       return;
     }
 
     this.loadNotifications();
+    this.refreshHandle = setInterval(() => this.loadNotifications(), 30000);
+  }
+
+  ngOnDestroy(): void {
+    if (this.refreshHandle) {
+      clearInterval(this.refreshHandle);
+      this.refreshHandle = null;
+    }
   }
 
   loadNotifications(): void {
@@ -62,7 +71,7 @@ export class StudentNotificationsPageComponent implements OnInit {
     this.notificationService.markAsRead(notification.id, this.currentUserId).subscribe({
       next: (updated) => {
         this.notifications = this.notifications.map((item) => item.id === updated.id ? updated : item);
-        this.successMessage = 'Notification marquee comme lue.';
+        this.successMessage = 'Notification marquée comme lue.';
         this.markingId = null;
       },
       error: () => {
@@ -88,5 +97,19 @@ export class StudentNotificationsPageComponent implements OnInit {
 
   trackByNotificationId(_: number, notification: UserNotification): number {
     return notification.id;
+  }
+
+  getNotificationBadgeLabel(notification: UserNotification): string {
+    const type = String(notification.type ?? '').toUpperCase();
+    if (type === 'DEMANDE_ENTREPRISE_REFUSEE') return 'Refus';
+    if (type === 'DEMANDE_ENTREPRISE_VALIDEE') return 'Approbation';
+    return notification.read ? 'Lue' : 'Non lue';
+  }
+
+  getNotificationBadgeClass(notification: UserNotification): string {
+    const type = String(notification.type ?? '').toUpperCase();
+    if (type === 'DEMANDE_ENTREPRISE_REFUSEE') return 'status-REJETEE';
+    if (type === 'DEMANDE_ENTREPRISE_VALIDEE') return 'status-VALIDEE';
+    return notification.read ? 'status-VALIDEE' : 'status-EN_ATTENTE';
   }
 }

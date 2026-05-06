@@ -10,6 +10,7 @@ import {
   StudentReport,
   StudentTrelloSummary
 } from '../../services/student/student.models';
+import { PdfWindowService } from '../../services/pdf-window.service';
 import { StudentPortalService } from '../../services/student/student-portal.service';
 
 @Component({
@@ -37,7 +38,10 @@ export class StudentFollowUpPageComponent implements OnInit {
   report: StudentReport | null = null;
   stageDocuments: StudentStageDocumentsOverview | null = null;
 
-  constructor(private studentPortalService: StudentPortalService) {}
+  constructor(
+    private studentPortalService: StudentPortalService,
+    private pdfWindowService: PdfWindowService
+  ) {}
 
   ngOnInit(): void {
     this.studentPortalService.listMyInternships().subscribe({
@@ -134,13 +138,13 @@ export class StudentFollowUpPageComponent implements OnInit {
       this.errorMessage = this.logbookBlockingMessage || "Impossible d'ouvrir le PDF du cahier de stage.";
       return;
     }
+    const pdfWindow = this.pdfWindowService.openPlaceholder('Cahier de stage');
     this.studentPortalService.downloadStageDocumentPdf(this.selectedInternship.id, 'cahier-stage').subscribe({
       next: (blob) => {
-        const url = URL.createObjectURL(blob);
-        window.open(url, '_blank');
-        setTimeout(() => URL.revokeObjectURL(url), 1000);
+        this.pdfWindowService.showPdf(pdfWindow, blob, { title: 'Cahier de stage' });
       },
       error: (error) => {
+        pdfWindow?.close();
         this.errorMessage = this.studentPortalService.describeError(error, "Impossible d'ouvrir le PDF du cahier de stage.");
       }
     });

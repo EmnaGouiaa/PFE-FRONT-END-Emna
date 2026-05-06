@@ -71,8 +71,14 @@ export class AdminEntreprisesComponent implements OnInit {
   }
 
   private extractErrorMessage(error: any, fallback: string): string {
+    const details = typeof error?.error?.details === 'string' ? error.error.details.trim() : '';
+    const message = typeof error?.error?.message === 'string' ? error.error.message.trim() : '';
+
+    if (message && details) {
+      return `${message} ${details}`;
+    }
     if (typeof error?.error === 'string' && error.error.trim()) return error.error;
-    if (typeof error?.error?.message === 'string' && error.error.message.trim()) return error.error.message;
+    if (message) return message;
     if (error?.error && typeof error.error === 'object') {
       const firstValue = Object.values(error.error).find(
         (value) => typeof value === 'string' && value.trim().length > 0

@@ -62,7 +62,7 @@ export class StudentReportPageComponent implements OnInit {
     this.studentPortalService.signReportAsStudent(this.report.id).subscribe({
       next: (report) => {
         this.report = report;
-        this.successMessage = 'Le cahier de stage a ete signe avec succes.';
+        this.successMessage = 'Le cahier de stage a été signé avec succès.';
         this.isSigning = false;
       },
       error: (error) => {
@@ -73,14 +73,14 @@ export class StudentReportPageComponent implements OnInit {
   }
 
   formatDate(value: string): string {
-    if (!value) return 'Non renseignee';
+    if (!value) return 'Non renseignée';
     const date = new Date(value);
     if (Number.isNaN(date.getTime())) return value;
     return date.toLocaleDateString('fr-FR');
   }
 
   formatUnknown(value: unknown): string {
-    if (value === null || value === undefined || value === '') return 'Non renseigne';
+    if (value === null || value === undefined || value === '') return 'Non renseigné';
     if (typeof value === 'object') return JSON.stringify(value);
     return String(value);
   }

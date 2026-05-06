@@ -178,9 +178,55 @@ type ValidationFilter = 'ALL' | 'EN_ATTENTE' | 'APPROUVEE' | 'REJETEE';
           </div>
         </article>
       </section>
+
+      <div class="refusal-modal-backdrop" *ngIf="rejectModalOpen" (click)="closeRejectModal()">
+        <section class="refusal-modal" (click)="$event.stopPropagation()">
+          <div class="refusal-hero">
+            <div class="refusal-icon" aria-hidden="true">!</div>
+            <div>
+              <div class="refusal-kicker">Refus responsable</div>
+              <h2>Motif du refus</h2>
+              <p>Le motif sera enregistré et affiché au stagiaire dans le détail de sa demande.</p>
+            </div>
+          </div>
+
+          <div class="refusal-context" *ngIf="requestBeingRejected">
+            <div><strong>Entreprise :</strong> {{ requestBeingRejected.nomEntreprise }}</div>
+            <div><strong>Étudiant :</strong> {{ requestBeingRejected.etudiant?.prenom || '-' }} {{ requestBeingRejected.etudiant?.nom || '' }}</div>
+          </div>
+
+          <label class="refusal-label" for="faculty-refusal-comment">Motif du refus</label>
+          <textarea
+            id="faculty-refusal-comment"
+            class="refusal-textarea"
+            [(ngModel)]="rejectComment"
+            [ngModelOptions]="{ standalone: true }"
+            rows="7"
+            maxlength="1000"
+            placeholder="Saisissez ici la raison du refus..."
+          ></textarea>
+
+          <div class="refusal-help">
+            <span>{{ rejectComment.trim().length }}/1000</span>
+            <span *ngIf="rejectValidationMessage" class="refusal-error">{{ rejectValidationMessage }}</span>
+          </div>
+
+          <div class="refusal-actions">
+            <button type="button" class="btn btn-secondary" (click)="closeRejectModal()">Annuler</button>
+            <button type="button" class="btn btn-danger" (click)="confirmReject()" [disabled]="isLoading">
+              Confirmer le refus
+            </button>
+          </div>
+        </section>
+      </div>
     </div>
   `,
-  styleUrls: ['../../admin/demandes-stage/admin-demandes-stage.component.css', '../../company/company-shared.css', '../faculty-shared.css']
+  styleUrls: [
+    '../../admin/demandes-stage/admin-demandes-stage.component.css',
+    '../../company/company-shared.css',
+    '../faculty-shared.css',
+    './faculty-company-requests.component.css'
+  ]
 })
 export class FacultyCompanyRequestsPageComponent implements OnInit {
   readonly StatutValidation = StatutValidation;
@@ -192,6 +238,10 @@ export class FacultyCompanyRequestsPageComponent implements OnInit {
   isLoading = false;
   errorMessage = '';
   successMessage = '';
+  rejectModalOpen = false;
+  rejectComment = '';
+  rejectValidationMessage = '';
+  requestBeingRejected: DemandeStage | null = null;
   searchQuery = '';
   adminFilter: ValidationFilter = 'ALL';
   responsibleFilter: ValidationFilter = 'ALL';
@@ -275,14 +325,35 @@ export class FacultyCompanyRequestsPageComponent implements OnInit {
     event.stopPropagation();
     if (!this.canAct(request)) return;
 
-    const comment = prompt('Motif de refus responsable (optionnel) :') ?? undefined;
-    if (!confirm(`Refuser la demande #${request.id} cote responsable universitaire ?`)) return;
+    this.requestBeingRejected = request;
+    this.rejectComment = '';
+    this.rejectValidationMessage = '';
+    this.rejectModalOpen = true;
+  }
+
+  closeRejectModal(): void {
+    this.rejectModalOpen = false;
+    this.rejectComment = '';
+    this.rejectValidationMessage = '';
+    this.requestBeingRejected = null;
+  }
+
+  confirmReject(): void {
+    const request = this.requestBeingRejected;
+    if (!request) return;
+
+    const comment = this.rejectComment.trim();
+    if (!comment) {
+      this.rejectValidationMessage = 'Veuillez saisir le motif du refus';
+      return;
+    }
 
     this.isLoading = true;
     this.demandeStageService.refuserResponsableStages(request.id, comment).subscribe({
       next: (updatedRequest) => {
-        this.successMessage = `Demande #${request.id} refusee cote responsable universitaire.`;
+        this.successMessage = 'La demande a été refusée avec succès';
         this.syncUpdatedRequest(updatedRequest);
+        this.closeRejectModal();
         this.isLoading = false;
       },
       error: (error) => {
@@ -293,7 +364,9 @@ export class FacultyCompanyRequestsPageComponent implements OnInit {
   }
 
   canAct(request: DemandeStage): boolean {
-    return (request.statutValidationResponsableStages ?? StatutValidation.EN_ATTENTE) === StatutValidation.EN_ATTENTE;
+    return request.statut === 'EN_ATTENTE'
+      && request.statutValidationAdmin !== StatutValidation.REJETEE
+      && (request.statutValidationResponsableStages ?? StatutValidation.EN_ATTENTE) === StatutValidation.EN_ATTENTE;
   }
 
   isFullyValidated(request: DemandeStage): boolean {

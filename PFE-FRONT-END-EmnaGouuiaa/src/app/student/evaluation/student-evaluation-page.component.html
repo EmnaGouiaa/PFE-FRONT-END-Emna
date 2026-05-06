@@ -1,8 +1,8 @@
 <div class="company-page student-page">
   <section class="page-hero">
     <div>
-      <h1>Evaluation</h1>
-      <p>Consultez votre fiche d evaluation si l API backend l expose au role stagiaire.</p>
+      <h1>Évaluation</h1>
+      <p>Consultez votre fiche d’évaluation si l’API backend l’expose au rôle stagiaire.</p>
     </div>
   </section>
 
@@ -13,7 +13,7 @@
     <div class="panel-header">
       <div>
         <h2>Choix du stage</h2>
-        <p class="panel-subtitle">La fiche d evaluation est liee au stage selectionne</p>
+        <p class="panel-subtitle">La fiche d’évaluation est liée au stage sélectionné.</p>
       </div>
     </div>
 
@@ -25,43 +25,43 @@
   </section>
 
   <div class="empty-card" *ngIf="isLoadingInternships">Chargement des stages...</div>
-  <div class="empty-card" *ngIf="!isLoadingInternships && !internships.length">Aucun stage disponible pour afficher une evaluation.</div>
+  <div class="empty-card" *ngIf="!isLoadingInternships && !internships.length">Aucun stage disponible pour afficher une évaluation.</div>
 
   <section class="panel" *ngIf="selectedInternship">
     <div class="panel-header">
       <div>
-        <h2>Fiche d evaluation</h2>
+          <h2>Fiche d’évaluation</h2>
         <p class="panel-subtitle">Consultation uniquement</p>
       </div>
     </div>
 
     <div class="empty-card" *ngIf="isLoadingData">Chargement de la fiche...</div>
-    <div class="empty-card" *ngIf="!isLoadingData && !evaluation && !infoMessage">Aucune fiche d evaluation disponible pour ce stage.</div>
+    <div class="empty-card" *ngIf="!isLoadingData && !evaluation && !infoMessage">Aucune fiche d’évaluation disponible pour ce stage.</div>
 
     <div class="detail-grid" *ngIf="evaluation">
       <div class="detail-item">
         <span class="label">Note finale</span>
-        <span class="value">{{ evaluation.noteFinale ?? 'Non renseignee' }}</span>
+        <span class="value">{{ evaluation.noteFinale ?? 'Non renseignée' }}</span>
       </div>
       <div class="detail-item">
-        <span class="label">Etat de la fiche</span>
-        <span class="value">{{ evaluation.complete ? 'Complete' : 'Partielle' }}</span>
+        <span class="label">État de la fiche</span>
+        <span class="value">{{ evaluation.complete ? 'Complète' : 'Partielle' }}</span>
       </div>
       <div class="detail-item full-width">
-        <span class="label">Points forts de l encadrant professionnel</span>
-        <span class="value">{{ evaluation.pointFortEncadrantPro || 'Non renseigne' }}</span>
+        <span class="label">Points forts de l’encadrant professionnel</span>
+        <span class="value">{{ evaluation.pointFortEncadrantPro || 'Non renseigné' }}</span>
       </div>
       <div class="detail-item full-width">
-        <span class="label">Axes d amelioration de l encadrant professionnel</span>
-        <span class="value">{{ evaluation.axeAmeliorationEncadrantPro || 'Non renseigne' }}</span>
+        <span class="label">Axes d’amélioration de l’encadrant professionnel</span>
+        <span class="value">{{ evaluation.axeAmeliorationEncadrantPro || 'Non renseigné' }}</span>
       </div>
       <div class="detail-item full-width">
         <span class="label">Points forts du responsable entreprise</span>
-        <span class="value">{{ evaluation.pointFortResponsableEntreprise || 'Non renseigne' }}</span>
+        <span class="value">{{ evaluation.pointFortResponsableEntreprise || 'Non renseigné' }}</span>
       </div>
       <div class="detail-item full-width">
-        <span class="label">Axes d amelioration du responsable entreprise</span>
-        <span class="value">{{ evaluation.axeAmeliorationResponsableEntreprise || 'Non renseigne' }}</span>
+        <span class="label">Axes d’amélioration du responsable entreprise</span>
+        <span class="value">{{ evaluation.axeAmeliorationResponsableEntreprise || 'Non renseigné' }}</span>
       </div>
     </div>
   </section>

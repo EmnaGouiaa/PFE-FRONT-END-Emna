@@ -47,8 +47,8 @@ export class AdminValidationListComponent implements OnInit {
         this.dataSource = requests;
         this.isLoading = false;
       },
-      error: (error) => {
-        this.snackBar.open('Error loading requests', 'Close', { duration: 3000 });
+      error: () => {
+        this.snackBar.open('Erreur lors du chargement des demandes.', 'Fermer', { duration: 3000 });
         this.isLoading = false;
       }
     });
@@ -60,14 +60,14 @@ export class AdminValidationListComponent implements OnInit {
       data: { request }
     });
 
-    dialogRef.afterClosed().subscribe(result => {
+    dialogRef.afterClosed().subscribe((result) => {
       if (result) {
         this.loadRequests();
         if (result.status === InternshipStatus.OFFICIAL) {
-           this.snackBar.open('Internship is now official!', '🎉', { 
-             duration: 5000,
-             panelClass: ['success-snackbar']
-           });
+          this.snackBar.open('Le stage a été officialisé avec succès.', 'Fermer', {
+            duration: 5000,
+            panelClass: ['success-snackbar']
+          });
         }
       }
     });
@@ -75,10 +75,14 @@ export class AdminValidationListComponent implements OnInit {
 
   getStatusClass(status: string): string {
     switch (status) {
-      case InternshipStatus.ACADEMICALLY_APPROVED: return 'status-approved-academic';
-      case InternshipStatus.OFFICIAL: return 'status-official';
-      case InternshipStatus.ADMIN_REJECTED: return 'status-rejected-admin';
-      default: return 'status-pending';
+      case InternshipStatus.ACADEMICALLY_APPROVED:
+        return 'status-approved-academic';
+      case InternshipStatus.OFFICIAL:
+        return 'status-official';
+      case InternshipStatus.ADMIN_REJECTED:
+        return 'status-rejected-admin';
+      default:
+        return 'status-pending';
     }
   }
 

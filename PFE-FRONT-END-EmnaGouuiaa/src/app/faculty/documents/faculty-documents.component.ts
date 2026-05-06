@@ -5,6 +5,7 @@ import {
   FacultyStageDocumentStatus,
   FacultyStageDocumentsOverview
 } from '../../services/faculty/faculty.models';
+import { PdfWindowService } from '../../services/pdf-window.service';
 
 type DocumentType = 'convention' | 'fiche-evaluation' | 'cahier-stage';
 
@@ -17,7 +18,7 @@ type DocumentType = 'convention' | 'fiche-evaluation' | 'cahier-stage';
       <header class="page-hero">
         <div>
           <h1>Documents de stage</h1>
-          <p>Convention et cahier de stage regroupes par stage, avec generation et consultation PDF selon votre role.</p>
+          <p>Supervisez la convention, la fiche d'évaluation et le cahier de stage depuis une vue unifiée par stage.</p>
         </div>
         <div class="hero-actions">
           <button type="button" class="btn btn-secondary" (click)="loadDocuments()" [disabled]="isLoading">Actualiser</button>
@@ -78,13 +79,28 @@ type DocumentType = 'convention' | 'fiche-evaluation' | 'cahier-stage';
             <section class="document-card" *ngFor="let doc of getDocumentEntries(item)">
               <div class="document-card__top">
                 <div>
+                  <div class="document-card__eyebrow">{{ getDocumentTypeLabel(doc.type) }}</div>
                   <div class="document-card__title">{{ doc.status.libelle }}</div>
-                  <div class="document-card__hint" *ngIf="!doc.status.disponible">{{ doc.status.raisonAbsence || 'Document non disponible pour le moment.' }}</div>
-                  <div class="document-card__hint" *ngIf="doc.status.disponible">Document pret a etre consulte au format PDF.</div>
+                  <div class="document-card__hint">{{ getDocumentDescription(doc.type, doc.status) }}</div>
                 </div>
-                <span class="status-pill" [ngClass]="doc.status.disponible ? 'status-positive' : 'status-warning'">
-                  {{ doc.status.disponible ? 'Disponible' : 'Manquant' }}
+                <span class="status-pill" [ngClass]="getStatusBadgeClass(doc.status)">
+                  {{ getStatusLabel(doc.status) }}
                 </span>
+              </div>
+
+              <div class="document-card__summary">
+                <div class="summary-item">
+                  <span class="label">Statut</span>
+                  <strong>{{ getStatusLabel(doc.status) }}</strong>
+                </div>
+                <div class="summary-item">
+                  <span class="label">Génération</span>
+                  <strong>{{ doc.status.generationAutorisee ? 'Autorisée' : 'Bloquée' }}</strong>
+                </div>
+                <div class="summary-item" *ngIf="doc.status.raisonAbsence">
+                  <span class="label">Cause</span>
+                  <strong>{{ doc.status.raisonAbsence }}</strong>
+                </div>
               </div>
 
               <div class="document-card__signing" *ngIf="doc.type === 'convention' && doc.status.disponible">
@@ -196,11 +212,42 @@ type DocumentType = 'convention' | 'fiche-evaluation' | 'cahier-stage';
       color: #0f172a;
     }
 
+    .document-card__eyebrow {
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: #1d4ed8;
+      margin-bottom: 0.3rem;
+      font-weight: 700;
+    }
+
     .document-card__hint {
       margin-top: 0.35rem;
       color: #6b7280;
       font-size: 0.95rem;
       line-height: 1.45;
+    }
+
+    .document-card__summary {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      gap: 0.75rem;
+    }
+
+    .summary-item {
+      border-radius: 14px;
+      background: rgba(255, 255, 255, 0.82);
+      border: 1px solid rgba(148, 163, 184, 0.16);
+      padding: 0.8rem 0.9rem;
+    }
+
+    .summary-item .label {
+      display: block;
+      font-size: 0.76rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: #64748b;
+      margin-bottom: 0.3rem;
     }
 
     .document-card__signing {
@@ -211,6 +258,11 @@ type DocumentType = 'convention' | 'fiche-evaluation' | 'cahier-stage';
     .status-neutral {
       background: rgba(148, 163, 184, 0.16);
       color: #475569;
+    }
+
+    .status-info {
+      background: rgba(191, 219, 254, 0.55);
+      color: #1d4ed8;
     }
 
     @media (max-width: 768px) {
@@ -229,7 +281,10 @@ export class FacultyDocumentsPageComponent implements OnInit {
   successMessage = '';
   pendingActionKey = '';
 
-  constructor(private facultyPortalService: FacultyPortalService) {}
+  constructor(
+    private facultyPortalService: FacultyPortalService,
+    private pdfWindowService: PdfWindowService
+  ) {}
 
   get availableDocumentsCount(): number {
     return this.stageDocuments.reduce((total, item) => total + this.getDocumentEntries(item).filter((doc) => doc.status.disponible).length, 0);
@@ -291,15 +346,15 @@ export class FacultyDocumentsPageComponent implements OnInit {
     this.pendingActionKey = this.buildActionKey(stageId, type);
     this.errorMessage = '';
     this.successMessage = '';
+    const pdfWindow = this.pdfWindowService.openPlaceholder(label);
 
     this.facultyPortalService.downloadStageDocumentPdf(stageId, type).subscribe({
       next: (blob) => {
-        const objectUrl = URL.createObjectURL(blob);
-        window.open(objectUrl, '_blank', 'noopener');
-        window.setTimeout(() => URL.revokeObjectURL(objectUrl), 60_000);
+        this.pdfWindowService.showPdf(pdfWindow, blob, { title: label });
         this.pendingActionKey = '';
       },
       error: (error) => {
+        pdfWindow?.close();
         this.errorMessage = this.extractErrorMessage(error, `Impossible d'ouvrir le PDF ${label}.`);
         this.pendingActionKey = '';
       }
@@ -345,6 +400,41 @@ export class FacultyDocumentsPageComponent implements OnInit {
 
   private buildActionKey(stageId: number, type: DocumentType): string {
     return `${stageId}:${type}`;
+  }
+
+  getDocumentTypeLabel(type: DocumentType): string {
+    if (type === 'convention') return 'Convention';
+    if (type === 'fiche-evaluation') return "Fiche d'évaluation";
+    return 'Cahier de stage';
+  }
+
+  getStatusLabel(status: FacultyStageDocumentStatus): string {
+    if (status.disponible && status.genere) return 'Généré';
+    if (status.disponible) return 'Signé';
+    if (status.generationAutorisee && !status.genere) return 'Prêt à générer';
+    if (status.documentId && !status.disponible) return 'En attente';
+    return status.statut || 'À remplir';
+  }
+
+  getStatusBadgeClass(status: FacultyStageDocumentStatus): string {
+    const label = this.getStatusLabel(status);
+    if (label === 'Signé' || label === 'Généré') return 'status-positive';
+    if (label === 'Prêt à générer') return 'status-info';
+    if (label === 'À remplir') return 'status-neutral';
+    return 'status-warning';
+  }
+
+  getDocumentDescription(type: DocumentType, status: FacultyStageDocumentStatus): string {
+    if (status.disponible) {
+      return 'Le document final est disponible pour vérification et consultation PDF.';
+    }
+    if (status.raisonAbsence) {
+      return status.raisonAbsence;
+    }
+    if (type === 'fiche-evaluation') {
+      return "La fiche d'évaluation restera indisponible tant qu'elle n'est pas suffisamment complétée et signée.";
+    }
+    return 'Le document n’est pas encore prêt pour la consultation.';
   }
 
   private extractErrorMessage(error: any, fallback: string): string {

@@ -5,6 +5,7 @@ import { ActivatedRoute, RouterModule } from '@angular/router';
 import { ConventionStage } from '../../models/convention-stage.model';
 import { API_BASE_URL } from '../../services/api.config';
 import { AuthentificationService, RoleUtilisateur } from '../../services/authentification.service';
+import { PdfWindowService } from '../../services/pdf-window.service';
 import { ServiceConventionService } from '../../services/service-convention.service';
 
 @Component({
@@ -27,7 +28,8 @@ export class AgreementDetailComponent implements OnInit {
     private route: ActivatedRoute,
     private conventions: ServiceConventionService,
     private auth: AuthentificationService,
-    private http: HttpClient
+    private http: HttpClient,
+    private pdfWindowService: PdfWindowService
   ) {}
 
   ngOnInit(): void {
@@ -52,7 +54,29 @@ export class AgreementDetailComponent implements OnInit {
   }
 
   imprimer(): void {
-    window.print();
+    if (!this.convention?.id) {
+      this.messageErreur = "Impossible d'imprimer cette convention.";
+      return;
+    }
+
+    const printWindow = this.pdfWindowService.openPlaceholder('Convention de stage');
+    if (!printWindow) {
+      this.messageErreur = "La fenêtre d'impression a été bloquée par le navigateur.";
+      return;
+    }
+
+    this.http.get(`${API_BASE_URL}/conventions-stage/${this.convention.id}/pdf`, { responseType: 'blob' }).subscribe({
+      next: (blob) => {
+        this.pdfWindowService.showPdf(printWindow, blob, {
+          title: 'Convention de stage',
+          autoPrint: true
+        });
+      },
+      error: () => {
+        printWindow.close();
+        this.messageErreur = "Impossible d'ouvrir la fenêtre d'impression du PDF.";
+      }
+    });
   }
 
   get role(): RoleUtilisateur | null {

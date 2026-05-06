@@ -2,7 +2,7 @@
   <section class="page-hero">
     <div>
       <h1>Réunions</h1>
-      <p>Consultez toutes les réunions liées à votre stage, avec les observations et comptes rendus disponibles.</p>
+      <p>Consultez vos réunions planifiées et identifiez immédiatement l'encadrant concerné pour chaque échange.</p>
     </div>
   </section>
 
@@ -12,7 +12,7 @@
     <div class="panel-header">
       <div>
         <h2>Stage concerné</h2>
-        <p class="panel-subtitle">Sélectionnez le stage pour afficher son agenda</p>
+        <p class="panel-subtitle">Sélectionnez le stage pour afficher ses réunions et les informations de vos encadrants.</p>
       </div>
     </div>
 
@@ -30,7 +30,7 @@
     <section class="panel">
       <div class="panel-header">
         <div>
-          <h2>A venir</h2>
+          <h2>À venir</h2>
           <p class="panel-subtitle">{{ upcomingMeetings.length }} réunion(s) programmée(s)</p>
         </div>
       </div>
@@ -40,13 +40,22 @@
       <div class="empty-card" *ngIf="!isLoadingMeetings && stageMeetings.length && !upcomingMeetings.length">Aucune réunion à venir.</div>
 
       <div class="stack" *ngIf="upcomingMeetings.length">
-        <article class="detail-card" *ngFor="let meeting of upcomingMeetings">
-          <div class="cell-title">
-            {{ meeting.numReunion || ('Réunion #' + meeting.id) }}
-            <span class="status-pill status-neutral">{{ meeting.source === 'FINALE' ? 'Finale' : 'Hebdomadaire' }}</span>
+        <article class="detail-card meeting-card" *ngFor="let meeting of upcomingMeetings">
+          <div class="meeting-card-top">
+            <span class="status-pill" [ngClass]="getSupervisorBadgeClass(meeting)">
+              Encadrant {{ getSupervisorTypeLabel(meeting) }}
+            </span>
+            <span class="status-pill status-neutral">{{ meeting.source === 'FINALE' ? 'Réunion finale' : 'Réunion de suivi' }}</span>
           </div>
+
+          <div class="cell-title meeting-title">{{ getMeetingTitle(meeting) }}</div>
           <div class="cell-sub">{{ formatDate(meeting.date) }} · {{ meeting.heure || 'Heure non renseignée' }}</div>
-          <div class="cell-sub">{{ meeting.observation || 'Sans observation' }}</div>
+          <div class="meeting-summary">
+            <span class="meeting-meta-label">Nom de l'encadrant</span>
+            <strong>{{ getSupervisorName(meeting) }}</strong>
+          </div>
+          <div class="cell-sub">{{ meeting.observation || 'Aucune observation renseignée.' }}</div>
+
           <button type="button" class="btn btn-ghost" (click)="selectMeeting(meeting)">Détails</button>
         </article>
       </div>
@@ -63,13 +72,22 @@
       <div class="empty-card" *ngIf="!isLoadingMeetings && stageMeetings.length && !pastMeetings.length">Aucune réunion passée.</div>
 
       <div class="stack" *ngIf="pastMeetings.length">
-        <article class="detail-card" *ngFor="let meeting of pastMeetings">
-          <div class="cell-title">
-            {{ meeting.numReunion || ('Réunion #' + meeting.id) }}
-            <span class="status-pill status-neutral">{{ meeting.source === 'FINALE' ? 'Finale' : 'Hebdomadaire' }}</span>
+        <article class="detail-card meeting-card" *ngFor="let meeting of pastMeetings">
+          <div class="meeting-card-top">
+            <span class="status-pill" [ngClass]="getSupervisorBadgeClass(meeting)">
+              Encadrant {{ getSupervisorTypeLabel(meeting) }}
+            </span>
+            <span class="status-pill status-neutral">{{ meeting.source === 'FINALE' ? 'Réunion finale' : 'Réunion de suivi' }}</span>
           </div>
+
+          <div class="cell-title meeting-title">{{ getMeetingTitle(meeting) }}</div>
           <div class="cell-sub">{{ formatDate(meeting.date) }} · {{ meeting.heure || 'Heure non renseignée' }}</div>
-          <div class="cell-sub">{{ meeting.compteRendu || meeting.observation || 'Sans détail' }}</div>
+          <div class="meeting-summary">
+            <span class="meeting-meta-label">Nom de l'encadrant</span>
+            <strong>{{ getSupervisorName(meeting) }}</strong>
+          </div>
+          <div class="cell-sub">{{ meeting.compteRendu || meeting.observation || 'Sans détail supplémentaire.' }}</div>
+
           <button type="button" class="btn btn-ghost" (click)="selectMeeting(meeting)">Détails</button>
         </article>
       </div>
@@ -84,11 +102,25 @@
       </div>
 
       <div class="form">
-        <div class="panel-subtitle">{{ selectedMeeting.source === 'FINALE' ? 'Réunion finale' : 'Réunion hebdomadaire' }}</div>
+        <div class="meeting-detail-banner">
+          <span class="status-pill" [ngClass]="getSupervisorBadgeClass(selectedMeeting)">
+            Encadrant {{ getSupervisorTypeLabel(selectedMeeting) }}
+          </span>
+          <strong>{{ getSupervisorName(selectedMeeting) }}</strong>
+        </div>
+
         <div class="detail-grid">
+          <div class="detail-item full-width">
+            <span class="label">Titre de la réunion</span>
+            <span class="value">{{ getMeetingTitle(selectedMeeting) }}</span>
+          </div>
           <div class="detail-item">
             <span class="label">Référence</span>
             <span class="value">{{ selectedMeeting.numReunion || ('Réunion #' + selectedMeeting.id) }}</span>
+          </div>
+          <div class="detail-item">
+            <span class="label">Type</span>
+            <span class="value">{{ selectedMeeting.source === 'FINALE' ? 'Réunion finale' : 'Réunion de suivi' }}</span>
           </div>
           <div class="detail-item">
             <span class="label">Date</span>
@@ -102,16 +134,20 @@
             <span class="label">Stage</span>
             <span class="value">{{ selectedMeeting.stageTitre || 'Non renseigné' }}</span>
           </div>
+          <div class="detail-item">
+            <span class="label">Entreprise</span>
+            <span class="value">{{ selectedMeeting.entrepriseNom || 'Non renseignée' }}</span>
+          </div>
           <div class="detail-item full-width">
             <span class="label">Observation</span>
-            <span class="value">{{ selectedMeeting.observation || 'Aucune observation' }}</span>
+            <span class="value">{{ selectedMeeting.observation || 'Aucune observation.' }}</span>
           </div>
           <div class="detail-item full-width">
             <span class="label">Compte rendu</span>
-            <span class="value">{{ selectedMeeting.compteRendu || 'Aucun compte rendu disponible' }}</span>
+            <span class="value">{{ selectedMeeting.compteRendu || 'Aucun compte rendu disponible.' }}</span>
           </div>
           <div class="detail-item" *ngIf="selectedMeeting.source === 'FINALE'">
-            <span class="label">Formulaire d’évaluation</span>
+            <span class="label">Formulaire d'évaluation</span>
             <span class="value">{{ selectedMeeting.urlFormEvaluation || 'Aucun lien défini' }}</span>
           </div>
         </div>

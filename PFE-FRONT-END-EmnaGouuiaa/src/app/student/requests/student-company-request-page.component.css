@@ -1,0 +1,72 @@
+.field-error {
+  margin-top: 6px;
+  color: #b91c1c;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.status-alert {
+  margin-top: 16px;
+  padding: 16px 18px;
+  border-radius: 18px;
+  border: 1px solid transparent;
+}
+
+.status-alert-rejected {
+  background: linear-gradient(135deg, rgba(225, 29, 72, 0.12), rgba(254, 202, 202, 0.34));
+  border-color: rgba(225, 29, 72, 0.18);
+}
+
+.status-alert-title {
+  color: #b91c1c;
+  font-weight: 800;
+}
+
+.status-alert-subtitle {
+  margin-top: 4px;
+  color: #7f1d1d;
+}
+
+.meta-grid {
+  display: grid;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.meta-item {
+  display: grid;
+  gap: 4px;
+}
+
+.meta-label {
+  color: var(--text-muted);
+  font-size: 0.86rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.meta-value {
+  color: var(--text-main);
+  font-weight: 600;
+}
+
+.refusal-card {
+  margin-top: 14px;
+  padding: 16px 18px;
+  border-radius: 18px;
+  background: linear-gradient(135deg, rgba(251, 113, 133, 0.12), rgba(254, 215, 170, 0.22));
+  border: 1px solid rgba(225, 29, 72, 0.14);
+}
+
+.refusal-title {
+  margin-bottom: 6px;
+  color: #be123c;
+  font-weight: 800;
+}
+
+.refusal-card p {
+  margin: 0;
+  color: var(--text-main);
+  line-height: 1.6;
+}

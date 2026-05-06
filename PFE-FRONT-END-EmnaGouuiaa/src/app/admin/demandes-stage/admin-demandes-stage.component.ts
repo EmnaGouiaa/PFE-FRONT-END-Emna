@@ -23,6 +23,10 @@ export class AdminDemandesStageComponent implements OnInit {
   isLoading = false;
   errorMessage = '';
   successMessage = '';
+  rejectModalOpen = false;
+  rejectComment = '';
+  rejectValidationMessage = '';
+  demandeEnCoursDeRefus: DemandeStage | null = null;
 
   searchQuery = '';
   filtreAdmin: FiltreValidation = 'ALL';
@@ -111,7 +115,7 @@ export class AdminDemandesStageComponent implements OnInit {
         .toLowerCase();
 
       const matchRecherche = !recherche || cible.includes(recherche);
-      const matchAdmin = this.matchValidation(this.filtreAdmin, d.statutValidationAdmin);
+      const matchAdmin = this.matchValidation(this.filtreAdmin, this.getEffectiveAdminStatus(d));
       const statutResp = d.statutValidationResponsableStages ?? StatutValidation.EN_ATTENTE;
       const matchResp = this.matchValidation(this.filtreResponsable, statutResp);
 
@@ -163,19 +167,39 @@ export class AdminDemandesStageComponent implements OnInit {
   }
 
   refuserAdmin(demande: DemandeStage): void {
-    console.log('[AdminDemandesStage] refuserAdmin click', demande?.id);
+    this.demandeEnCoursDeRefus = demande;
+    this.rejectComment = '';
+    this.rejectValidationMessage = '';
+    this.rejectModalOpen = true;
+  }
+
+  fermerFenetreRefus(): void {
+    this.rejectModalOpen = false;
+    this.rejectComment = '';
+    this.rejectValidationMessage = '';
+    this.demandeEnCoursDeRefus = null;
+  }
+
+  confirmerRefusAdmin(): void {
+    const demande = this.demandeEnCoursDeRefus;
+    if (!demande) return;
+
     const adminId = this.serviceAuthentification.getUserId();
     if (!adminId) {
       this.errorMessage = 'Identifiant admin introuvable (session).';
       return;
     }
 
-    const commentaire = prompt('Motif de refus (optionnel) :') ?? undefined;
-    if (!confirm(`Refuser la demande #${demande.id} en tant qu'administrateur ?`)) return;
+    const commentaire = this.rejectComment.trim();
+    if (!commentaire) {
+      this.rejectValidationMessage = 'Veuillez saisir le motif du refus';
+      return;
+    }
 
     this.isLoading = true;
     this.errorMessage = '';
     this.successMessage = '';
+    this.rejectValidationMessage = '';
 
     this.serviceDemandeStage.refuserAdmin(demande.id, adminId, commentaire).pipe(
       timeout(15000)
@@ -183,8 +207,9 @@ export class AdminDemandesStageComponent implements OnInit {
       next: (updatedDemande) => {
         try {
           console.log('[AdminDemandesStage] refuserAdmin success', demande?.id);
-          this.successMessage = `Demande #${demande.id} refusee.`;
+          this.successMessage = 'La demande a été refusée avec succès';
           this.upsertDemandeInState(updatedDemande);
+          this.fermerFenetreRefus();
 
           if (!updatedDemande || !Number.isFinite(updatedDemande.id) || updatedDemande.id <= 0) {
             this.chargerDemandes();
@@ -213,7 +238,7 @@ export class AdminDemandesStageComponent implements OnInit {
   }
 
   countAdmin(status: StatutValidation): number {
-    return this.demandes.filter((d) => d.statutValidationAdmin === status).length;
+    return this.demandes.filter((d) => this.getEffectiveAdminStatus(d) === status).length;
   }
 
   countResponsable(status: StatutValidation): number {
@@ -223,7 +248,16 @@ export class AdminDemandesStageComponent implements OnInit {
   }
 
   canAdminAct(d: DemandeStage): boolean {
-    return d.statutValidationAdmin === StatutValidation.EN_ATTENTE;
+    return d.statut === 'EN_ATTENTE'
+      && d.statutValidationAdmin === StatutValidation.EN_ATTENTE
+      && (d.statutValidationResponsableStages ?? StatutValidation.EN_ATTENTE) !== StatutValidation.REJETEE;
+  }
+
+  getEffectiveAdminStatus(d: DemandeStage): StatutValidation {
+    if (d.statut === 'REJETEE' && d.statutValidationAdmin === StatutValidation.EN_ATTENTE) {
+      return StatutValidation.REJETEE;
+    }
+    return d.statutValidationAdmin ?? StatutValidation.EN_ATTENTE;
   }
 
   badgeClass(statut: StatutValidation | undefined): string {
