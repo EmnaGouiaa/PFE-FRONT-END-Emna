@@ -1,15 +1,24 @@
 import { Component, OnInit } from '@angular/core';
+<<<<<<< HEAD
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { switchMap } from 'rxjs/operators';
 import { ProfileCompletionService } from '../services/profile-completion.service';
 import { DonneesProfil, ServiceProfilService } from '../services/service-profil.service';
+=======
+import { ServiceProfilService, DonneesProfil, MiseAJourProfil, MiseAJourMotDePasse } from '../services/service-profil.service';
+import { AuthentificationService } from '../services/authentification.service';
+import { Router } from '@angular/router';
+import { CommonModule } from '@angular/common';
+import { FormsModule, ReactiveFormsModule, FormGroup, FormBuilder, Validators } from '@angular/forms';
+>>>>>>> 2d3d62c5d004508496c215ced2ea02973e183bc3
 
 @Component({
   selector: 'app-profile-management',
   standalone: true,
   imports: [CommonModule, FormsModule, ReactiveFormsModule],
   templateUrl: './profile-management.component.html',
+<<<<<<< HEAD
   styleUrls: ['../admin/dashboard/admin-dashboard.css', '../company/company-shared.css', './profile-management.component.css']
 })
 export class ProfileManagementComponent implements OnInit {
@@ -34,6 +43,29 @@ export class ProfileManagementComponent implements OnInit {
   constructor(
     private serviceProfil: ServiceProfilService,
     private profileCompletionService: ProfileCompletionService,
+=======
+  styleUrls: ['./profile-management.component.css']
+})
+export class ProfileManagementComponent implements OnInit {
+  
+  profil: DonneesProfil | null = null;
+  enChargement = false;
+  enregistrementEnCours = false;
+  modificationMotDePasseEnCours = false;
+  afficherChampsMotDePasse = false;
+  
+  formulaireProfil!: FormGroup;
+  formulaireMotDePasse!: FormGroup;
+  
+  messageErreur: string | null = null;
+  messageSucces: string | null = null;
+  erreursValidation: string[] = [];
+  
+  constructor(
+    private serviceProfil: ServiceProfilService,
+    private serviceAuthentification: AuthentificationService,
+    private router: Router,
+>>>>>>> 2d3d62c5d004508496c215ced2ea02973e183bc3
     private fb: FormBuilder
   ) {}
 
@@ -42,6 +74,7 @@ export class ProfileManagementComponent implements OnInit {
     this.chargerProfil();
   }
 
+<<<<<<< HEAD
   get roleLabel(): string {
     return this.profil ? this.getNomAffichageRole(this.profil.role) : 'Utilisateur';
   }
@@ -66,11 +99,16 @@ export class ProfileManagementComponent implements OnInit {
   initialiserFormulaires(): void {
     this.formulaireProfil = this.fb.group({
       email: ['', [Validators.required, Validators.email, Validators.maxLength(150)]],
+=======
+  initialiserFormulaires(): void {
+    this.formulaireProfil = this.fb.group({
+>>>>>>> 2d3d62c5d004508496c215ced2ea02973e183bc3
       prenom: ['', [Validators.required, Validators.minLength(2)]],
       nom: ['', [Validators.required, Validators.minLength(2)]],
       telephone: ['', [Validators.maxLength(20)]],
       adresse: [''],
       poste: [''],
+<<<<<<< HEAD
       service: [''],
       specialite: [''],
       grade: [''],
@@ -81,6 +119,9 @@ export class ProfileManagementComponent implements OnInit {
 
     this.formulaireConfirmationEmail = this.fb.group({
       motDePasse: ['', Validators.required]
+=======
+      specialite: ['']
+>>>>>>> 2d3d62c5d004508496c215ced2ea02973e183bc3
     });
 
     this.formulaireMotDePasse = this.fb.group({
@@ -92,17 +133,27 @@ export class ProfileManagementComponent implements OnInit {
 
   chargerProfil(): void {
     this.enChargement = true;
+<<<<<<< HEAD
     this.messageErreur = null;
 
+=======
+>>>>>>> 2d3d62c5d004508496c215ced2ea02973e183bc3
     this.serviceProfil.getProfil().subscribe({
       next: (profil) => {
         this.profil = profil;
         this.remplirFormulaire();
+<<<<<<< HEAD
         this.modeEditionProfil = false;
         this.enChargement = false;
       },
       error: (err) => {
         this.messageErreur = err?.error?.message || 'Échec du chargement du profil.';
+=======
+        this.enChargement = false;
+      },
+      error: () => {
+        this.messageErreur = 'Échec du chargement du profil.';
+>>>>>>> 2d3d62c5d004508496c215ced2ea02973e183bc3
         this.enChargement = false;
       }
     });
@@ -110,14 +161,19 @@ export class ProfileManagementComponent implements OnInit {
 
   remplirFormulaire(): void {
     if (!this.profil) return;
+<<<<<<< HEAD
 
     this.formulaireProfil.patchValue({
       email: this.profil.email,
+=======
+    this.formulaireProfil.patchValue({
+>>>>>>> 2d3d62c5d004508496c215ced2ea02973e183bc3
       prenom: this.profil.prenom,
       nom: this.profil.nom,
       telephone: this.profil.telephone || '',
       adresse: this.profil.adresse || '',
       poste: this.profil.poste || '',
+<<<<<<< HEAD
       service: this.profil.service || '',
       specialite: this.profil.specialite || '',
       grade: this.profil.grade || '',
@@ -154,11 +210,19 @@ export class ProfileManagementComponent implements OnInit {
       return;
     }
 
+=======
+      specialite: this.profil.specialite || ''
+    });
+  }
+
+  mettreAJourProfil(): void {
+>>>>>>> 2d3d62c5d004508496c215ced2ea02973e183bc3
     if (this.formulaireProfil.invalid) {
       this.marquerChampsCommeTouches(this.formulaireProfil);
       return;
     }
 
+<<<<<<< HEAD
     if (this.emailModifie()) {
       this.ouvrirConfirmationEmail();
       return;
@@ -204,10 +268,24 @@ export class ProfileManagementComponent implements OnInit {
         this.messageErreurConfirmationEmail = message.includes('Mot de passe') ? 'Mot de passe incorrect' : message;
         this.enregistrementEnCours = false;
         this.modificationEmailEnCours = false;
+=======
+    this.enregistrementEnCours = true;
+    this.serviceProfil.mettreAJourProfil(this.formulaireProfil.value).subscribe({
+      next: (reponse) => {
+        this.messageSucces = 'Profil mis à jour avec succès !';
+        this.profil = reponse;
+        this.enregistrementEnCours = false;
+        setTimeout(() => this.messageSucces = null, 3000);
+      },
+      error: (err) => {
+        this.messageErreur = err.error?.message || 'Erreur lors de la mise à jour.';
+        this.enregistrementEnCours = false;
+>>>>>>> 2d3d62c5d004508496c215ced2ea02973e183bc3
       }
     });
   }
 
+<<<<<<< HEAD
   annulerModificationEmail(): void {
     if (this.profil) {
       this.formulaireProfil.patchValue({ email: this.profil.email });
@@ -217,6 +295,8 @@ export class ProfileManagementComponent implements OnInit {
     this.formulaireConfirmationEmail.reset();
   }
 
+=======
+>>>>>>> 2d3d62c5d004508496c215ced2ea02973e183bc3
   mettreAJourMotDePasse(): void {
     if (this.formulaireMotDePasse.invalid) {
       this.marquerChampsCommeTouches(this.formulaireMotDePasse);
@@ -229,6 +309,7 @@ export class ProfileManagementComponent implements OnInit {
       return;
     }
 
+<<<<<<< HEAD
     const erreursValidationMotDePasse = this.serviceProfil.validerMotDePasse(donneesPass.nouveauMotDePasse);
     if (!erreursValidationMotDePasse.estValide) {
       this.messageErreur = erreursValidationMotDePasse.erreurs[0];
@@ -249,11 +330,25 @@ export class ProfileManagementComponent implements OnInit {
       },
       error: (err) => {
         this.messageErreur = this.extraireMessageErreur(err, 'Erreur de mise à jour du mot de passe.');
+=======
+    this.modificationMotDePasseEnCours = true;
+    this.serviceProfil.mettreAJourMotDePasse(donneesPass).subscribe({
+      next: () => {
+        this.messageSucces = 'Mot de passe mis à jour !';
+        this.modificationMotDePasseEnCours = false;
+        this.formulaireMotDePasse.reset();
+        this.afficherChampsMotDePasse = false;
+        setTimeout(() => this.messageSucces = null, 3000);
+      },
+      error: (err) => {
+        this.messageErreur = err.error?.message || 'Erreur de mise à jour du mot de passe.';
+>>>>>>> 2d3d62c5d004508496c215ced2ea02973e183bc3
         this.modificationMotDePasseEnCours = false;
       }
     });
   }
 
+<<<<<<< HEAD
   marquerChampsCommeTouches(formGroup: FormGroup): void {
     Object.values(formGroup.controls).forEach((control) => control.markAsTouched());
   }
@@ -261,12 +356,32 @@ export class ProfileManagementComponent implements OnInit {
   preparerAjoutSignature(): void {
     this.activerEditionProfil();
     this.formulaireProfil.get('nomFichierSignature')?.markAsTouched();
+=======
+  desactiverCompte(): void {
+    if (!confirm('Voulez-vous vraiment désactiver votre compte ?')) return;
+    this.serviceProfil.desactiverCompte().subscribe({
+      next: () => {
+        alert('Compte désactivé. Vous allez être déconnecté.');
+        this.deconnexion();
+      }
+    });
+  }
+
+  deconnexion(): void {
+    this.serviceAuthentification.deconnexion();
+    this.router.navigate(['/connexion']);
+  }
+
+  marquerChampsCommeTouches(formGroup: FormGroup): void {
+    Object.values(formGroup.controls).forEach(control => control.markAsTouched());
+>>>>>>> 2d3d62c5d004508496c215ced2ea02973e183bc3
   }
 
   getNomAffichageRole(role: string): string {
     return this.serviceProfil.getNomAffichageRole(role);
   }
 
+<<<<<<< HEAD
   afficherChampSpecifique(nomChamp: string): boolean {
     if (!this.profil) return false;
     const autorises = this.profil.champsProfilAutorises?.length
@@ -372,4 +487,9 @@ export class ProfileManagementComponent implements OnInit {
   private normaliserEmail(email: unknown): string {
     return String(email ?? '').trim().toLowerCase();
   }
+=======
+  formaterDate(date: string): string {
+    return this.serviceProfil.formaterDate(date);
+  }
+>>>>>>> 2d3d62c5d004508496c215ced2ea02973e183bc3
 }

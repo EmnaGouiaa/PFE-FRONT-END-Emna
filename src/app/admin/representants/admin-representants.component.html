@@ -26,7 +26,11 @@
           <th>Nom</th>
           <th>Email</th>
           <th>Telephone</th>
+<<<<<<< HEAD
           <th>Entreprise</th>
+=======
+          <th>Entreprise ID</th>
+>>>>>>> 2d3d62c5d004508496c215ced2ea02973e183bc3
           <th>Actions</th>
         </tr>
       </thead>
@@ -36,10 +40,14 @@
           <td>{{ r.prenom }} {{ r.nom }}</td>
           <td>{{ r.email || '-' }}</td>
           <td>{{ r.telephone || '-' }}</td>
+<<<<<<< HEAD
           <td>
             <div class="cell-title">{{ r.entrepriseNom || '-' }}</div>
             <div class="cell-sub" *ngIf="r.entrepriseId">ID: {{ r.entrepriseId }}</div>
           </td>
+=======
+          <td>{{ r.entrepriseId ?? '-' }}</td>
+>>>>>>> 2d3d62c5d004508496c215ced2ea02973e183bc3
           <td class="actions">
             <button class="btn btn-secondary" (click)="openEdit(r)" [disabled]="isLoading">Modifier</button>
           </td>
@@ -57,7 +65,11 @@
 
       <form [formGroup]="form" (ngSubmit)="submit()" class="form">
         <label>Prenom *</label>
+<<<<<<< HEAD
         <input class="input" formControlName="prenom" autofocus />
+=======
+        <input class="input" formControlName="prenom" />
+>>>>>>> 2d3d62c5d004508496c215ced2ea02973e183bc3
 
         <label>Nom *</label>
         <input class="input" formControlName="nom" />

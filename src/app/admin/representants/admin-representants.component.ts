@@ -1,7 +1,10 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
+<<<<<<< HEAD
 import { timeout } from 'rxjs/operators';
+=======
+>>>>>>> 2d3d62c5d004508496c215ced2ea02973e183bc3
 import {
   ResponsablesEntrepriseService,
   ResponsableEntreprise,
@@ -73,6 +76,7 @@ export class AdminRepresentantsComponent implements OnInit {
     console.log('[AdminRepresentants] load triggered');
     this.isLoading = true;
     this.errorMessage = '';
+<<<<<<< HEAD
     this.service.list().pipe(
       timeout(15000)
     ).subscribe({
@@ -92,6 +96,19 @@ export class AdminRepresentantsComponent implements OnInit {
         } finally {
           this.isLoading = false;
         }
+=======
+    this.service.list().subscribe({
+      next: (items) => {
+        console.log('[AdminRepresentants] list success', items?.length ?? 0);
+        this.representants = [...(items ?? [])];
+        this.filtered = [...this.representants];
+        this.isLoading = false;
+      },
+      error: (err) => {
+        console.error('Error loading representants:', err);
+        this.errorMessage = this.extractErrorMessage(err, 'Echec du chargement des representants.');
+        this.isLoading = false;
+>>>>>>> 2d3d62c5d004508496c215ced2ea02973e183bc3
       }
     });
   }
@@ -160,6 +177,7 @@ export class AdminRepresentantsComponent implements OnInit {
         entrepriseId
       };
 
+<<<<<<< HEAD
       this.service.update(this.editingId, payload).pipe(
         timeout(15000)
       ).subscribe({
@@ -184,6 +202,24 @@ export class AdminRepresentantsComponent implements OnInit {
           } finally {
             this.isLoading = false;
           }
+=======
+      this.service.update(this.editingId, payload).subscribe({
+        next: (updatedRepresentant) => {
+          console.log('[AdminRepresentants] update success', this.editingId);
+          this.successMessage = 'Representant mis a jour avec succes.';
+          this.closeForm();
+          this.upsertRepresentantInState(updatedRepresentant);
+          this.isLoading = false;
+
+          if (!updatedRepresentant || !Number.isFinite(updatedRepresentant.id) || updatedRepresentant.id <= 0) {
+            this.load();
+          }
+        },
+        error: (err) => {
+          console.error('Error updating representant:', err);
+          this.errorMessage = this.extractErrorMessage(err, 'Echec de la mise a jour.');
+          this.isLoading = false;
+>>>>>>> 2d3d62c5d004508496c215ced2ea02973e183bc3
         }
       });
       return;
@@ -197,6 +233,7 @@ export class AdminRepresentantsComponent implements OnInit {
       entrepriseId
     };
 
+<<<<<<< HEAD
     this.service.create(payload).pipe(
       timeout(15000)
     ).subscribe({
@@ -221,6 +258,24 @@ export class AdminRepresentantsComponent implements OnInit {
         } finally {
           this.isLoading = false;
         }
+=======
+    this.service.create(payload).subscribe({
+      next: (createdRepresentant) => {
+        console.log('[AdminRepresentants] create success');
+        this.successMessage = 'Representant cree avec succes.';
+        this.closeForm();
+        this.upsertRepresentantInState(createdRepresentant);
+        this.isLoading = false;
+
+        if (!createdRepresentant || !Number.isFinite(createdRepresentant.id) || createdRepresentant.id <= 0) {
+          this.load();
+        }
+      },
+      error: (err) => {
+        console.error('Error creating representant:', err);
+        this.errorMessage = this.extractErrorMessage(err, 'Echec de la creation.');
+        this.isLoading = false;
+>>>>>>> 2d3d62c5d004508496c215ced2ea02973e183bc3
       }
     });
   }

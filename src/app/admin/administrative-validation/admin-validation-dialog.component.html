@@ -1,5 +1,6 @@
 <h2 mat-dialog-title>
   <mat-icon>assignment_turned_in</mat-icon>
+<<<<<<< HEAD
   Confirmation du stage
 </h2>
 
@@ -14,6 +15,23 @@
       <div class="info-item">
         <label>Sujet</label>
         <span>{{ request.internshipSubject }}</span>
+=======
+  Internship Confirmation
+</h2>
+
+<mat-dialog-content class="dialog-content">
+  <!-- Detail View -->
+  <div class="details-section">
+    <h3>📂 Request Details</h3>
+    <div class="info-grid">
+      <div class="info-item">
+        <label>Student Name</label>
+        <span>{{request.student.prenom}} {{request.student.nom}}</span>
+      </div>
+      <div class="info-item">
+        <label>Subject</label>
+        <span>{{request.internshipSubject}}</span>
+>>>>>>> 2d3d62c5d004508496c215ced2ea02973e183bc3
       </div>
     </div>
   </div>
@@ -21,6 +39,7 @@
   <mat-divider></mat-divider>
 
   <div class="details-section">
+<<<<<<< HEAD
     <h3>Encadrant professionnel</h3>
     <div class="info-grid">
       <div class="info-item">
@@ -34,6 +53,21 @@
       <div class="info-item">
         <label>Entreprise</label>
         <span>{{ request.companyName }}</span>
+=======
+    <h3>👨‍💼 Professional Supervisor</h3>
+    <div class="info-grid">
+      <div class="info-item">
+        <label>Name</label>
+        <span>{{request.supervisorName}}</span>
+      </div>
+      <div class="info-item">
+        <label>Email</label>
+        <span>{{request.supervisorEmail}}</span>
+      </div>
+      <div class="info-item">
+        <label>Company</label>
+        <span>{{request.companyName}}</span>
+>>>>>>> 2d3d62c5d004508496c215ced2ea02973e183bc3
       </div>
     </div>
   </div>
@@ -41,6 +75,7 @@
   <mat-divider></mat-divider>
 
   <div class="details-section">
+<<<<<<< HEAD
     <h3>Validation académique</h3>
     <div class="info-grid">
       <div class="info-item full-width">
@@ -50,12 +85,24 @@
       <div class="info-item">
         <label>Date</label>
         <span>{{ request.academicValidationDate | date:'medium' }}</span>
+=======
+    <h3>🎓 Academic Validation</h3>
+    <div class="info-grid">
+      <div class="info-item full-width">
+        <label>Supervisor Comment</label>
+        <p class="comment-text">{{request.academicComments || 'No comment provided.'}}</p>
+      </div>
+      <div class="info-item">
+        <label>Date</label>
+        <span>{{request.academicValidationDate | date:'medium'}}</span>
+>>>>>>> 2d3d62c5d004508496c215ced2ea02973e183bc3
       </div>
     </div>
   </div>
 
   <mat-divider></mat-divider>
 
+<<<<<<< HEAD
   <form [formGroup]="validationForm" class="action-form">
     <mat-form-field appearance="outline" class="full-width">
       <mat-label>Commentaire administratif</mat-label>
@@ -63,12 +110,23 @@
       <mat-hint>Le commentaire est obligatoire en cas de refus.</mat-hint>
       <mat-error *ngIf="validationForm.get('comment')?.hasError('required')">
         Un commentaire est requis pour un refus.
+=======
+  <!-- Action Section -->
+  <form [formGroup]="validationForm" class="action-form">
+    <mat-form-field appearance="outline" class="full-width">
+      <mat-label>Administrative Comment</mat-label>
+      <textarea matInput formControlName="comment" placeholder="Enter your final confirmation or rejection reason..." rows="3"></textarea>
+      <mat-hint>Comment is mandatory for rejections.</mat-hint>
+      <mat-error *ngIf="validationForm.get('comment')?.hasError('required')">
+        A comment is required for rejection.
+>>>>>>> 2d3d62c5d004508496c215ced2ea02973e183bc3
       </mat-error>
     </mat-form-field>
   </form>
 </mat-dialog-content>
 
 <mat-dialog-actions align="end">
+<<<<<<< HEAD
   <button mat-button (click)="onCancel()" [disabled]="isProcessing">Annuler</button>
   <button mat-flat-button color="warn" (click)="onReject()" [disabled]="isProcessing">
     <mat-icon>cancel</mat-icon>
@@ -77,5 +135,15 @@
   <button mat-flat-button color="primary" (click)="onApprove()" [disabled]="isProcessing">
     <mat-icon>check_circle</mat-icon>
     Officialiser
+=======
+  <button mat-button (click)="onCancel()" [disabled]="isProcessing">Cancel</button>
+  <button mat-flat-button color="warn" (click)="onReject()" [disabled]="isProcessing">
+    <mat-icon>cancel</mat-icon>
+    Reject
+  </button>
+  <button mat-flat-button color="primary" (click)="onApprove()" [disabled]="isProcessing">
+    <mat-icon>check_circle</mat-icon>
+    Officialize
+>>>>>>> 2d3d62c5d004508496c215ced2ea02973e183bc3
   </button>
 </mat-dialog-actions>

@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 import { CommonModule } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
 import { Component, OnInit } from '@angular/core';
@@ -165,4 +166,16 @@ export class List implements OnInit {
 
     return [];
   }
+=======
+import { Component } from '@angular/core';
+
+@Component({
+  selector: 'app-list',
+  imports: [],
+  templateUrl: './list.html',
+  styleUrl: './list.css',
+})
+export class List {
+
+>>>>>>> 2d3d62c5d004508496c215ced2ea02973e183bc3
 }

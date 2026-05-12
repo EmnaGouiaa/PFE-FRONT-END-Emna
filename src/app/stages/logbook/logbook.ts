@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 import { CommonModule } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
 import { Component, OnInit } from '@angular/core';
@@ -128,4 +129,16 @@ export class Logbook implements OnInit {
         return null;
     }
   }
+=======
+import { Component } from '@angular/core';
+
+@Component({
+  selector: 'app-logbook',
+  imports: [],
+  templateUrl: './logbook.html',
+  styleUrl: './logbook.css',
+})
+export class Logbook {
+
+>>>>>>> 2d3d62c5d004508496c215ced2ea02973e183bc3
 }

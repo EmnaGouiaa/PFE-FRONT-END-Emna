@@ -3,7 +3,11 @@ import { HttpClient } from '@angular/common/http';
 import { Observable, throwError } from 'rxjs';
 import { catchError, map } from 'rxjs/operators';
 import { API_BASE_URL } from './api.config';
+<<<<<<< HEAD
 import { DemandeStage, StatutDemande, StatutValidation } from '../models/demande-stage.model';
+=======
+import { DemandeStage } from '../models/demande-stage.model';
+>>>>>>> 2d3d62c5d004508496c215ced2ea02973e183bc3
 
 export interface DemandeStageDTO {
   nomEntreprise: string;
@@ -48,12 +52,16 @@ export class ServiceDemandeStageService {
       if (Array.isArray((raw as any).items)) return (raw as any).items as T[];
       if (Array.isArray((raw as any).results)) return (raw as any).results as T[];
       if (Array.isArray((raw as any).demandes)) return (raw as any).demandes as T[];
+<<<<<<< HEAD
       if (Array.isArray((raw as any).demandesStage)) return (raw as any).demandesStage as T[];
+=======
+>>>>>>> 2d3d62c5d004508496c215ced2ea02973e183bc3
     }
 
     return [];
   }
 
+<<<<<<< HEAD
   private unwrapObject<T>(response: any): T {
     return this.unwrapAny(response) as T;
   }
@@ -96,11 +104,16 @@ export class ServiceDemandeStageService {
       .filter((part) => typeof part === 'string' && part.trim().length > 0)
       .join(' ')
       .trim();
+=======
+  private normalizeDemande(raw: any): DemandeStage {
+    const etudiant = raw?.etudiant ?? raw?.stagiaire ?? null;
+>>>>>>> 2d3d62c5d004508496c215ced2ea02973e183bc3
 
     return {
       ...(raw as DemandeStage),
       id: Number(raw?.id ?? 0),
       nomEntreprise: raw?.nomEntreprise ?? raw?.entreprise?.nomEntreprise ?? '',
+<<<<<<< HEAD
       adresseEntreprise: raw?.adresseEntreprise ?? raw?.adresse ?? raw?.entreprise?.adresseEntreprise ?? raw?.entreprise?.adresse ?? '',
       emailEntreprise: raw?.emailEntreprise ?? raw?.entreprise?.emailEntreprise ?? '',
       telephoneEntreprise: raw?.telephoneEntreprise ?? raw?.entreprise?.telephoneEntreprise ?? '',
@@ -128,6 +141,14 @@ export class ServiceDemandeStageService {
         raw?.commentaireResponsableStages ?? raw?.motifRefusResponsableStages ?? undefined,
       creeLe: raw?.creeLe ?? raw?.dateDemande ?? new Date().toISOString(),
       misAJourLe: raw?.misAJourLe ?? undefined,
+=======
+      adresseEntreprise: raw?.adresseEntreprise ?? raw?.entreprise?.adresseEntreprise ?? '',
+      emailEntreprise: raw?.emailEntreprise ?? raw?.entreprise?.emailEntreprise ?? '',
+      telephoneEntreprise: raw?.telephoneEntreprise ?? raw?.entreprise?.telephoneEntreprise ?? '',
+      nomEncadrant: raw?.nomEncadrant ?? '',
+      emailEncadrant: raw?.emailEncadrant ?? '',
+      sujetStage: raw?.sujetStage ?? '',
+>>>>>>> 2d3d62c5d004508496c215ced2ea02973e183bc3
       etudiant: etudiant
         ? {
             id: Number(etudiant?.id ?? 0),
@@ -169,37 +190,65 @@ export class ServiceDemandeStageService {
 
   getDemandeParId(id: number): Observable<DemandeStage> {
     return this.http.get<any>(`${this.API_URL}/${id}`).pipe(
+<<<<<<< HEAD
       map((r) => this.normalizeDemande(this.unwrapObject<any>(r))),
+=======
+      map((r) => this.normalizeDemande(this.unwrapAny(r))),
+>>>>>>> 2d3d62c5d004508496c215ced2ea02973e183bc3
       catchError(error => throwError(() => error))
     );
   }
 
   validerAdmin(demandeId: number, adminId: number): Observable<DemandeStage> {
+<<<<<<< HEAD
     return this.http.put<any>(`${this.API_URL}/${demandeId}/valider-admin/${adminId}`, {}).pipe(
       map((r) => this.normalizeDemande(this.unwrapObject<any>(r))),
+=======
+    return this.http.put<DemandeStage>(`${this.API_URL}/${demandeId}/valider-admin/${adminId}`, {}).pipe(
+>>>>>>> 2d3d62c5d004508496c215ced2ea02973e183bc3
       catchError(error => throwError(() => error))
     );
   }
 
   refuserAdmin(demandeId: number, adminId: number, commentaire?: string): Observable<DemandeStage> {
+<<<<<<< HEAD
     const body = { commentaire: String(commentaire ?? '').trim() };
     return this.http.put<any>(`${this.API_URL}/${demandeId}/refuser-admin/${adminId}`, body).pipe(
       map((r) => this.normalizeDemande(this.unwrapObject<any>(r))),
+=======
+    const body = commentaire ? { commentaire } : {};
+    return this.http.put<DemandeStage>(`${this.API_URL}/${demandeId}/refuser-admin/${adminId}`, body).pipe(
+>>>>>>> 2d3d62c5d004508496c215ced2ea02973e183bc3
       catchError(error => throwError(() => error))
     );
   }
 
   validerResponsableStages(demandeId: number): Observable<DemandeStage> {
+<<<<<<< HEAD
     return this.http.put<any>(`${this.API_URL}/${demandeId}/valider-responsable-stages`, {}).pipe(
       map((r) => this.normalizeDemande(this.unwrapObject<any>(r))),
+=======
+    return this.http.put<DemandeStage>(`${this.API_URL}/${demandeId}/valider-responsable-stages`, {}).pipe(
+>>>>>>> 2d3d62c5d004508496c215ced2ea02973e183bc3
       catchError(error => throwError(() => error))
     );
   }
 
   refuserResponsableStages(demandeId: number, commentaire?: string): Observable<DemandeStage> {
+<<<<<<< HEAD
     const body = { commentaire: String(commentaire ?? '').trim() };
     return this.http.put<any>(`${this.API_URL}/${demandeId}/refuser-responsable-stages`, body).pipe(
       map((r) => this.normalizeDemande(this.unwrapObject<any>(r))),
+=======
+    const body = commentaire ? { commentaire } : {};
+    return this.http.put<DemandeStage>(`${this.API_URL}/${demandeId}/refuser-responsable-stages`, body).pipe(
+      catchError(error => throwError(() => error))
+    );
+  }
+
+  creerEntreprise(demandeId: number): Observable<any> {
+    return this.http.post(`${this.API_URL}/${demandeId}/creer-entreprise`, {}).pipe(
+>>>>>>> 2d3d62c5d004508496c215ced2ea02973e183bc3
       catchError(error => throwError(() => error))
     );
   }

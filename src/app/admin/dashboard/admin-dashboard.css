@@ -7,9 +7,15 @@
     --text-main: #1f2937;
     --text-muted: #6b7280;
     --white: #ffffff;
+<<<<<<< HEAD
     --success: var(--secondary-color);
     --warning: var(--accent-color);
     --error: var(--primary-color);
+=======
+    --success: #16a34a;
+    --warning: #f59e0b;
+    --error: #dc2626;
+>>>>>>> 2d3d62c5d004508496c215ced2ea02973e183bc3
     --transition: all 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.15);
     --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.02);
     --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.06);
@@ -85,13 +91,18 @@
 .dashboard-error {
     background: rgba(220, 38, 38, 0.12);
     border: 1px solid rgba(220, 38, 38, 0.28);
+<<<<<<< HEAD
     color: var(--primary-color);
+=======
+    color: #991b1b;
+>>>>>>> 2d3d62c5d004508496c215ced2ea02973e183bc3
     padding: 10px 14px;
     border-radius: 12px;
     margin-bottom: 14px;
     font-weight: 700;
 }
 
+<<<<<<< HEAD
 .signature-reminder-card {
     align-items: center;
     display: flex;
@@ -120,6 +131,8 @@
     font-weight: 800;
 }
 
+=======
+>>>>>>> 2d3d62c5d004508496c215ced2ea02973e183bc3
 @keyframes fadeInUp {
     from {
         opacity: 0;
@@ -224,7 +237,11 @@
 .sync-pill.sync-error {
     background: rgba(220, 38, 38, 0.06);
     border-color: rgba(220, 38, 38, 0.18);
+<<<<<<< HEAD
     color: var(--primary-color);
+=======
+    color: #b91c1c;
+>>>>>>> 2d3d62c5d004508496c215ced2ea02973e183bc3
 }
 
 .status-dot {
@@ -354,7 +371,11 @@
 
 .stat-students .stat-icon {
     background: linear-gradient(135deg, rgba(203, 216, 18, 0.18), rgba(203, 216, 18, 0.06));
+<<<<<<< HEAD
     color: var(--primary-color);
+=======
+    color: #9ca300;
+>>>>>>> 2d3d62c5d004508496c215ced2ea02973e183bc3
 }
 
 .stat-teachers .stat-icon {
@@ -404,7 +425,11 @@
 }
 
 .stat-chip.chip-error {
+<<<<<<< HEAD
     color: var(--primary-color);
+=======
+    color: #b91c1c;
+>>>>>>> 2d3d62c5d004508496c215ced2ea02973e183bc3
     background: rgba(220, 38, 38, 0.06);
     border-color: rgba(220, 38, 38, 0.16);
 }
@@ -563,8 +588,13 @@
     background: rgba(107, 114, 128, 0.4);
 }
 
+<<<<<<< HEAD
 .role-dot.badge-admin { background: var(--primary-color); }
 .role-dot.badge-student { background: var(--accent-color); }
+=======
+.role-dot.badge-admin { background: #dc2626; }
+.role-dot.badge-student { background: #9ca300; }
+>>>>>>> 2d3d62c5d004508496c215ced2ea02973e183bc3
 .role-dot.badge-teacher { background: var(--secondary-color); }
 .role-dot.badge-company { background: var(--success); }
 .role-dot.badge-manager { background: var(--warning); }
@@ -869,12 +899,20 @@
 
 .badge-admin {
     background: linear-gradient(135deg, rgba(220, 38, 38, 0.12), rgba(220, 38, 38, 0.06));
+<<<<<<< HEAD
     color: var(--primary-color);
+=======
+    color: #dc2626;
+>>>>>>> 2d3d62c5d004508496c215ced2ea02973e183bc3
 }
 
 .badge-student {
     background: linear-gradient(135deg, rgba(203, 216, 18, 0.18), rgba(203, 216, 18, 0.06));
+<<<<<<< HEAD
     color: var(--primary-color);
+=======
+    color: #9ca300;
+>>>>>>> 2d3d62c5d004508496c215ced2ea02973e183bc3
 }
 
 .badge-teacher {

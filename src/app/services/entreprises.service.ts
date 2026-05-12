@@ -10,21 +10,31 @@ export interface Entreprise {
   adresseEntreprise?: string;
   emailEntreprise?: string;
   telephoneEntreprise?: string;
+<<<<<<< HEAD
   secteurActivite?: string;
+=======
+>>>>>>> 2d3d62c5d004508496c215ced2ea02973e183bc3
   actif?: boolean;
 }
 
 export interface CreateEntrepriseRequest {
   nomEntreprise: string;
+<<<<<<< HEAD
   adresse?: string;
   adresseEntreprise?: string;
   emailEntreprise?: string;
   telephoneEntreprise?: string;
   secteurActivite?: string;
+=======
+  adresseEntreprise?: string;
+  emailEntreprise?: string;
+  telephoneEntreprise?: string;
+>>>>>>> 2d3d62c5d004508496c215ced2ea02973e183bc3
 }
 
 export interface UpdateEntrepriseRequest {
   nomEntreprise?: string;
+<<<<<<< HEAD
   adresse?: string;
   adresseEntreprise?: string;
   emailEntreprise?: string;
@@ -41,6 +51,14 @@ interface EntrepriseApiPayload {
   secteurActivite?: string;
 }
 
+=======
+  adresseEntreprise?: string;
+  emailEntreprise?: string;
+  telephoneEntreprise?: string;
+  actif?: boolean;
+}
+
+>>>>>>> 2d3d62c5d004508496c215ced2ea02973e183bc3
 @Injectable({ providedIn: 'root' })
 export class EntreprisesService {
   private readonly API_URL = `${API_BASE_URL}/entreprises`;
@@ -80,11 +98,15 @@ export class EntreprisesService {
       adresseEntreprise: raw?.adresseEntreprise ?? raw?.adresse ?? '',
       emailEntreprise: raw?.emailEntreprise ?? raw?.email ?? '',
       telephoneEntreprise: raw?.telephoneEntreprise ?? raw?.telephone ?? '',
+<<<<<<< HEAD
       secteurActivite: raw?.secteurActivite ?? '',
+=======
+>>>>>>> 2d3d62c5d004508496c215ced2ea02973e183bc3
       actif
     };
   }
 
+<<<<<<< HEAD
   private toApiPayload(payload: CreateEntrepriseRequest | UpdateEntrepriseRequest): EntrepriseApiPayload {
     const nom = String(payload.nomEntreprise ?? '').trim();
     const adresse = String(payload.adresseEntreprise ?? payload.adresse ?? '').trim();
@@ -101,6 +123,8 @@ export class EntreprisesService {
     };
   }
 
+=======
+>>>>>>> 2d3d62c5d004508496c215ced2ea02973e183bc3
   list(): Observable<Entreprise[]> {
     return this.http
       .get<any>(this.API_URL)
@@ -114,18 +138,28 @@ export class EntreprisesService {
   }
 
   create(payload: CreateEntrepriseRequest): Observable<Entreprise> {
+<<<<<<< HEAD
     const requestBody = this.toApiPayload(payload);
     console.log('[EntreprisesService] create payload:', requestBody);
     return this.http
       .post<any>(this.API_URL, requestBody)
+=======
+    return this.http
+      .post<any>(this.API_URL, payload)
+>>>>>>> 2d3d62c5d004508496c215ced2ea02973e183bc3
       .pipe(map((r) => this.normalizeEntreprise(this.unwrapObject<any>(r))));
   }
 
   update(id: number, payload: UpdateEntrepriseRequest): Observable<Entreprise> {
+<<<<<<< HEAD
     const requestBody = this.toApiPayload(payload);
     console.log('[EntreprisesService] update payload:', requestBody);
     return this.http
       .put<any>(`${this.API_URL}/${id}`, requestBody)
+=======
+    return this.http
+      .put<any>(`${this.API_URL}/${id}`, payload)
+>>>>>>> 2d3d62c5d004508496c215ced2ea02973e183bc3
       .pipe(map((r) => this.normalizeEntreprise(this.unwrapObject<any>(r))));
   }
 }

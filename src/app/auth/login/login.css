@@ -105,6 +105,7 @@
   }
 }
 
+<<<<<<< HEAD
 .forgot-password-row {
   display: flex;
   justify-content: flex-end;
@@ -122,6 +123,8 @@
   text-decoration: underline;
 }
 
+=======
+>>>>>>> 2d3d62c5d004508496c215ced2ea02973e183bc3
 .login-container {
   display: flex;
   justify-content: center;

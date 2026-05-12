@@ -16,8 +16,12 @@ export class Navbar implements OnInit {
   isAdmin = false;
   isStagiaire = false;
   isEncadrant = false;
+<<<<<<< HEAD
   isResponsableEntreprise = false;
   isResponsableUniversitaire = false;
+=======
+  isResponsable = false;
+>>>>>>> 2d3d62c5d004508496c215ced2ea02973e183bc3
 
   constructor(
     private authService: AuthentificationService,
@@ -37,10 +41,16 @@ export class Navbar implements OnInit {
     this.isEncadrant =
       this.userRole === RoleUtilisateur.ENCADRANT_ACADEMIQUE ||
       this.userRole === RoleUtilisateur.ENCADRANT_PROFESSIONNEL;
+<<<<<<< HEAD
     this.isResponsableEntreprise = this.userRole === RoleUtilisateur.RESPONSABLE_ENTREPRISE;
     this.isResponsableUniversitaire =
       this.userRole === RoleUtilisateur.RESPONSABLE_SERVICE_STAGES ||
       this.userRole === RoleUtilisateur.RESPONSABLE_UNIVERSITAIRE_STAGES;
+=======
+    this.isResponsable =
+      this.userRole === RoleUtilisateur.RESPONSABLE_SERVICE_STAGES ||
+      this.userRole === RoleUtilisateur.RESPONSABLE_ENTREPRISE;
+>>>>>>> 2d3d62c5d004508496c215ced2ea02973e183bc3
   }
 
   logout(): void {
@@ -65,7 +75,10 @@ export class Navbar implements OnInit {
       [RoleUtilisateur.ENCADRANT_PROFESSIONNEL]: 'Encadrant professionnel',
       [RoleUtilisateur.ENCADRANT_ACADEMIQUE]: 'Encadrant académique',
       [RoleUtilisateur.RESPONSABLE_SERVICE_STAGES]: 'Responsable des stages',
+<<<<<<< HEAD
       [RoleUtilisateur.RESPONSABLE_UNIVERSITAIRE_STAGES]: 'Responsable universitaire des stages',
+=======
+>>>>>>> 2d3d62c5d004508496c215ced2ea02973e183bc3
       [RoleUtilisateur.RESPONSABLE_ENTREPRISE]: 'Responsable entreprise'
     };
 

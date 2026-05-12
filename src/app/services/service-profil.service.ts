@@ -1,9 +1,16 @@
 import { Injectable } from '@angular/core';
+<<<<<<< HEAD
 import { HttpClient } from '@angular/common/http';
 import { Observable, of, throwError } from 'rxjs';
 import { catchError, map, switchMap, tap } from 'rxjs/operators';
 import { API_BASE_URL } from './api.config';
 import { AuthentificationService, ReponseAuthentification } from './authentification.service';
+=======
+import { HttpClient, HttpHeaders } from '@angular/common/http';
+import { Observable, throwError } from 'rxjs';
+import { catchError } from 'rxjs/operators';
+import { API_BASE_URL } from './api.config';
+>>>>>>> 2d3d62c5d004508496c215ced2ea02973e183bc3
 
 export interface DonneesProfil {
   id: number;
@@ -13,6 +20,7 @@ export interface DonneesProfil {
   role: string;
   telephone?: string;
   adresse?: string;
+<<<<<<< HEAD
   matricule?: string;
   grade?: string;
   poste?: string;
@@ -30,6 +38,13 @@ export interface DonneesProfil {
   misAJourLe: string;
   champsProfilAutorises: string[];
   documentsStageAutorises: string[];
+=======
+  poste?: string;
+  specialite?: string;
+  actif: boolean;
+  creeLe: string;
+  misAJourLe: string;
+>>>>>>> 2d3d62c5d004508496c215ced2ea02973e183bc3
 }
 
 export interface MiseAJourProfil {
@@ -41,6 +56,7 @@ export interface MiseAJourProfil {
   confirmationMotDePasse?: string;
   adresse?: string;
   poste?: string;
+<<<<<<< HEAD
   service?: string;
   specialite?: string;
   grade?: string;
@@ -53,6 +69,9 @@ export interface MiseAJourProfil {
 export interface MiseAJourEmail {
   email: string;
   motDePasseActuel: string;
+=======
+  specialite?: string;
+>>>>>>> 2d3d62c5d004508496c215ced2ea02973e183bc3
 }
 
 export interface MiseAJourMotDePasse {
@@ -65,6 +84,7 @@ export interface MiseAJourMotDePasse {
   providedIn: 'root'
 })
 export class ServiceProfilService {
+<<<<<<< HEAD
   private readonly API_URL = `${API_BASE_URL}/utilisateurs`;
   private readonly AUTH_URL = `${API_BASE_URL}/auth`;
   private readonly signatureCachePrefix = 'nomFichierSignature';
@@ -131,10 +151,35 @@ export class ServiceProfilService {
       tap(() => this.authService.marquerMotDePasseModifie()),
       catchError(error => throwError(() => error))
     );
+=======
+  private readonly API_URL = `${API_BASE_URL}/profil`;
+
+  constructor(private http: HttpClient) {}
+
+  getProfil(): Observable<DonneesProfil> {
+    return this.http.get<DonneesProfil>(this.API_URL)
+      .pipe(catchError(error => throwError(() => error)));
+  }
+
+  mettreAJourProfil(donnees: MiseAJourProfil): Observable<DonneesProfil> {
+    return this.http.put<DonneesProfil>(this.API_URL, donnees)
+      .pipe(catchError(error => throwError(() => error)));
+  }
+
+  mettreAJourMotDePasse(donnees: MiseAJourMotDePasse): Observable<DonneesProfil> {
+    return this.http.put<DonneesProfil>(`${this.API_URL}/mot-de-passe`, donnees)
+      .pipe(catchError(error => throwError(() => error)));
+  }
+
+  desactiverCompte(): Observable<DonneesProfil> {
+    return this.http.put<DonneesProfil>(`${this.API_URL}/desactiver`, {})
+      .pipe(catchError(error => throwError(() => error)));
+>>>>>>> 2d3d62c5d004508496c215ced2ea02973e183bc3
   }
 
   getNomAffichageRole(role: string): string {
     const mapRole: { [key: string]: string } = {
+<<<<<<< HEAD
       STAGIAIRE: 'Étudiant',
       ADMINISTRATEUR: 'Administrateur',
       RESPONSABLE_ENTREPRISE: 'Représentant de l’entreprise',
@@ -142,6 +187,13 @@ export class ServiceProfilService {
       ENCADRANT_ACADEMIQUE: 'Encadrant académique',
       RESPONSABLE_SERVICE_STAGES: 'Responsable des stages',
       RESPONSABLE_UNIVERSITAIRE_STAGES: 'Responsable universitaire des stages'
+=======
+      'STAGIAIRE': 'Étudiant',
+      'ADMINISTRATEUR': 'Administrateur',
+      'RESPONSABLE_ENTREPRISE': 'Représentant Entreprise',
+      'ENCADRANT_PROFESSIONNEL': 'Encadrant Professionnel',
+      'ENCADRANT_ACADEMIQUE': 'Encadrant Académique'
+>>>>>>> 2d3d62c5d004508496c215ced2ea02973e183bc3
     };
     return mapRole[role] || role;
   }
@@ -165,6 +217,7 @@ export class ServiceProfilService {
     if (!/\d/.test(motDePasse)) erreurs.push('Le mot de passe doit contenir au moins un chiffre');
     return { estValide: erreurs.length === 0, erreurs };
   }
+<<<<<<< HEAD
 
   private requireUserId(): number {
     const userId = this.authService.getUserId();
@@ -290,4 +343,6 @@ export class ServiceProfilService {
       return '';
     }
   }
+=======
+>>>>>>> 2d3d62c5d004508496c215ced2ea02973e183bc3
 }

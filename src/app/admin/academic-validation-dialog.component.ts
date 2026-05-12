@@ -24,37 +24,65 @@ import { AcademicValidationRequest } from '../models/academic-validation.model';
   template: `
     <div class="dialog-container">
       <h2 mat-dialog-title>
+<<<<<<< HEAD
         <span *ngIf="isViewMode">Détails de la demande de stage</span>
         <span *ngIf="isApproveMode">Approuver la demande de stage</span>
         <span *ngIf="isRejectMode">Refuser la demande de stage</span>
+=======
+        <span *ngIf="isViewMode">Internship Request Details</span>
+        <span *ngIf="isApproveMode">Approve Internship Request</span>
+        <span *ngIf="isRejectMode">Reject Internship Request</span>
+>>>>>>> 2d3d62c5d004508496c215ced2ea02973e183bc3
       </h2>
 
       <mat-dialog-content>
         <div class="request-details">
           <div class="detail-row">
+<<<<<<< HEAD
             <span class="label">Étudiant :</span>
+=======
+            <span class="label">Student:</span>
+>>>>>>> 2d3d62c5d004508496c215ced2ea02973e183bc3
             <span class="value">{{ data.request.studentName }} ({{ data.request.studentEmail }})</span>
           </div>
 
           <div class="detail-row">
+<<<<<<< HEAD
             <span class="label">Sujet :</span>
+=======
+            <span class="label">Subject:</span>
+>>>>>>> 2d3d62c5d004508496c215ced2ea02973e183bc3
             <span class="value">{{ data.request.internshipSubject }}</span>
           </div>
 
           <div class="detail-row">
+<<<<<<< HEAD
             <span class="label">Entreprise :</span>
+=======
+            <span class="label">Company:</span>
+>>>>>>> 2d3d62c5d004508496c215ced2ea02973e183bc3
             <span class="value">{{ data.request.companyName }}</span>
           </div>
 
           <div class="detail-row">
+<<<<<<< HEAD
             <span class="label">Période :</span>
             <span class="value">
               {{ data.request.startDate | date: 'shortDate' }} au {{ data.request.endDate | date: 'shortDate' }}
+=======
+            <span class="label">Duration:</span>
+            <span class="value">
+              {{ data.request.startDate | date: 'short' }} to {{ data.request.endDate | date: 'short' }}
+>>>>>>> 2d3d62c5d004508496c215ced2ea02973e183bc3
             </span>
           </div>
 
           <div class="detail-row">
+<<<<<<< HEAD
             <span class="label">Statut :</span>
+=======
+            <span class="label">Status:</span>
+>>>>>>> 2d3d62c5d004508496c215ced2ea02973e183bc3
             <span class="value" [ngClass]="'status-' + data.request.academicValidationStatus.toLowerCase()">
               {{ data.request.academicValidationStatus }}
             </span>
@@ -65,30 +93,52 @@ import { AcademicValidationRequest } from '../models/academic-validation.model';
           <!-- Comment Field (only for approve/reject) -->
           <mat-form-field appearance="outline" *ngIf="!isViewMode" class="full-width">
             <mat-label>
+<<<<<<< HEAD
               <span *ngIf="isApproveMode">Commentaire facultatif</span>
               <span *ngIf="isRejectMode">Motif du refus (obligatoire)</span>
             </mat-label>
             <textarea matInput [(ngModel)]="comment" rows="4"
               [required]="isRejectMode"
               placeholder="Saisissez votre commentaire...">
+=======
+              <span *ngIf="isApproveMode">Optional Comment</span>
+              <span *ngIf="isRejectMode">Rejection Reason (required)</span>
+            </mat-label>
+            <textarea matInput [(ngModel)]="comment" rows="4"
+              [required]="isRejectMode"
+              placeholder="Enter your comment...">
+>>>>>>> 2d3d62c5d004508496c215ced2ea02973e183bc3
             </textarea>
           </mat-form-field>
 
           <!-- Display comment if already validated -->
           <div *ngIf="isViewMode && data.request.academicComments" class="comment-section">
+<<<<<<< HEAD
             <span class="label">Commentaires :</span>
+=======
+            <span class="label">Comments:</span>
+>>>>>>> 2d3d62c5d004508496c215ced2ea02973e183bc3
             <p class="comment-text">{{ data.request.academicComments }}</p>
           </div>
         </div>
       </mat-dialog-content>
 
       <mat-dialog-actions align="end">
+<<<<<<< HEAD
         <button mat-button (click)="onCancel()">Annuler</button>
         <button mat-raised-button color="primary" *ngIf="isApproveMode" (click)="onApprove()">
           <mat-icon>check</mat-icon> Approuver
         </button>
         <button mat-raised-button color="warn" *ngIf="isRejectMode" (click)="onReject()">
           <mat-icon>close</mat-icon> Refuser
+=======
+        <button mat-button (click)="onCancel()">Cancel</button>
+        <button mat-raised-button color="primary" *ngIf="isApproveMode" (click)="onApprove()">
+          <mat-icon>check</mat-icon> Approve
+        </button>
+        <button mat-raised-button color="warn" *ngIf="isRejectMode" (click)="onReject()">
+          <mat-icon>close</mat-icon> Reject
+>>>>>>> 2d3d62c5d004508496c215ced2ea02973e183bc3
         </button>
       </mat-dialog-actions>
     </div>
@@ -212,14 +262,22 @@ export class AcademicValidationDialogComponent {
       },
       error: (err: any) => {
         console.error('Error approving request:', err);
+<<<<<<< HEAD
         alert("Une erreur est survenue lors de l'approbation de la demande.");
+=======
+        alert('Error approving request');
+>>>>>>> 2d3d62c5d004508496c215ced2ea02973e183bc3
       }
     });
   }
 
   onReject() {
     if (!this.comment.trim()) {
+<<<<<<< HEAD
       alert('Veuillez saisir un motif de refus.');
+=======
+      alert('Please enter a rejection reason');
+>>>>>>> 2d3d62c5d004508496c215ced2ea02973e183bc3
       return;
     }
 
@@ -230,7 +288,11 @@ export class AcademicValidationDialogComponent {
       },
       error: (err: any) => {
         console.error('Error rejecting request:', err);
+<<<<<<< HEAD
         alert('Une erreur est survenue lors du refus de la demande.');
+=======
+        alert('Error rejecting request');
+>>>>>>> 2d3d62c5d004508496c215ced2ea02973e183bc3
       }
     });
   }

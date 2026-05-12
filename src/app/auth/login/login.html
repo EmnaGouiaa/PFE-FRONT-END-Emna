@@ -1,9 +1,17 @@
 <div class="login-container">
+<<<<<<< HEAD
+=======
+  <!-- Éléments de fond -->
+>>>>>>> 2d3d62c5d004508496c215ced2ea02973e183bc3
   <div class="dot-pattern"></div>
   <div class="shape-1"></div>
   <div class="shape-2"></div>
 
   <div class="login-wrapper">
+<<<<<<< HEAD
+=======
+    <!-- Section Photo - Gauche -->
+>>>>>>> 2d3d62c5d004508496c215ced2ea02973e183bc3
     <div class="photo-section">
       <div class="photo-content">
         <img src="/assets/testt.png" alt="Diplôme">
@@ -12,11 +20,19 @@
             <path d="M22 10v6M2 10l10-5 10 5-10 5z"/>
             <path d="M6 12v5c3 2 6 2 9 0v-5"/>
           </svg>
+<<<<<<< HEAD
           Gestion des stages universitaires
+=======
+          Gestion des Stages Universitaires
+>>>>>>> 2d3d62c5d004508496c215ced2ea02973e183bc3
         </div>
       </div>
     </div>
 
+<<<<<<< HEAD
+=======
+    <!-- Carte de Connexion - Droite -->
+>>>>>>> 2d3d62c5d004508496c215ced2ea02973e183bc3
     <div class="login-card">
       <div class="header">
         <h2>Connexion</h2>
@@ -31,7 +47,11 @@
 
       <form [formGroup]="formulaireConnexion" (ngSubmit)="onSubmit()" class="login-form">
         <div class="form-group">
+<<<<<<< HEAD
           <label for="email">Adresse e-mail</label>
+=======
+          <label for="email">Adresse email</label>
+>>>>>>> 2d3d62c5d004508496c215ced2ea02973e183bc3
           <div class="input-wrapper">
             <input
               type="email"
@@ -42,7 +62,11 @@
             />
           </div>
           <div class="error-message" *ngIf="formulaireConnexion.get('email')?.invalid && formulaireConnexion.get('email')?.touched">
+<<<<<<< HEAD
             L'adresse e-mail est requise.
+=======
+            L'adresse email est requise
+>>>>>>> 2d3d62c5d004508496c215ced2ea02973e183bc3
           </div>
         </div>
 
@@ -58,11 +82,16 @@
             >
           </div>
           <div class="error-message" *ngIf="formulaireConnexion.get('motDePasse')?.invalid && formulaireConnexion.get('motDePasse')?.touched">
+<<<<<<< HEAD
             Minimum 6 caractères.
+=======
+            Minimum 6 caractères
+>>>>>>> 2d3d62c5d004508496c215ced2ea02973e183bc3
           </div>
         </div>
 
         <div class="info-message">
+<<<<<<< HEAD
           Accès réservé aux utilisateurs autorisés.
         </div>
 
@@ -80,8 +109,43 @@
 
         <button type="submit" class="submit-btn" [disabled]="formulaireConnexion.invalid || enChargement">
           {{ enChargement ? 'Connexion en cours…' : 'Se connecter' }}
+=======
+           Accès réservé aux utilisateurs autorisés
+        </div>
+
+        <div class="success-banner" *ngIf="messageSucces">
+          ✅ {{ messageSucces }}
+        </div>
+
+        <div class="error-banner" *ngIf="messageErreur">
+          ⚠️ {{ messageErreur }}
+        </div>
+
+        <button type="submit" class="submit-btn" [disabled]="formulaireConnexion.invalid || enChargement">
+          {{ enChargement ? 'Connexion en cours...' : 'Se connecter' }}
+>>>>>>> 2d3d62c5d004508496c215ced2ea02973e183bc3
         </button>
       </form>
     </div>
   </div>
 </div>
+<<<<<<< HEAD
+=======
+
+<!-- Section Comptes de Démo -->
+<div class="demo-accounts">
+  <div class="demo-header">
+    <h4>Comptes de démonstration</h4>
+    <p>Utilisez ces comptes pour tester l'application</p>
+  </div>
+  <div class="demo-list">
+    <div class="demo-item" *ngFor="let compte of comptesDemo">
+      <div class="demo-role">{{ compte.role }}</div>
+      <div class="demo-credentials">
+        <strong>Email :</strong> {{ compte.email }}<br>
+        <strong>Mot de passe :</strong> {{ compte.motDePasse }}
+      </div>
+    </div>
+  </div>
+</div>
+>>>>>>> 2d3d62c5d004508496c215ced2ea02973e183bc3

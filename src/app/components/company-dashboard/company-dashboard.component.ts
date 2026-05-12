@@ -1534,6 +1534,9 @@ export class CompanyDashboard implements OnInit {
 
   logout(): void {
     this.authService.logout();
+<<<<<<< HEAD
     this.router.navigate(['/connexion']);
+=======
+>>>>>>> 2d3d62c5d004508496c215ced2ea02973e183bc3
   }
 }

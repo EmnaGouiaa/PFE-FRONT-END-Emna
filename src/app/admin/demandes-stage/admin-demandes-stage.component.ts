@@ -1,7 +1,10 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+<<<<<<< HEAD
 import { timeout } from 'rxjs/operators';
+=======
+>>>>>>> 2d3d62c5d004508496c215ced2ea02973e183bc3
 import { AuthentificationService } from '../../services/authentification.service';
 import { ServiceDemandeStageService } from '../../services/service-demande-stage.service';
 import { DemandeStage, StatutValidation } from '../../models/demande-stage.model';
@@ -23,10 +26,13 @@ export class AdminDemandesStageComponent implements OnInit {
   isLoading = false;
   errorMessage = '';
   successMessage = '';
+<<<<<<< HEAD
   rejectModalOpen = false;
   rejectComment = '';
   rejectValidationMessage = '';
   demandeEnCoursDeRefus: DemandeStage | null = null;
+=======
+>>>>>>> 2d3d62c5d004508496c215ced2ea02973e183bc3
 
   searchQuery = '';
   filtreAdmin: FiltreValidation = 'ALL';
@@ -73,6 +79,7 @@ export class AdminDemandesStageComponent implements OnInit {
     this.isLoading = true;
     this.errorMessage = '';
 
+<<<<<<< HEAD
     this.serviceDemandeStage.getToutesDemandes().pipe(
       timeout(15000)
     ).subscribe({
@@ -92,6 +99,19 @@ export class AdminDemandesStageComponent implements OnInit {
         } finally {
           this.isLoading = false;
         }
+=======
+    this.serviceDemandeStage.getToutesDemandes().subscribe({
+      next: (demandes) => {
+        console.log('[AdminDemandesStage] getToutesDemandes success', demandes?.length ?? 0);
+        this.demandes = Array.isArray(demandes) ? [...demandes] : [];
+        this.appliquerFiltres();
+        this.isLoading = false;
+      },
+      error: (error) => {
+        console.error('Erreur chargement demandes-stage:', error);
+        this.errorMessage = this.extractErrorMessage(error, 'Erreur lors du chargement des demandes.');
+        this.isLoading = false;
+>>>>>>> 2d3d62c5d004508496c215ced2ea02973e183bc3
       }
     });
   }
@@ -115,7 +135,11 @@ export class AdminDemandesStageComponent implements OnInit {
         .toLowerCase();
 
       const matchRecherche = !recherche || cible.includes(recherche);
+<<<<<<< HEAD
       const matchAdmin = this.matchValidation(this.filtreAdmin, this.getEffectiveAdminStatus(d));
+=======
+      const matchAdmin = this.matchValidation(this.filtreAdmin, d.statutValidationAdmin);
+>>>>>>> 2d3d62c5d004508496c215ced2ea02973e183bc3
       const statutResp = d.statutValidationResponsableStages ?? StatutValidation.EN_ATTENTE;
       const matchResp = this.matchValidation(this.filtreResponsable, statutResp);
 
@@ -137,6 +161,7 @@ export class AdminDemandesStageComponent implements OnInit {
     this.errorMessage = '';
     this.successMessage = '';
 
+<<<<<<< HEAD
     this.serviceDemandeStage.validerAdmin(demande.id, adminId).pipe(
       timeout(15000)
     ).subscribe({
@@ -162,11 +187,29 @@ export class AdminDemandesStageComponent implements OnInit {
         } finally {
           this.isLoading = false;
         }
+=======
+    this.serviceDemandeStage.validerAdmin(demande.id, adminId).subscribe({
+      next: (updatedDemande) => {
+        console.log('[AdminDemandesStage] validerAdmin success', demande?.id);
+        this.successMessage = `Demande #${demande.id} validee.`;
+        this.upsertDemandeInState(updatedDemande);
+        this.isLoading = false;
+
+        if (!updatedDemande || !Number.isFinite(updatedDemande.id) || updatedDemande.id <= 0) {
+          this.chargerDemandes();
+        }
+      },
+      error: (error) => {
+        console.error('Validation admin echouee:', error);
+        this.errorMessage = this.extractErrorMessage(error, 'Echec de la validation admin.');
+        this.isLoading = false;
+>>>>>>> 2d3d62c5d004508496c215ced2ea02973e183bc3
       }
     });
   }
 
   refuserAdmin(demande: DemandeStage): void {
+<<<<<<< HEAD
     this.demandeEnCoursDeRefus = demande;
     this.rejectComment = '';
     this.rejectValidationMessage = '';
@@ -184,21 +227,30 @@ export class AdminDemandesStageComponent implements OnInit {
     const demande = this.demandeEnCoursDeRefus;
     if (!demande) return;
 
+=======
+    console.log('[AdminDemandesStage] refuserAdmin click', demande?.id);
+>>>>>>> 2d3d62c5d004508496c215ced2ea02973e183bc3
     const adminId = this.serviceAuthentification.getUserId();
     if (!adminId) {
       this.errorMessage = 'Identifiant admin introuvable (session).';
       return;
     }
 
+<<<<<<< HEAD
     const commentaire = this.rejectComment.trim();
     if (!commentaire) {
       this.rejectValidationMessage = 'Veuillez saisir le motif du refus';
       return;
     }
+=======
+    const commentaire = prompt('Motif de refus (optionnel) :') ?? undefined;
+    if (!confirm(`Refuser la demande #${demande.id} en tant qu'administrateur ?`)) return;
+>>>>>>> 2d3d62c5d004508496c215ced2ea02973e183bc3
 
     this.isLoading = true;
     this.errorMessage = '';
     this.successMessage = '';
+<<<<<<< HEAD
     this.rejectValidationMessage = '';
 
     this.serviceDemandeStage.refuserAdmin(demande.id, adminId, commentaire).pipe(
@@ -225,6 +277,52 @@ export class AdminDemandesStageComponent implements OnInit {
         } finally {
           this.isLoading = false;
         }
+=======
+
+    this.serviceDemandeStage.refuserAdmin(demande.id, adminId, commentaire).subscribe({
+      next: (updatedDemande) => {
+        console.log('[AdminDemandesStage] refuserAdmin success', demande?.id);
+        this.successMessage = `Demande #${demande.id} refusee.`;
+        this.upsertDemandeInState(updatedDemande);
+        this.isLoading = false;
+
+        if (!updatedDemande || !Number.isFinite(updatedDemande.id) || updatedDemande.id <= 0) {
+          this.chargerDemandes();
+        }
+      },
+      error: (error) => {
+        console.error('Refus admin echoue:', error);
+        this.errorMessage = this.extractErrorMessage(error, 'Echec du refus admin.');
+        this.isLoading = false;
+      }
+    });
+  }
+
+  creerEntreprise(demande: DemandeStage): void {
+    console.log('[AdminDemandesStage] creerEntreprise click', demande?.id);
+    if (!confirm(`Creer l'entreprise pour la demande #${demande.id} ?`)) return;
+
+    this.isLoading = true;
+    this.errorMessage = '';
+    this.successMessage = '';
+
+    this.serviceDemandeStage.creerEntreprise(demande.id).subscribe({
+      next: (updatedDemande) => {
+        console.log('[AdminDemandesStage] creerEntreprise success', demande?.id);
+        this.successMessage = `Entreprise creee depuis la demande #${demande.id}.`;
+        this.upsertDemandeInState(updatedDemande as DemandeStage);
+        this.isLoading = false;
+
+        const hasValidId = Number.isFinite((updatedDemande as any)?.id) && Number((updatedDemande as any)?.id) > 0;
+        if (!hasValidId) {
+          this.chargerDemandes();
+        }
+      },
+      error: (error) => {
+        console.error('Creation entreprise echouee:', error);
+        this.errorMessage = this.extractErrorMessage(error, 'Echec de la creation entreprise.');
+        this.isLoading = false;
+>>>>>>> 2d3d62c5d004508496c215ced2ea02973e183bc3
       }
     });
   }
@@ -233,12 +331,17 @@ export class AdminDemandesStageComponent implements OnInit {
     return this.demandes.length;
   }
 
+<<<<<<< HEAD
   countDemandesCompletes(): number {
     return this.demandes.filter((d) => this.isFullyValidated(d)).length;
   }
 
   countAdmin(status: StatutValidation): number {
     return this.demandes.filter((d) => this.getEffectiveAdminStatus(d) === status).length;
+=======
+  countAdmin(status: StatutValidation): number {
+    return this.demandes.filter((d) => d.statutValidationAdmin === status).length;
+>>>>>>> 2d3d62c5d004508496c215ced2ea02973e183bc3
   }
 
   countResponsable(status: StatutValidation): number {
@@ -248,6 +351,7 @@ export class AdminDemandesStageComponent implements OnInit {
   }
 
   canAdminAct(d: DemandeStage): boolean {
+<<<<<<< HEAD
     return d.statut === 'EN_ATTENTE'
       && d.statutValidationAdmin === StatutValidation.EN_ATTENTE
       && (d.statutValidationResponsableStages ?? StatutValidation.EN_ATTENTE) !== StatutValidation.REJETEE;
@@ -258,6 +362,14 @@ export class AdminDemandesStageComponent implements OnInit {
       return StatutValidation.REJETEE;
     }
     return d.statutValidationAdmin ?? StatutValidation.EN_ATTENTE;
+=======
+    return d.statutValidationAdmin === StatutValidation.EN_ATTENTE;
+  }
+
+  canCreerEntreprise(d: DemandeStage): boolean {
+    const resp = d.statutValidationResponsableStages ?? StatutValidation.EN_ATTENTE;
+    return d.statutValidationAdmin === StatutValidation.APPROUVEE && resp === StatutValidation.APPROUVEE;
+>>>>>>> 2d3d62c5d004508496c215ced2ea02973e183bc3
   }
 
   badgeClass(statut: StatutValidation | undefined): string {
@@ -276,6 +388,7 @@ export class AdminDemandesStageComponent implements OnInit {
     if (filtre === 'ALL') return true;
     return filtre === (statut ?? StatutValidation.EN_ATTENTE);
   }
+<<<<<<< HEAD
 
   isFullyValidated(d: DemandeStage): boolean {
     const resp = d.statutValidationResponsableStages ?? StatutValidation.EN_ATTENTE;
@@ -298,4 +411,6 @@ export class AdminDemandesStageComponent implements OnInit {
     if (label === 'REFUSEE') return 'badge badge-rejected';
     return 'badge badge-pending';
   }
+=======
+>>>>>>> 2d3d62c5d004508496c215ced2ea02973e183bc3
 }

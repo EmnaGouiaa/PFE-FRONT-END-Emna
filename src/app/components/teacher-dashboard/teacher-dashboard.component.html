@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 <div class="admin-shell">
   <aside class="admin-sidebar teacher-sidebar">
     <div class="sidebar-header teacher-header">
@@ -243,3 +244,198 @@
   </main>
 </div>
 
+=======
+<div class="dashboard-container">
+    <!-- Background elements matching login page -->
+    <div class="dot-pattern"></div>
+    <div class="shape-1"></div>
+    <div class="shape-2"></div>
+
+    <!-- Navbar -->
+    <nav class="navbar">
+        <div class="nav-brand">
+            <i class="fas fa-chalkboard-teacher"></i>
+            <span>Academic Supervisor Portal</span>
+        </div>
+        <div class="nav-menu">
+            <a class="nav-link" (click)="navigateTo('/teacher/dashboard')">
+                <i class="fas fa-tachometer-alt"></i> Dashboard
+            </a>
+            <a class="nav-link" (click)="navigateTo('/stages')">
+                <i class="fas fa-users"></i> My Students
+            </a>
+            <a class="nav-link" (click)="navigateTo('/teacher/validations')">
+                <i class="fas fa-clipboard-check"></i> Validations
+            </a>
+            <a class="nav-link" (click)="navigateTo('/teacher/evaluations')">
+                <i class="fas fa-star"></i> Evaluations
+            </a>
+        </div>
+        <div class="nav-user">
+            <span class="user-info">{{ userName$ | async }}</span>
+            <button class="logout-btn" (click)="logout()">
+                <i class="fas fa-sign-out-alt"></i> Logout
+            </button>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="main-content">
+        <!-- Welcome Section -->
+        <div class="welcome-section">
+            <div class="welcome-card">
+                <h1>
+                    <i class="fas fa-chalkboard-teacher"></i>
+                    Academic Supervisor Dashboard
+                </h1>
+                <p>{{ welcomeMessage$ | async }}</p>
+            </div>
+        </div>
+
+        <!-- Statistics Overview -->
+        <div class="stats-section">
+            <h2>Overview</h2>
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-icon">
+                        <i class="fas fa-user-graduate"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h3>{{ stats?.totalStudents || 0 }}</h3>
+                        <p>Supervised Students</p>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">
+                        <i class="fas fa-clipboard-check"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h3>{{ stats?.pendingValidations || 0 }}</h3>
+                        <p>Pending Validations</p>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">
+                        <i class="fas fa-briefcase"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h3>{{ stats?.activeInternships || 0 }}</h3>
+                        <p>Active Internships</p>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">
+                        <i class="fas fa-calendar-check"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h3>{{ stats?.upcomingEvaluations || 0 }}</h3>
+                        <p>Upcoming Evaluations</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Student Progress Tracking -->
+        <div class="students-section">
+            <h2>Student Progress Tracking</h2>
+            <div class="students-table">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Student Name</th>
+                            <th>Company</th>
+                            <th>Topic</th>
+                            <th>Progress</th>
+                            <th>Last Update</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr *ngFor="let student of studentsList">
+                            <td>
+                                <div class="student-info">
+                                    <strong>{{ student.name }}</strong>
+                                    <small>{{ student.email }}</small>
+                                </div>
+                            </td>
+                            <td>{{ student.company }}</td>
+                            <td>{{ student.topic }}</td>
+                            <td>
+                                <div class="progress-indicator">
+                                    <div class="progress-bar-mini">
+                                        <div class="progress-fill-mini" [style.width.%]="student.progress"></div>
+                                    </div>
+                                    <span>{{ student.progress }}%</span>
+                                </div>
+                            </td>
+                            <td>{{ student.lastUpdate }}</td>
+                            <td>
+                                <div class="action-buttons">
+                                    <button class="btn-icon" title="View Logbook" (click)="viewLogbook(student.id)">
+                                        <i class="fas fa-book"></i>
+                                    </button>
+                                    <button class="btn-icon" title="Send Message" (click)="contactStudent(student.id)">
+                                        <i class="fas fa-envelope"></i>
+                                    </button>
+                                    <button class="btn-icon" title="Evaluate" (click)="evaluateStudent(student.id)">
+                                        <i class="fas fa-star"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Pending Validations -->
+        <div class="validations-section">
+            <h2>Pending Topic Validations</h2>
+            <div class="validations-grid">
+                <div class="validation-card" *ngFor="let validation of pendingValidations">
+                    <div class="validation-header">
+                        <h3>{{ validation.studentName }}</h3>
+                        <span class="badge-date">{{ validation.submissionDate }}</span>
+                    </div>
+                    <div class="validation-content">
+                        <h4>Topic: {{ validation.topic }}</h4>
+                        <p><strong>Company:</strong> {{ validation.company }}</p>
+                        <p><strong>Description:</strong> {{ validation.description }}</p>
+                    </div>
+                    <div class="validation-actions">
+                        <button class="btn-approve" (click)="approveValidation(validation.id)">
+                            <i class="fas fa-check"></i> Approve
+                        </button>
+                        <button class="btn-reject" (click)="rejectValidation(validation.id)">
+                            <i class="fas fa-times"></i> Request Changes
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="actions-section">
+            <h2>Quick Actions</h2>
+            <div class="actions-grid">
+                <button class="action-btn" (click)="navigateTo('/stages')">
+                    <i class="fas fa-users"></i>
+                    View All Students
+                </button>
+                <button class="action-btn" (click)="navigateTo('/teacher/validations')">
+                    <i class="fas fa-clipboard-check"></i>
+                    Review Validations
+                </button>
+                <button class="action-btn" (click)="navigateTo('/teacher/evaluations')">
+                    <i class="fas fa-star"></i>
+                    Submit Evaluations
+                </button>
+                <button class="action-btn" (click)="assignTask()">
+                    <i class="fas fa-tasks"></i>
+                    Assign Task
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+>>>>>>> 2d3d62c5d004508496c215ced2ea02973e183bc3

@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 import { CommonModule } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
 import { Component, OnInit } from '@angular/core';
@@ -68,4 +69,16 @@ export class Evaluation implements OnInit {
     if (Number.isNaN(date.getTime())) return String(value);
     return date.toLocaleString('fr-FR');
   }
+=======
+import { Component } from '@angular/core';
+
+@Component({
+  selector: 'app-evaluation',
+  imports: [],
+  templateUrl: './evaluation.html',
+  styleUrl: './evaluation.css',
+})
+export class Evaluation {
+
+>>>>>>> 2d3d62c5d004508496c215ced2ea02973e183bc3
 }

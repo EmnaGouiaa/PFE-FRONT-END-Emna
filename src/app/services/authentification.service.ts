@@ -28,6 +28,7 @@ export interface ReponseAuthentification {
   prenom: string;
   email: string;
   role: RoleUtilisateur | string;
+<<<<<<< HEAD
   doitChangerMotDePasse?: boolean;
 }
 
@@ -44,6 +45,8 @@ export interface ResetPasswordRequest {
 
 export interface PasswordResetResponse {
   message: string;
+=======
+>>>>>>> 2d3d62c5d004508496c215ced2ea02973e183bc3
 }
 
 export interface UtilisateurActuel {
@@ -52,7 +55,10 @@ export interface UtilisateurActuel {
   prenom: string;
   email: string;
   role: RoleUtilisateur | null;
+<<<<<<< HEAD
   doitChangerMotDePasse: boolean;
+=======
+>>>>>>> 2d3d62c5d004508496c215ced2ea02973e183bc3
 }
 
 @Injectable({
@@ -66,7 +72,10 @@ export class AuthentificationService {
   private readonly cleNom = 'nom';
   private readonly clePrenom = 'prenom';
   private readonly cleEmail = 'email';
+<<<<<<< HEAD
   private readonly cleDoitChangerMotDePasse = 'doitChangerMotDePasse';
+=======
+>>>>>>> 2d3d62c5d004508496c215ced2ea02973e183bc3
 
   private readonly estAuthentifieSubject = new BehaviorSubject<boolean>(this.estAuthentifie());
   readonly estAuthentifie$ = this.estAuthentifieSubject.asObservable();
@@ -102,6 +111,7 @@ export class AuthentificationService {
     );
   }
 
+<<<<<<< HEAD
   forgotPassword(donnees: ForgotPasswordRequest): Observable<PasswordResetResponse> {
     return this.http.post<PasswordResetResponse>(`${this.apiUrl}/forgot-password`, {
       email: donnees.email.trim()
@@ -121,6 +131,8 @@ export class AuthentificationService {
     );
   }
 
+=======
+>>>>>>> 2d3d62c5d004508496c215ced2ea02973e183bc3
   deconnexion(): void {
     localStorage.removeItem(this.cleToken);
     localStorage.removeItem(this.cleRole);
@@ -128,7 +140,10 @@ export class AuthentificationService {
     localStorage.removeItem(this.cleNom);
     localStorage.removeItem(this.clePrenom);
     localStorage.removeItem(this.cleEmail);
+<<<<<<< HEAD
     localStorage.removeItem(this.cleDoitChangerMotDePasse);
+=======
+>>>>>>> 2d3d62c5d004508496c215ced2ea02973e183bc3
 
     // Legacy keys that can cause stale auth mixing.
     localStorage.removeItem('jwtToken');
@@ -156,8 +171,13 @@ export class AuthentificationService {
   }
 
   getRoleUtilisateur(): RoleUtilisateur | null {
+<<<<<<< HEAD
     // Source of truth: the JWT token claims. Fallback to the stored role when decoding is unavailable.
     return this.extraireRoleDepuisToken(this.getToken()) ?? this.normaliserRole(this.getRole());
+=======
+    // Source of truth: the JWT token claims.
+    return this.extraireRoleDepuisToken(this.getToken());
+>>>>>>> 2d3d62c5d004508496c215ced2ea02973e183bc3
   }
 
   getUserId(): number | null {
@@ -175,6 +195,7 @@ export class AuthentificationService {
     return localStorage.getItem(this.cleEmail);
   }
 
+<<<<<<< HEAD
   doitChangerMotDePasse(): boolean {
     return localStorage.getItem(this.cleDoitChangerMotDePasse) === 'true';
   }
@@ -190,10 +211,13 @@ export class AuthentificationService {
     }
   }
 
+=======
+>>>>>>> 2d3d62c5d004508496c215ced2ea02973e183bc3
   aRole(role: RoleUtilisateur): boolean {
     return this.getRoleUtilisateur() === role;
   }
 
+<<<<<<< HEAD
   estResponsableStages(role: RoleUtilisateur | null = this.getRoleUtilisateur()): boolean {
     return (
       role === RoleUtilisateur.RESPONSABLE_SERVICE_STAGES ||
@@ -221,14 +245,19 @@ export class AuthentificationService {
     }
   }
 
+=======
+>>>>>>> 2d3d62c5d004508496c215ced2ea02973e183bc3
   getUtilisateurActuel(): UtilisateurActuel | null {
     return this.utilisateurActuelSubject.value;
   }
 
+<<<<<<< HEAD
   actualiserSession(reponse: ReponseAuthentification): void {
     this.sauvegarderSession(reponse);
   }
 
+=======
+>>>>>>> 2d3d62c5d004508496c215ced2ea02973e183bc3
   private sauvegarderSession(reponse: ReponseAuthentification): void {
     // Ensure no stale role/token from previous logins remains.
     this.effacerDonneesDeSessionAvantConnexion();
@@ -236,7 +265,10 @@ export class AuthentificationService {
     // Prefer token claims as source of truth (it must match backend authorization).
     const roleDepuisToken = this.extraireRoleDepuisToken(reponse.token);
     const roleDepuisReponse = this.normaliserRole(String(reponse.role));
+<<<<<<< HEAD
     const roleFinal = roleDepuisToken ?? roleDepuisReponse;
+=======
+>>>>>>> 2d3d62c5d004508496c215ced2ea02973e183bc3
 
     if (roleDepuisReponse && roleDepuisToken !== roleDepuisReponse) {
       console.warn('⚠️ Rôle différent entre token et réponse. Token:', roleDepuisToken, 'Réponse:', roleDepuisReponse);
@@ -247,9 +279,15 @@ export class AuthentificationService {
     }
 
     localStorage.setItem(this.cleToken, reponse.token);
+<<<<<<< HEAD
     // Persist the resolved role to keep redirects/guards stable even if token decoding fails later.
     if (roleFinal) {
       localStorage.setItem(this.cleRole, String(roleFinal));
+=======
+    // Store ONLY the role derived from JWT (never trust response.role as source of truth).
+    if (roleDepuisToken) {
+      localStorage.setItem(this.cleRole, String(roleDepuisToken));
+>>>>>>> 2d3d62c5d004508496c215ced2ea02973e183bc3
     } else {
       localStorage.removeItem(this.cleRole);
     }
@@ -257,7 +295,10 @@ export class AuthentificationService {
     localStorage.setItem(this.cleNom, reponse.nom);
     localStorage.setItem(this.clePrenom, reponse.prenom);
     localStorage.setItem(this.cleEmail, reponse.email);
+<<<<<<< HEAD
     localStorage.setItem(this.cleDoitChangerMotDePasse, String(Boolean(reponse.doitChangerMotDePasse)));
+=======
+>>>>>>> 2d3d62c5d004508496c215ced2ea02973e183bc3
 
     this.estAuthentifieSubject.next(true);
     this.utilisateurActuelSubject.next(this.construireUtilisateurActuel(reponse));
@@ -272,6 +313,7 @@ export class AuthentificationService {
     const role = this.getRoleUtilisateur();
     const userId = this.getUserId();
 
+<<<<<<< HEAD
     return {
       userId,
       nom,
@@ -280,19 +322,29 @@ export class AuthentificationService {
       role,
       doitChangerMotDePasse: this.doitChangerMotDePasse()
     };
+=======
+    return { userId, nom, prenom, email, role };
+>>>>>>> 2d3d62c5d004508496c215ced2ea02973e183bc3
   }
 
   private construireUtilisateurActuel(reponse: ReponseAuthentification): UtilisateurActuel {
     const roleDepuisToken = this.extraireRoleDepuisToken(reponse.token);
+<<<<<<< HEAD
     const roleDepuisReponse = this.normaliserRole(String(reponse.role));
+=======
+>>>>>>> 2d3d62c5d004508496c215ced2ea02973e183bc3
 
     return {
       userId: reponse.userId,
       nom: reponse.nom,
       prenom: reponse.prenom,
       email: reponse.email,
+<<<<<<< HEAD
       role: roleDepuisToken ?? roleDepuisReponse,
       doitChangerMotDePasse: Boolean(reponse.doitChangerMotDePasse)
+=======
+      role: roleDepuisToken
+>>>>>>> 2d3d62c5d004508496c215ced2ea02973e183bc3
     };
   }
 
@@ -320,7 +372,10 @@ export class AuthentificationService {
       this.cleNom,
       this.clePrenom,
       this.cleEmail,
+<<<<<<< HEAD
       this.cleDoitChangerMotDePasse,
+=======
+>>>>>>> 2d3d62c5d004508496c215ced2ea02973e183bc3
       'jwtToken',
       'userRole'
     ];

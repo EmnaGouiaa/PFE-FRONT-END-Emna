@@ -44,11 +44,20 @@ export class StudentDashboardComponent implements OnInit {
       next: (demandes) => {
         this.demandesStage = demandes ?? [];
         this.isLoading = false;
+<<<<<<< HEAD
       },
       error: (error) => {
         console.error('Erreur lors du chargement des demandes de stage :', error);
         this.isLoading = false;
         alert('Erreur lors du chargement des demandes de stage.');
+=======
+        console.log('📋 Loaded demandes-stage:', demandes);
+      },
+      error: (error) => {
+        console.error('❌ Error loading demandes-stage:', error);
+        this.isLoading = false;
+        alert('Erreur lors du chargement des demandes de stage');
+>>>>>>> 2d3d62c5d004508496c215ced2ea02973e183bc3
       }
     });
   }
@@ -58,7 +67,11 @@ export class StudentDashboardComponent implements OnInit {
   }
 
   viewRequestDetails(requestId: number): void {
+<<<<<<< HEAD
     alert(`Détails de la demande #${requestId} : cette fonctionnalité n’est pas disponible pour le moment.`);
+=======
+    alert(`Viewing details for request #${requestId}. Feature coming soon!`);
+>>>>>>> 2d3d62c5d004508496c215ced2ea02973e183bc3
   }
 
   getStatusColor(status: string): string {
@@ -100,11 +113,16 @@ export class StudentDashboardComponent implements OnInit {
   }
 
   formatDate(dateString: string): string {
+<<<<<<< HEAD
     if (!dateString) return '-';
     const date = new Date(dateString);
     if (Number.isNaN(date.getTime())) return '-';
 
     return date.toLocaleDateString('fr-FR', {
+=======
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', {
+>>>>>>> 2d3d62c5d004508496c215ced2ea02973e183bc3
       year: 'numeric',
       month: 'short',
       day: 'numeric',

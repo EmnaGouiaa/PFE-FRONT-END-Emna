@@ -23,7 +23,11 @@ import { AcademicValidationDialogComponent } from './academic-validation-dialog.
   ],
   template: `
     <div class="validation-container">
+<<<<<<< HEAD
       <h2>Validation académique des demandes de stage</h2>
+=======
+      <h2>Academic Validation - Internship Requests</h2>
+>>>>>>> 2d3d62c5d004508496c215ced2ea02973e183bc3
 
       <div *ngIf="isLoading" class="loading">
         <mat-spinner diameter="40"></mat-spinner>
@@ -33,31 +37,51 @@ import { AcademicValidationDialogComponent } from './academic-validation-dialog.
         <table mat-table [dataSource]="requests" class="validation-table">
           <!-- Student Name -->
           <ng-container matColumnDef="studentName">
+<<<<<<< HEAD
             <th mat-header-cell *matHeaderCellDef>Étudiant</th>
+=======
+            <th mat-header-cell *matHeaderCellDef>Student Name</th>
+>>>>>>> 2d3d62c5d004508496c215ced2ea02973e183bc3
             <td mat-cell *matCellDef="let element">{{ element.studentName }}</td>
           </ng-container>
 
           <!-- Subject -->
           <ng-container matColumnDef="subject">
+<<<<<<< HEAD
             <th mat-header-cell *matHeaderCellDef>Sujet du stage</th>
+=======
+            <th mat-header-cell *matHeaderCellDef>Internship Subject</th>
+>>>>>>> 2d3d62c5d004508496c215ced2ea02973e183bc3
             <td mat-cell *matCellDef="let element">{{ element.internshipSubject }}</td>
           </ng-container>
 
           <!-- Company -->
           <ng-container matColumnDef="company">
+<<<<<<< HEAD
             <th mat-header-cell *matHeaderCellDef>Entreprise</th>
+=======
+            <th mat-header-cell *matHeaderCellDef>Company</th>
+>>>>>>> 2d3d62c5d004508496c215ced2ea02973e183bc3
             <td mat-cell *matCellDef="let element">{{ element.companyName }}</td>
           </ng-container>
 
           <!-- Submitted Date -->
           <ng-container matColumnDef="submittedDate">
+<<<<<<< HEAD
             <th mat-header-cell *matHeaderCellDef>Date de soumission</th>
+=======
+            <th mat-header-cell *matHeaderCellDef>Submitted Date</th>
+>>>>>>> 2d3d62c5d004508496c215ced2ea02973e183bc3
             <td mat-cell *matCellDef="let element">{{ element.submittedDate | date: 'short' }}</td>
           </ng-container>
 
           <!-- Status -->
           <ng-container matColumnDef="status">
+<<<<<<< HEAD
             <th mat-header-cell *matHeaderCellDef>Statut</th>
+=======
+            <th mat-header-cell *matHeaderCellDef>Status</th>
+>>>>>>> 2d3d62c5d004508496c215ced2ea02973e183bc3
             <td mat-cell *matCellDef="let element">
               <span [ngClass]="'status-badge ' + element.academicValidationStatus.toLowerCase()">
                 {{ element.academicValidationStatus }}
@@ -69,11 +93,19 @@ import { AcademicValidationDialogComponent } from './academic-validation-dialog.
           <ng-container matColumnDef="actions">
             <th mat-header-cell *matHeaderCellDef>Actions</th>
             <td mat-cell *matCellDef="let element">
+<<<<<<< HEAD
               <button mat-raised-button color="primary" (click)="onView(element)">Voir</button>
               <button mat-raised-button color="accent" (click)="onApprove(element)"
                 *ngIf="element.academicValidationStatus === 'PENDING'">Approuver</button>
               <button mat-raised-button color="warn" (click)="onReject(element)"
                 *ngIf="element.academicValidationStatus === 'PENDING'">Refuser</button>
+=======
+              <button mat-raised-button color="primary" (click)="onView(element)">View</button>
+              <button mat-raised-button color="accent" (click)="onApprove(element)"
+                *ngIf="element.academicValidationStatus === 'PENDING'">Approve</button>
+              <button mat-raised-button color="warn" (click)="onReject(element)"
+                *ngIf="element.academicValidationStatus === 'PENDING'">Reject</button>
+>>>>>>> 2d3d62c5d004508496c215ced2ea02973e183bc3
             </td>
           </ng-container>
 
@@ -83,7 +115,11 @@ import { AcademicValidationDialogComponent } from './academic-validation-dialog.
       </div>
 
       <div *ngIf="!isLoading && requests.length === 0" class="no-data">
+<<<<<<< HEAD
         <p>Aucune validation académique en attente.</p>
+=======
+        <p>No pending academic validations</p>
+>>>>>>> 2d3d62c5d004508496c215ced2ea02973e183bc3
       </div>
     </div>
   `,

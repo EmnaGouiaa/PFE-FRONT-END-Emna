@@ -26,9 +26,12 @@
         </div>
         <div class="nav-user">
             <span class="user-info">{{ userName$ | async }}</span>
+<<<<<<< HEAD
             <a class="nav-link" (click)="navigateTo('/admin/profil')">
                 <i class="fas fa-user"></i> Gérer profil
             </a>
+=======
+>>>>>>> 2d3d62c5d004508496c215ced2ea02973e183bc3
             <button class="logout-btn" (click)="logout()">
                 <i class="fas fa-sign-out-alt"></i> Logout
             </button>
@@ -150,7 +153,30 @@
             </div>
         </div>
 
+<<<<<<< HEAD
         
     </div>
 </div>
 
+=======
+        <!-- Quick Actions -->
+        <div class="actions-section">
+            <h2>Quick Actions</h2>
+            <div class="actions-grid">
+                <button class="action-btn" (click)="navigateTo('/admin/users')">
+                    <i class="fas fa-user-plus"></i>
+                    Add New User
+                </button>
+                <button class="action-btn" (click)="navigateTo('/stages')">
+                    <i class="fas fa-briefcase"></i>
+                    View Internships
+                </button>
+                <button class="action-btn" (click)="navigateTo('/admin/reports')">
+                    <i class="fas fa-download"></i>
+                    Export Reports
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+>>>>>>> 2d3d62c5d004508496c215ced2ea02973e183bc3

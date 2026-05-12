@@ -45,7 +45,11 @@ import { AuthService } from '../services/auth.service';
             
             <!-- User info & logout -->
             <span style="color: #ccc;">|</span>
+<<<<<<< HEAD
             <a routerLink="/profile" style="color: white; text-decoration: none;">👤 Gérer profil</a>
+=======
+            <a routerLink="/profile" style="color: white; text-decoration: none;">👤 Profile</a>
+>>>>>>> 2d3d62c5d004508496c215ced2ea02973e183bc3
             <span style="color: #ccc;">|</span>
             <span style="color: #aaa;">{{ userEmail }}</span>
             <button (click)="logout()" style="background: #dc3545; color: white; border: none; padding: 5px 10px; cursor: pointer; border-radius: 3px;">

@@ -1,9 +1,16 @@
 <div class="page">
+<<<<<<< HEAD
   <header class="page-header dashboard-header dashboard-top-header">
     <div>
       <span class="dashboard-kicker">Pilotage demandes</span>
       <h1>Demandes de creation d'entreprise</h1>
       <p>Le meme style que le dashboard admin pour suivre la double validation, prioriser les actions et eviter les ecrans vides.</p>
+=======
+  <header class="page-header">
+    <div>
+      <h1>Demandes de stage - Validation</h1>
+      <p>Valider ou refuser les demandes et suivre l'etat Admin + Responsable.</p>
+>>>>>>> 2d3d62c5d004508496c215ced2ea02973e183bc3
     </div>
     <div class="header-actions">
       <button class="btn btn-secondary" (click)="chargerDemandes()" [disabled]="isLoading">Rafraichir</button>
@@ -11,6 +18,7 @@
   </header>
 
   <section class="stats">
+<<<<<<< HEAD
     <div class="stat dashboard-stat">
       <div class="stat-head">
         <span class="stat-icon" aria-hidden="true">
@@ -60,6 +68,23 @@
         <div class="stat-label">Double validation</div>
       </div>
       <div class="stat-value">{{ countDemandesCompletes() }}</div>
+=======
+    <div class="stat">
+      <div class="stat-label">Total</div>
+      <div class="stat-value">{{ getTotal() }}</div>
+    </div>
+    <div class="stat">
+      <div class="stat-label">Admin en attente</div>
+      <div class="stat-value">{{ countAdmin(StatutValidation.EN_ATTENTE) }}</div>
+    </div>
+    <div class="stat">
+      <div class="stat-label">Admin approuvees</div>
+      <div class="stat-value">{{ countAdmin(StatutValidation.APPROUVEE) }}</div>
+    </div>
+    <div class="stat">
+      <div class="stat-label">Admin rejetees</div>
+      <div class="stat-value">{{ countAdmin(StatutValidation.REJETEE) }}</div>
+>>>>>>> 2d3d62c5d004508496c215ced2ea02973e183bc3
     </div>
   </section>
 
@@ -87,10 +112,13 @@
     </select>
   </section>
 
+<<<<<<< HEAD
   <div class="support-banner">
     Une entreprise est creee automatiquement des que l'administrateur et le responsable universitaire ont tous les deux valide la demande.
   </div>
 
+=======
+>>>>>>> 2d3d62c5d004508496c215ced2ea02973e183bc3
   <div *ngIf="errorMessage" class="alert alert-error">{{ errorMessage }}</div>
   <div *ngIf="successMessage" class="alert alert-success">{{ successMessage }}</div>
   <div *ngIf="isLoading" class="loading">Chargement...</div>
@@ -109,7 +137,10 @@
           <th>Encadrant</th>
           <th>Validation Admin</th>
           <th>Validation Responsable</th>
+<<<<<<< HEAD
           <th>Statut global</th>
+=======
+>>>>>>> 2d3d62c5d004508496c215ced2ea02973e183bc3
           <th>Actions</th>
         </tr>
       </thead>
@@ -128,15 +159,22 @@
             <div class="cell-title">{{ d.nomEncadrant }}</div>
             <div class="cell-sub">{{ d.emailEncadrant }}</div>
           </td>
+<<<<<<< HEAD
           <td><span [class]="badgeClass(getEffectiveAdminStatus(d))">{{ getEffectiveAdminStatus(d) }}</span></td>
+=======
+          <td><span [class]="badgeClass(d.statutValidationAdmin)">{{ d.statutValidationAdmin }}</span></td>
+>>>>>>> 2d3d62c5d004508496c215ced2ea02973e183bc3
           <td>
             <span [class]="badgeClass(d.statutValidationResponsableStages || StatutValidation.EN_ATTENTE)">
               {{ d.statutValidationResponsableStages || StatutValidation.EN_ATTENTE }}
             </span>
           </td>
+<<<<<<< HEAD
           <td>
             <span [class]="badgeClassForDemande(d)">{{ getGlobalStatusLabel(d) }}</span>
           </td>
+=======
+>>>>>>> 2d3d62c5d004508496c215ced2ea02973e183bc3
           <td class="actions">
             <button class="btn btn-success" (click)="approuverAdmin(d)" [disabled]="!canAdminAct(d) || isLoading">
               Valider
@@ -144,11 +182,18 @@
             <button class="btn btn-danger" (click)="refuserAdmin(d)" [disabled]="!canAdminAct(d) || isLoading">
               Refuser
             </button>
+<<<<<<< HEAD
+=======
+            <button class="btn btn-primary" (click)="creerEntreprise(d)" [disabled]="!canCreerEntreprise(d) || isLoading">
+              Creer entreprise
+            </button>
+>>>>>>> 2d3d62c5d004508496c215ced2ea02973e183bc3
           </td>
         </tr>
       </tbody>
     </table>
   </div>
+<<<<<<< HEAD
 
   <div class="refusal-modal-backdrop" *ngIf="rejectModalOpen" (click)="fermerFenetreRefus()">
     <section class="refusal-modal" (click)="$event.stopPropagation()">
@@ -190,4 +235,6 @@
       </div>
     </section>
   </div>
+=======
+>>>>>>> 2d3d62c5d004508496c215ced2ea02973e183bc3
 </div>

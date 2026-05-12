@@ -47,8 +47,13 @@ export class AdminValidationListComponent implements OnInit {
         this.dataSource = requests;
         this.isLoading = false;
       },
+<<<<<<< HEAD
       error: () => {
         this.snackBar.open('Erreur lors du chargement des demandes.', 'Fermer', { duration: 3000 });
+=======
+      error: (error) => {
+        this.snackBar.open('Error loading requests', 'Close', { duration: 3000 });
+>>>>>>> 2d3d62c5d004508496c215ced2ea02973e183bc3
         this.isLoading = false;
       }
     });
@@ -60,6 +65,7 @@ export class AdminValidationListComponent implements OnInit {
       data: { request }
     });
 
+<<<<<<< HEAD
     dialogRef.afterClosed().subscribe((result) => {
       if (result) {
         this.loadRequests();
@@ -68,6 +74,16 @@ export class AdminValidationListComponent implements OnInit {
             duration: 5000,
             panelClass: ['success-snackbar']
           });
+=======
+    dialogRef.afterClosed().subscribe(result => {
+      if (result) {
+        this.loadRequests();
+        if (result.status === InternshipStatus.OFFICIAL) {
+           this.snackBar.open('Internship is now official!', '🎉', { 
+             duration: 5000,
+             panelClass: ['success-snackbar']
+           });
+>>>>>>> 2d3d62c5d004508496c215ced2ea02973e183bc3
         }
       }
     });
@@ -75,6 +91,7 @@ export class AdminValidationListComponent implements OnInit {
 
   getStatusClass(status: string): string {
     switch (status) {
+<<<<<<< HEAD
       case InternshipStatus.ACADEMICALLY_APPROVED:
         return 'status-approved-academic';
       case InternshipStatus.OFFICIAL:
@@ -83,6 +100,12 @@ export class AdminValidationListComponent implements OnInit {
         return 'status-rejected-admin';
       default:
         return 'status-pending';
+=======
+      case InternshipStatus.ACADEMICALLY_APPROVED: return 'status-approved-academic';
+      case InternshipStatus.OFFICIAL: return 'status-official';
+      case InternshipStatus.ADMIN_REJECTED: return 'status-rejected-admin';
+      default: return 'status-pending';
+>>>>>>> 2d3d62c5d004508496c215ced2ea02973e183bc3
     }
   }
 

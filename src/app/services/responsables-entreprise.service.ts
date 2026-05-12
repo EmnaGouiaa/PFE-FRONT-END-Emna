@@ -10,11 +10,15 @@ export interface ResponsableEntreprise {
   nom?: string;
   email?: string;
   telephone?: string;
+<<<<<<< HEAD
   poste?: string;
   service?: string;
   nomFichierSignature?: string;
   entrepriseId?: number;
   entrepriseNom?: string;
+=======
+  entrepriseId?: number;
+>>>>>>> 2d3d62c5d004508496c215ced2ea02973e183bc3
   actif?: boolean;
 }
 
@@ -23,8 +27,11 @@ export interface CreateResponsableEntrepriseRequest {
   nom: string;
   email: string;
   telephone?: string;
+<<<<<<< HEAD
   poste?: string;
   service?: string;
+=======
+>>>>>>> 2d3d62c5d004508496c215ced2ea02973e183bc3
   entrepriseId?: number;
 }
 
@@ -33,8 +40,11 @@ export interface UpdateResponsableEntrepriseRequest {
   nom?: string;
   email?: string;
   telephone?: string;
+<<<<<<< HEAD
   poste?: string;
   service?: string;
+=======
+>>>>>>> 2d3d62c5d004508496c215ced2ea02973e183bc3
   entrepriseId?: number;
   actif?: boolean;
 }
@@ -78,15 +88,20 @@ export class ResponsablesEntrepriseService {
       nom: raw?.nom ?? raw?.lastName ?? '',
       email: raw?.email ?? '',
       telephone: raw?.telephone ?? raw?.phone ?? '',
+<<<<<<< HEAD
       poste: raw?.poste ?? '',
       service: raw?.service ?? '',
       nomFichierSignature: raw?.nomFichierSignature ?? '',
       entrepriseId: raw?.entrepriseId ?? raw?.idEntreprise ?? raw?.entreprise?.id,
       entrepriseNom: raw?.entrepriseNom ?? raw?.entreprise?.nomEntreprise ?? raw?.entreprise?.nom ?? '',
+=======
+      entrepriseId: raw?.entrepriseId ?? raw?.idEntreprise ?? raw?.entreprise?.id,
+>>>>>>> 2d3d62c5d004508496c215ced2ea02973e183bc3
       actif
     };
   }
 
+<<<<<<< HEAD
   private toApiPayload(
     payload: CreateResponsableEntrepriseRequest | UpdateResponsableEntrepriseRequest
   ): CreateResponsableEntrepriseRequest | UpdateResponsableEntrepriseRequest {
@@ -101,6 +116,8 @@ export class ResponsablesEntrepriseService {
     };
   }
 
+=======
+>>>>>>> 2d3d62c5d004508496c215ced2ea02973e183bc3
   list(): Observable<ResponsableEntreprise[]> {
     return this.http
       .get<any>(this.API_URL)
@@ -115,13 +132,21 @@ export class ResponsablesEntrepriseService {
 
   create(payload: CreateResponsableEntrepriseRequest): Observable<ResponsableEntreprise> {
     return this.http
+<<<<<<< HEAD
       .post<any>(this.API_URL, this.toApiPayload(payload))
+=======
+      .post<any>(this.API_URL, payload)
+>>>>>>> 2d3d62c5d004508496c215ced2ea02973e183bc3
       .pipe(map((r) => this.normalizeResponsable(this.unwrapObject<any>(r))));
   }
 
   update(id: number, payload: UpdateResponsableEntrepriseRequest): Observable<ResponsableEntreprise> {
     return this.http
+<<<<<<< HEAD
       .put<any>(`${this.API_URL}/${id}`, this.toApiPayload(payload))
+=======
+      .put<any>(`${this.API_URL}/${id}`, payload)
+>>>>>>> 2d3d62c5d004508496c215ced2ea02973e183bc3
       .pipe(map((r) => this.normalizeResponsable(this.unwrapObject<any>(r))));
   }
 

@@ -1,4 +1,5 @@
 <div class="admin-container">
+<<<<<<< HEAD
   <div class="dot-pattern"></div>
   <div class="shape-1"></div>
   <div class="shape-2"></div>
@@ -311,3 +312,394 @@
   </div>
 </div>
 
+=======
+    <!-- Background Pattern -->
+    <div class="dot-pattern"></div>
+    <div class="shape-1"></div>
+    <div class="shape-2"></div>
+
+    <div class="admin-wrapper">
+        <!-- Top Summary -->
+        <header class="admin-header">
+            <div class="header-top">
+                <div class="header-content">
+                    <h1>
+                        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2">
+                            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                            <circle cx="9" cy="7" r="4" />
+                            <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+                            <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+                        </svg>
+                        Dashboard Admin
+                    </h1>
+                    <p class="header-subtitle">
+                        {{ greeting }} — {{ subtitle }}
+                    </p>
+                </div>
+
+                <div class="header-actions">
+                    <button type="button" class="refresh-btn" (click)="loadStats()" [disabled]="isLoading">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2">
+                            <path d="M21 12a9 9 0 1 1-2.64-6.36" />
+                            <polyline points="21 3 21 9 15 9" />
+                        </svg>
+                        Actualiser
+                    </button>
+
+                    <div class="sync-pill" [class.sync-error]="apiStatus.users === 'error'">
+                        <span class="status-dot" [class.ok]="apiStatus.users === 'ok'"
+                            [class.error]="apiStatus.users === 'error'" [class.loading]="apiStatus.users === 'loading'"></span>
+                        <span>
+                            {{ lastUpdatedAt ? (lastUpdatedAt | date: 'short') : 'Synchronisation…' }}
+                        </span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="header-kpis" *ngIf="!isLoading">
+                <div class="mini-kpi">
+                    <span class="mini-label">Activation</span>
+                    <span class="mini-value">{{ kpis.activationRate }}%</span>
+                </div>
+                <div class="mini-kpi">
+                    <span class="mini-label">Actifs</span>
+                    <span class="mini-value">{{ kpis.activeUsers }}</span>
+                </div>
+                <div class="mini-kpi">
+                    <span class="mini-label">Inactifs</span>
+                    <span class="mini-value">{{ kpis.inactiveUsers }}</span>
+                </div>
+                <div class="mini-kpi">
+                    <span class="mini-label">Admins</span>
+                    <span class="mini-value">{{ kpis.admins }}</span>
+                </div>
+            </div>
+        </header>
+
+        <div class="dashboard-error" *ngIf="errorMessage">{{ errorMessage }}</div>
+
+        <ng-container *ngIf="!isLoading; else loadingSkeleton">
+            <!-- Main Stats Cards -->
+            <div class="stats-grid">
+                <div class="stat-card stat-total">
+                    <div class="stat-icon">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2">
+                            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                            <circle cx="9" cy="7" r="4" />
+                        </svg>
+                    </div>
+                    <div class="stat-info">
+                        <div class="stat-top">
+                            <p>Total utilisateurs</p>
+                            <span class="stat-chip">{{ kpis.activeUsers }} actifs</span>
+                        </div>
+                        <h3>{{ stats.totalUsers }}</h3>
+                        <div class="stat-sub">
+                            <span class="muted">Inactifs:</span> {{ kpis.inactiveUsers }}
+                        </div>
+                    </div>
+                </div>
+
+                <div class="stat-card stat-students">
+                    <div class="stat-icon">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2">
+                            <path d="M22 10v6M2 10l10-5 10 5-10 5z" />
+                            <path d="M6 12v5c3 2 6 2 9 0v-5" />
+                        </svg>
+                    </div>
+                    <div class="stat-info">
+                        <div class="stat-top">
+                            <p>Stagiaires</p>
+                            <span class="stat-chip">{{ stats.totalUsers ? (stats.students / stats.totalUsers * 100 | number:'1.0-0') : 0 }}%</span>
+                        </div>
+                        <h3>{{ stats.students }}</h3>
+                        <div class="stat-sub">
+                            <span class="muted">Part du total</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="stat-card stat-teachers">
+                    <div class="stat-icon">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2">
+                            <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z" />
+                            <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z" />
+                        </svg>
+                    </div>
+                    <div class="stat-info">
+                        <div class="stat-top">
+                            <p>Encadrants</p>
+                            <span class="stat-chip">{{ stats.totalUsers ? (stats.teachers / stats.totalUsers * 100 | number:'1.0-0') : 0 }}%</span>
+                        </div>
+                        <h3>{{ stats.teachers }}</h3>
+                        <div class="stat-sub">
+                            <span class="muted">Acad. + Pro</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="stat-card stat-companies">
+                    <div class="stat-icon">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2">
+                            <rect x="2" y="7" width="20" height="14" rx="2" ry="2" />
+                            <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16" />
+                        </svg>
+                    </div>
+                    <div class="stat-info">
+                        <div class="stat-top">
+                            <p>Entreprises</p>
+                            <span class="stat-chip"
+                                [class.chip-error]="apiStatus.entreprises === 'error'">
+                                {{ apiStatus.entreprises === 'ok' ? (entreprises.active + ' actives') : 'API indisponible' }}
+                            </span>
+                        </div>
+                        <h3>{{ stats.companies }}</h3>
+                        <div class="stat-sub">
+                            <span class="muted">Représentants:</span> {{ kpis.entrepriseReps }}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Secondary KPI Grid -->
+            <div class="kpi-grid">
+                <div class="kpi-card">
+                    <div class="kpi-title">Utilisateurs actifs</div>
+                    <div class="kpi-value">{{ kpis.activeUsers }}</div>
+                    <div class="kpi-foot">Activation: <strong>{{ kpis.activationRate }}%</strong></div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-title">Utilisateurs inactifs</div>
+                    <div class="kpi-value">{{ kpis.inactiveUsers }}</div>
+                    <div class="kpi-foot">À traiter: <strong>{{ kpis.inactiveUsers }}</strong></div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-title">Administrateurs</div>
+                    <div class="kpi-value">{{ kpis.admins }}</div>
+                    <div class="kpi-foot">Accès élevé</div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-title">Responsables stages</div>
+                    <div class="kpi-value">{{ kpis.managers }}</div>
+                    <div class="kpi-foot">Validation workflow</div>
+                </div>
+            </div>
+
+            <!-- Analytics + Health -->
+            <div class="analytics-grid">
+                <div class="analytics-card">
+                    <div class="card-header">
+                        <h2>Répartition par rôle</h2>
+                        <span class="pill">{{ stats.totalUsers }} utilisateurs</span>
+                    </div>
+
+                    <div class="role-bars" *ngIf="roleDistribution.length; else noRoles">
+                        <div class="role-bar" *ngFor="let item of roleDistribution">
+                            <div class="role-bar-top">
+                                <div class="role-bar-name">
+                                    <span [class]="'role-dot ' + item.badgeClass"></span>
+                                    <span class="role-text">{{ item.label }}</span>
+                                </div>
+                                <div class="role-bar-value">
+                                    <span class="count">{{ item.count }}</span>
+                                    <span class="muted">({{ item.pct | number:'1.0-0' }}%)</span>
+                                </div>
+                            </div>
+                            <div class="role-bar-track">
+                                <div [class]="'role-bar-fill ' + item.badgeClass" [style.width.%]="item.pct"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <ng-template #noRoles>
+                        <div class="empty-inline">Aucune donnée de rôle disponible.</div>
+                    </ng-template>
+                </div>
+
+                <div class="health-card">
+                    <div class="card-header">
+                        <h2>System Overview</h2>
+                        <span class="pill soft">Plateforme</span>
+                    </div>
+
+                    <div class="health-grid">
+                        <div class="donut" [style.--p]="kpis.activationRate">
+                            <div class="donut-center">
+                                <div class="donut-value">{{ kpis.activationRate }}%</div>
+                                <div class="donut-label">Activation</div>
+                            </div>
+                        </div>
+
+                        <div class="health-list">
+                            <div class="health-item">
+                                <span class="status-dot" [class.ok]="apiStatus.users === 'ok'"
+                                    [class.error]="apiStatus.users === 'error'"
+                                    [class.loading]="apiStatus.users === 'loading'"></span>
+                                <div>
+                                    <div class="health-title">API Utilisateurs</div>
+                                    <div class="health-sub">
+                                        {{ apiStatus.users === 'ok' ? 'Connectée' : (apiStatus.users === 'error' ? 'Erreur / indisponible' : 'Connexion…') }}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="health-item">
+                                <span class="status-dot" [class.ok]="apiStatus.entreprises === 'ok'"
+                                    [class.error]="apiStatus.entreprises === 'error'"
+                                    [class.loading]="apiStatus.entreprises === 'loading'"></span>
+                                <div>
+                                    <div class="health-title">API Entreprises</div>
+                                    <div class="health-sub">
+                                        {{ apiStatus.entreprises === 'ok' ? (entreprises.total + ' entreprise(s)') : (apiStatus.entreprises === 'error' ? 'Erreur / indisponible' : 'Connexion…') }}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="health-item">
+                                <span class="status-dot ok"></span>
+                                <div>
+                                    <div class="health-title">Dernière mise à jour</div>
+                                    <div class="health-sub">{{ lastUpdatedAt ? (lastUpdatedAt | date:'short') : '—' }}</div>
+                                </div>
+                            </div>
+
+                            <div class="health-item">
+                                <span class="status-dot warn"></span>
+                                <div>
+                                    <div class="health-title">Comptes inactifs</div>
+                                    <div class="health-sub">{{ kpis.inactiveUsers }} à traiter</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="quick-actions">
+                <a routerLink="/admin/utilisateurs" class="action-btn action-primary">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                        stroke-width="2">
+                        <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                        <circle cx="8.5" cy="7" r="4" />
+                        <line x1="20" y1="8" x2="20" y2="14" />
+                        <line x1="23" y1="11" x2="17" y2="11" />
+                    </svg>
+                    Utilisateurs
+                </a>
+                <a routerLink="/admin/entreprises" class="action-btn action-secondary">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                        stroke-width="2">
+                        <rect x="3" y="3" width="18" height="18" rx="2" />
+                        <path d="M7 7h10" />
+                        <path d="M7 12h10" />
+                        <path d="M7 17h10" />
+                    </svg>
+                    Entreprises
+                </a>
+                <a routerLink="/admin/representants" class="action-btn action-secondary">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                        stroke-width="2">
+                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                        <circle cx="12" cy="7" r="4" />
+                    </svg>
+                    Représentants
+                </a>
+                <a routerLink="/admin/demandes-stage" class="action-btn action-warning">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                        stroke-width="2">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                        <polyline points="14 2 14 8 20 8" />
+                        <line x1="16" y1="13" x2="8" y2="13" />
+                        <line x1="16" y1="17" x2="8" y2="17" />
+                    </svg>
+                    Demandes
+                </a>
+            </div>
+
+            <!-- Recent Users -->
+            <div class="recent-users-section">
+                <div class="section-header">
+                    <h2>Utilisateurs récents</h2>
+                    <a routerLink="/admin/utilisateurs" class="view-all-link">Voir tout →</a>
+                </div>
+
+                <div class="users-table-container" *ngIf="recentUsers.length > 0; else noUsers">
+                    <table class="users-table">
+                        <thead>
+                            <tr>
+                                <th>Nom</th>
+                                <th>Email</th>
+                                <th>Rôle</th>
+                                <th>Statut</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr *ngFor="let user of recentUsers">
+                                <td>
+                                    <div class="user-name">
+                                        <span class="user-avatar">{{ getInitials(user) }}</span>
+                                        <div class="user-name-meta">
+                                            <div class="user-fullname">{{ user.prenom }} {{ user.nom }}</div>
+                                            <div class="user-mini">
+                                                <span class="state-dot" [class.on]="user.actif"></span>
+                                                {{ user.actif ? 'Actif' : 'Inactif' }}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>{{ user.email }}</td>
+                                <td>
+                                    <span [class]="'role-badge ' + getRoleBadgeClass(user.role)">
+                                        {{ getRoleLabel(user.role) }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <span class="status-pill" [class.active]="user.actif" [class.inactive]="!user.actif">
+                                        {{ user.actif ? 'Actif' : 'Inactif' }}
+                                    </span>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <ng-template #noUsers>
+                    <div class="empty-state">
+                        <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="1.5">
+                            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                            <circle cx="9" cy="7" r="4" />
+                            <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+                            <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+                        </svg>
+                        <p>Aucun utilisateur trouvé</p>
+                        <a routerLink="/admin/utilisateurs" class="btn-add-first">Ajouter un utilisateur</a>
+                    </div>
+                </ng-template>
+            </div>
+        </ng-container>
+
+        <!-- Loading Skeleton -->
+        <ng-template #loadingSkeleton>
+            <div class="stats-grid">
+                <div class="stat-card skeleton" *ngFor="let i of [1,2,3,4]"></div>
+            </div>
+            <div class="kpi-grid">
+                <div class="kpi-card skeleton kpi-skeleton" *ngFor="let i of [1,2,3,4]"></div>
+            </div>
+            <div class="analytics-grid">
+                <div class="analytics-card skeleton big-skeleton"></div>
+                <div class="health-card skeleton big-skeleton"></div>
+            </div>
+            <div class="recent-users-section skeleton table-skeleton"></div>
+        </ng-template>
+    </div>
+</div>
+>>>>>>> 2d3d62c5d004508496c215ced2ea02973e183bc3

@@ -13,7 +13,10 @@ export interface User {
     actif: boolean;
     matricule?: string;
     filiere?: string;
+<<<<<<< HEAD
     filiereNom?: string;
+=======
+>>>>>>> 2d3d62c5d004508496c215ced2ea02973e183bc3
     niveau?: string;
     niveauStage?: string;
     grade?: string;
@@ -24,16 +27,23 @@ export interface User {
     adresse?: string;
     secteurActivite?: string;
     telephone?: string;
+<<<<<<< HEAD
     nomFichierSignature?: string;
     emailSent?: boolean | null;
     message?: string;
+=======
+>>>>>>> 2d3d62c5d004508496c215ced2ea02973e183bc3
 }
 
 export interface CreateUserRequest {
     prenom: string;
     nom: string;
     email: string;
+<<<<<<< HEAD
     telephone?: string;
+=======
+    motDePasse: string;
+>>>>>>> 2d3d62c5d004508496c215ced2ea02973e183bc3
     role: string;
 }
 
@@ -41,8 +51,13 @@ export interface UpdateUserRequest {
     prenom?: string;
     nom?: string;
     email?: string;
+<<<<<<< HEAD
     telephone?: string;
     nomFichierSignature?: string;
+=======
+    motDePasse?: string;
+    password?: string;
+>>>>>>> 2d3d62c5d004508496c215ced2ea02973e183bc3
     role?: string;
     actif?: boolean;
 }
@@ -64,6 +79,20 @@ export class UserManagementService {
 
     constructor(private http: HttpClient) { }
 
+<<<<<<< HEAD
+=======
+    private toLegacyPasswordPayload(payload: UpdateUserRequest): any {
+        const p: any = { ...payload };
+
+        if (typeof p.motDePasse === 'string' && p.motDePasse.trim() !== '') {
+            p.password = p.motDePasse;
+            delete p.motDePasse;
+        }
+
+        return p;
+    }
+
+>>>>>>> 2d3d62c5d004508496c215ced2ea02973e183bc3
     private unwrapAny(response: any): any {
         return (response && typeof response === 'object' && 'data' in response) ? response.data : response;
     }
@@ -87,6 +116,7 @@ export class UserManagementService {
     }
 
     private normalizeRole(value: unknown): string {
+<<<<<<< HEAD
         if (typeof value === 'string') {
             const normalized = value.trim();
             return normalized.startsWith('ROLE_') ? normalized.slice('ROLE_'.length) : normalized;
@@ -95,6 +125,12 @@ export class UserManagementService {
             const obj = value as any;
             const raw = String(obj.role ?? obj.name ?? obj.code ?? obj.libelle ?? '').trim();
             return raw.startsWith('ROLE_') ? raw.slice('ROLE_'.length) : raw;
+=======
+        if (typeof value === 'string') return value;
+        if (value && typeof value === 'object') {
+            const obj = value as any;
+            return String(obj.role ?? obj.name ?? obj.code ?? obj.libelle ?? '');
+>>>>>>> 2d3d62c5d004508496c215ced2ea02973e183bc3
         }
         return '';
     }
@@ -117,8 +153,12 @@ export class UserManagementService {
             role,
             actif,
             matricule: raw?.matricule,
+<<<<<<< HEAD
             filiere: raw?.filiere ?? raw?.filiereNom,
             filiereNom: raw?.filiereNom ?? raw?.filiere,
+=======
+            filiere: raw?.filiere,
+>>>>>>> 2d3d62c5d004508496c215ced2ea02973e183bc3
             niveau: raw?.niveau,
             niveauStage: raw?.niveauStage,
             grade: raw?.grade,
@@ -128,10 +168,14 @@ export class UserManagementService {
             service: raw?.service,
             adresse: raw?.adresse,
             secteurActivite: raw?.secteurActivite,
+<<<<<<< HEAD
             telephone: raw?.telephone,
             nomFichierSignature: raw?.nomFichierSignature,
             emailSent: typeof raw?.emailSent === 'boolean' ? raw.emailSent : null,
             message: typeof raw?.message === 'string' ? raw.message : ''
+=======
+            telephone: raw?.telephone
+>>>>>>> 2d3d62c5d004508496c215ced2ea02973e183bc3
         };
     }
 
@@ -167,6 +211,7 @@ export class UserManagementService {
      */
     updateUser(id: number, userData: UpdateUserRequest): Observable<User> {
         const url = `${this.API_URL}/${id}`;
+<<<<<<< HEAD
         const requestBody = {
             nom: userData.nom,
             prenom: userData.prenom,
@@ -182,6 +227,29 @@ export class UserManagementService {
         return this.http.put<any>(url, requestBody).pipe(
             map((response) => this.normalizeUser(this.unwrapObject<any>(response))),
             catchError((error: HttpErrorResponse) => throwError(() => error))
+=======
+
+        return this.http.put<any>(url, userData).pipe(
+            map((response) => this.normalizeUser(this.unwrapObject<any>(response))),
+            catchError((error: HttpErrorResponse) => {
+                // Compatibility fallback: some backend DTO versions expect "password"
+                // instead of "motDePasse" for update payloads.
+                const maybeRetry =
+                    error.status === 400 &&
+                    typeof userData?.motDePasse === 'string' &&
+                    userData.motDePasse.trim().length > 0;
+
+                if (!maybeRetry) {
+                    return throwError(() => error);
+                }
+
+                const legacyPayload = this.toLegacyPasswordPayload(userData);
+                return this.http.put<any>(url, legacyPayload).pipe(
+                    map((response) => this.normalizeUser(this.unwrapObject<any>(response))),
+                    catchError((retryError) => throwError(() => retryError))
+                );
+            })
+>>>>>>> 2d3d62c5d004508496c215ced2ea02973e183bc3
         );
     }
 
@@ -191,6 +259,7 @@ export class UserManagementService {
     desactiverUser(id: number): Observable<any> {
         return this.http.patch(`${this.API_URL}/${id}/desactiver`, {});
     }
+<<<<<<< HEAD
 
     activerUser(id: number): Observable<any> {
         return this.http.patch(`${this.API_URL}/${id}/activer`, {});
@@ -199,5 +268,7 @@ export class UserManagementService {
     deleteUser(id: number): Observable<void> {
         return this.http.delete<void>(`${this.API_URL}/${id}`);
     }
+=======
+>>>>>>> 2d3d62c5d004508496c215ced2ea02973e183bc3
 }
 

@@ -26,7 +26,11 @@ import { AuthentificationService, RoleUtilisateur, UtilisateurActuel } from '../
 
           <div class="user-info" *ngIf="(currentUser$ | async) as u">
             <p><strong>Votre rôle :</strong> {{ getRoleDisplayName(u.role || '') }}</p>
+<<<<<<< HEAD
             <p><strong>Rôles requis :</strong> {{ getRequiredRoles() }}</p>
+=======
+            <p><strong>Required Roles:</strong> {{ getRequiredRoles() }}</p>
+>>>>>>> 2d3d62c5d004508496c215ced2ea02973e183bc3
           </div>
           
           <div class="actions">
@@ -182,15 +186,25 @@ export class Unauthorized implements OnInit {
       [RoleUtilisateur.STAGIAIRE]: 'Stagiaire',
       [RoleUtilisateur.ENCADRANT_PROFESSIONNEL]: 'Encadrant professionnel',
       [RoleUtilisateur.ENCADRANT_ACADEMIQUE]: 'Encadrant académique',
+<<<<<<< HEAD
       [RoleUtilisateur.RESPONSABLE_SERVICE_STAGES]: 'Responsable du service des stages',
       [RoleUtilisateur.RESPONSABLE_UNIVERSITAIRE_STAGES]: 'Responsable universitaire des stages',
       [RoleUtilisateur.RESPONSABLE_ENTREPRISE]: 'Responsable d’entreprise'
+=======
+      [RoleUtilisateur.RESPONSABLE_SERVICE_STAGES]: 'Responsable service stages',
+      [RoleUtilisateur.RESPONSABLE_UNIVERSITAIRE_STAGES]: 'Responsable universitaire stages',
+      [RoleUtilisateur.RESPONSABLE_ENTREPRISE]: 'Responsable entreprise'
+>>>>>>> 2d3d62c5d004508496c215ced2ea02973e183bc3
     };
     return roleNames[role] || role || '—';
   }
 
   getRequiredRoles(): string {
+<<<<<<< HEAD
     if (this.requiredRoles.length === 0) return 'Inconnu';
+=======
+    if (this.requiredRoles.length === 0) return 'Unknown';
+>>>>>>> 2d3d62c5d004508496c215ced2ea02973e183bc3
     return this.requiredRoles.map(role => this.getRoleDisplayName(role)).join(', ');
   }
 
@@ -209,7 +223,10 @@ export class Unauthorized implements OnInit {
         this.router.navigate(['/enseignant/tableau-de-bord']);
         return;
       case RoleUtilisateur.RESPONSABLE_SERVICE_STAGES:
+<<<<<<< HEAD
       case RoleUtilisateur.RESPONSABLE_UNIVERSITAIRE_STAGES:
+=======
+>>>>>>> 2d3d62c5d004508496c215ced2ea02973e183bc3
         this.router.navigate(['/responsable/tableau-de-bord']);
         return;
       case RoleUtilisateur.RESPONSABLE_ENTREPRISE:

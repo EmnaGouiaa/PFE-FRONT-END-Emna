@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 .agreement-page {
   min-height: 100vh;
   padding: 24px;
@@ -71,11 +72,128 @@
 }
 
 .document-brand {
+=======
+.agreement-container {
+  padding: 24px;
+  background: #f1f5f9;
+  min-height: 100vh;
+}
+
+.agreement-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+}
+
+.title-section h1 {
+  font-size: 24px;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0;
+}
+
+.status-chip {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 16px;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  margin-top: 8px;
+}
+
+.status-chip.generated { background: #e2e8f0; color: #475569; }
+.status-chip.partially_signed { background: #dbeafe; color: #1d4ed8; }
+.status-chip.fully_signed { background: #dcfce7; color: #15803d; }
+
+.actions {
+  display: flex;
+  gap: 12px;
+}
+
+.content-grid {
+  display: grid;
+  grid-template-columns: 1fr 350px;
+  gap: 24px;
+}
+
+.pdf-viewer {
+  background: white;
+  border-radius: 8px;
+  overflow: hidden;
+  height: 700px;
+}
+
+iframe {
+  border: none;
+}
+
+.tracking-sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.signature-list {
+  margin-top: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.signatory-item {
+  display: flex;
+  gap: 12px;
+  padding: 12px;
+  border-radius: 8px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+}
+
+.signatory-item.signed {
+  background: #f0fdf4;
+  border-color: #bbf7d0;
+}
+
+.sig-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.sig-info .role {
+  font-size: 11px;
+  text-transform: uppercase;
+  color: #64748b;
+  font-weight: 600;
+}
+
+.sig-info .name {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1e293b;
+}
+
+.sig-info .date, .sig-info .waiting {
+  font-size: 11px;
+  margin-top: 4px;
+}
+
+.sig-info .date { color: #15803d; }
+.sig-info .waiting { color: #94a3b8; font-style: italic; }
+
+.success-banner {
+  background: #15803d;
+  color: white;
+  padding: 20px;
+  border-radius: 8px;
+>>>>>>> 2d3d62c5d004508496c215ced2ea02973e183bc3
   display: flex;
   align-items: center;
   gap: 16px;
 }
 
+<<<<<<< HEAD
 .brand-badge {
   width: 60px;
   height: 60px;
@@ -321,4 +439,16 @@
   .signature-card {
     box-shadow: none;
   }
+=======
+.success-banner mat-icon { font-size: 32px; width: 32px; height: 32px; }
+.success-banner h3 { margin: 0; font-size: 18px; }
+.success-banner p { margin: 4px 0 0; font-size: 13px; opacity: 0.9; }
+
+.global-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 60vh;
+>>>>>>> 2d3d62c5d004508496c215ced2ea02973e183bc3
 }

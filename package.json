@@ -33,15 +33,22 @@
     "@angular/router": "^21.2.6",
     "bootstrap": "^5.3.8",
     "rxjs": "~7.8.0",
+<<<<<<< HEAD
     "tslib": "^2.3.0",
     "zone.js": "^0.16.1"
+=======
+    "tslib": "^2.3.0"
+>>>>>>> 2d3d62c5d004508496c215ced2ea02973e183bc3
   },
   "devDependencies": {
     "@angular/build": "^21.0.1",
     "@angular/cli": "^21.0.1",
     "@angular/compiler-cli": "^21.0.0",
     "jsdom": "^27.1.0",
+<<<<<<< HEAD
     "playwright": "^1.59.1",
+=======
+>>>>>>> 2d3d62c5d004508496c215ced2ea02973e183bc3
     "typescript": "~5.9.2",
     "vitest": "^4.0.8"
   }

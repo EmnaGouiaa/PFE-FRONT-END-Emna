@@ -3,11 +3,14 @@ import { AuthGuard } from './guards/auth.guard';
 import { RoleGuard } from './guards/role.guard';
 import { RoleUtilisateur } from './services/authentification.service';
 
+<<<<<<< HEAD
 const RESPONSABLE_STAGES_ROLES = [
   RoleUtilisateur.RESPONSABLE_SERVICE_STAGES,
   RoleUtilisateur.RESPONSABLE_UNIVERSITAIRE_STAGES
 ];
 
+=======
+>>>>>>> 2d3d62c5d004508496c215ced2ea02973e183bc3
 export const routes: Routes = [
   // Aliases kept to avoid breaking older components/links.
   { path: 'login', redirectTo: 'connexion', pathMatch: 'full' },
@@ -21,10 +24,15 @@ export const routes: Routes = [
 
   { path: 'student/dashboard', redirectTo: 'etudiant/tableau-de-bord', pathMatch: 'full' },
   { path: 'teacher/dashboard', redirectTo: 'enseignant/tableau-de-bord', pathMatch: 'full' },
+<<<<<<< HEAD
   { path: 'encadrant/dashboard', redirectTo: 'enseignant/tableau-de-bord', pathMatch: 'full' },
   { path: 'company/dashboard', redirectTo: 'entreprise/tableau-de-bord', pathMatch: 'full' },
   { path: 'responsable', redirectTo: 'responsable/tableau-de-bord', pathMatch: 'full' },
   { path: 'responsable/dashboard', redirectTo: 'responsable/tableau-de-bord', pathMatch: 'full' },
+=======
+  { path: 'encadrant/dashboard', redirectTo: 'encadrant/tableau-de-bord', pathMatch: 'full' },
+  { path: 'company/dashboard', redirectTo: 'entreprise/tableau-de-bord', pathMatch: 'full' },
+>>>>>>> 2d3d62c5d004508496c215ced2ea02973e183bc3
 
   {
     path: 'connexion',
@@ -34,6 +42,7 @@ export const routes: Routes = [
     path: 'inscription',
     loadComponent: () => import('./auth/register/register').then(m => m.Register)
   },
+<<<<<<< HEAD
   {
     path: 'mot-de-passe-oublie',
     loadComponent: () => import('./auth/forgot-password/forgot-password.component').then(m => m.ForgotPasswordComponent)
@@ -43,11 +52,17 @@ export const routes: Routes = [
     loadComponent: () => import('./auth/first-login-password-change/first-login-password-change.component').then(m => m.FirstLoginPasswordChangeComponent),
     canActivate: [AuthGuard]
   },
+=======
+>>>>>>> 2d3d62c5d004508496c215ced2ea02973e183bc3
 
   // Gestion du profil (tous les utilisateurs authentifiés)
   {
     path: 'profil',
+<<<<<<< HEAD
     loadComponent: () => import('./components/profile-redirect.component').then(m => m.ProfileRedirectComponent),
+=======
+    loadComponent: () => import('./components/profile-management.component').then(m => m.ProfileManagementComponent),
+>>>>>>> 2d3d62c5d004508496c215ced2ea02973e183bc3
     canActivate: [AuthGuard]
   },
 
@@ -78,8 +93,14 @@ export const routes: Routes = [
       },
       {
         path: 'representants',
+<<<<<<< HEAD
         redirectTo: 'entreprises',
         pathMatch: 'full'
+=======
+        loadComponent: () => import('./admin/representants/admin-representants.component').then(m => m.AdminRepresentantsComponent),
+        canActivate: [RoleGuard],
+        data: { roles: [RoleUtilisateur.ADMINISTRATEUR] }
+>>>>>>> 2d3d62c5d004508496c215ced2ea02973e183bc3
       },
       {
         path: 'demandes',
@@ -91,26 +112,34 @@ export const routes: Routes = [
         loadComponent: () =>
           import('./admin/demandes-stage/admin-demandes-stage.component').then(m => m.AdminDemandesStageComponent),
         canActivate: [RoleGuard],
+<<<<<<< HEAD
         data: {
           roles: [RoleUtilisateur.ADMINISTRATEUR]
         }
+=======
+        data: { roles: [RoleUtilisateur.ADMINISTRATEUR, RoleUtilisateur.RESPONSABLE_SERVICE_STAGES] }
+>>>>>>> 2d3d62c5d004508496c215ced2ea02973e183bc3
       },
       {
         path: 'validation-administrative',
         redirectTo: 'demandes-stage',
         pathMatch: 'full'
+<<<<<<< HEAD
       },
       {
         path: 'profil',
         loadComponent: () => import('./components/profile-management.component').then(m => m.ProfileManagementComponent),
         canActivate: [RoleGuard],
         data: { roles: [RoleUtilisateur.ADMINISTRATEUR, RoleUtilisateur.AGENT_STAGE] }
+=======
+>>>>>>> 2d3d62c5d004508496c215ced2ea02973e183bc3
       }
     ]
   },
 
   // Routes Étudiant
   {
+<<<<<<< HEAD
     path: 'etudiant',
     loadComponent: () => import('./student/layout/student-layout.component').then(m => m.StudentLayoutComponent),
     canActivate: [AuthGuard, RoleGuard],
@@ -172,11 +201,30 @@ export const routes: Routes = [
   {
     path: 'enseignant/tableau-de-bord',
     loadComponent: () => import('./supervisor/supervisor-redirect.component').then(m => m.SupervisorRedirectComponent),
+=======
+    path: 'etudiant/tableau-de-bord',
+    loadComponent: () => import('./components/student-dashboard.component').then(m => m.StudentDashboardComponent),
+    canActivate: [AuthGuard, RoleGuard],
+    data: { roles: [RoleUtilisateur.STAGIAIRE] }
+  },
+  {
+    path: 'etudiant/demande-stage',
+    loadComponent: () => import('./components/internship-request-form.component').then(m => m.InternshipRequestFormComponent),
+    canActivate: [AuthGuard, RoleGuard],
+    data: { roles: [RoleUtilisateur.STAGIAIRE] }
+  },
+
+  // Routes Enseignant/Encadrant
+  {
+    path: 'enseignant/tableau-de-bord',
+    loadComponent: () => import('./components/teacher-dashboard/teacher-dashboard.component').then(m => m.TeacherDashboard),
+>>>>>>> 2d3d62c5d004508496c215ced2ea02973e183bc3
     canActivate: [AuthGuard, RoleGuard],
     data: { roles: [RoleUtilisateur.ENCADRANT_PROFESSIONNEL, RoleUtilisateur.ENCADRANT_ACADEMIQUE] }
   },
   {
     path: 'encadrant/tableau-de-bord',
+<<<<<<< HEAD
     loadComponent: () => import('./supervisor/supervisor-redirect.component').then(m => m.SupervisorRedirectComponent),
     canActivate: [AuthGuard, RoleGuard],
     data: { roles: [RoleUtilisateur.ENCADRANT_PROFESSIONNEL, RoleUtilisateur.ENCADRANT_ACADEMIQUE] }
@@ -293,6 +341,25 @@ export const routes: Routes = [
     path: 'entreprise/detail/:id',
     redirectTo: 'entreprise/profil',
     pathMatch: 'full'
+=======
+    loadComponent: () => import('./components/teacher-dashboard/teacher-dashboard.component').then(m => m.TeacherDashboard),
+    canActivate: [AuthGuard, RoleGuard],
+    data: { roles: [RoleUtilisateur.ENCADRANT_PROFESSIONNEL, RoleUtilisateur.ENCADRANT_ACADEMIQUE] }
+  },
+
+  // Routes Entreprise
+  {
+    path: 'entreprise/tableau-de-bord',
+    loadComponent: () => import('./components/company-dashboard/company-dashboard.component').then(m => m.CompanyDashboard),
+    canActivate: [AuthGuard, RoleGuard],
+    data: { roles: [RoleUtilisateur.RESPONSABLE_ENTREPRISE] }
+  },
+  {
+    path: 'entreprise/detail/:id',
+    loadComponent: () => import('./companies/detail/detail').then(m => m.Detail),
+    canActivate: [AuthGuard, RoleGuard],
+    data: { roles: [RoleUtilisateur.RESPONSABLE_ENTREPRISE] }
+>>>>>>> 2d3d62c5d004508496c215ced2ea02973e183bc3
   },
 
   // Routes Stages (accessibles par plusieurs rôles)
@@ -306,7 +373,11 @@ export const routes: Routes = [
         RoleUtilisateur.STAGIAIRE,
         RoleUtilisateur.ENCADRANT_PROFESSIONNEL,
         RoleUtilisateur.ENCADRANT_ACADEMIQUE,
+<<<<<<< HEAD
         ...RESPONSABLE_STAGES_ROLES
+=======
+        RoleUtilisateur.RESPONSABLE_SERVICE_STAGES
+>>>>>>> 2d3d62c5d004508496c215ced2ea02973e183bc3
       ]
     }
   },
@@ -345,6 +416,7 @@ export const routes: Routes = [
     }
   },
 
+<<<<<<< HEAD
   // Routes Responsable Universitaire des Stages
   {
     path: 'responsable',
@@ -414,6 +486,14 @@ export const routes: Routes = [
         loadComponent: () => import('./components/profile-management.component').then(m => m.ProfileManagementComponent)
       }
     ]
+=======
+  // Routes Responsable Service Stages
+  {
+    path: 'responsable/tableau-de-bord',
+    loadComponent: () => import('./components/role-based-dashboard/role-based-dashboard.component').then(m => m.RoleBasedDashboard),
+    canActivate: [AuthGuard, RoleGuard],
+    data: { roles: [RoleUtilisateur.RESPONSABLE_SERVICE_STAGES] }
+>>>>>>> 2d3d62c5d004508496c215ced2ea02973e183bc3
   },
 
   // Page non autorisé

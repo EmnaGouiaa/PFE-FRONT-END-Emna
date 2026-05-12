@@ -1,8 +1,20 @@
+<<<<<<< HEAD
 <div class="admin-shell admin-shell-left">
   <aside class="admin-sidebar">
     <div class="sidebar-header">
       <div class="title">Administration</div>
       <div class="subtitle">Espace de pilotage</div>
+=======
+<div class="admin-shell">
+  <main class="admin-content">
+    <router-outlet></router-outlet>
+  </main>
+
+  <aside class="admin-sidebar">
+    <div class="sidebar-header">
+      <div class="title">Administration</div>
+      <div class="subtitle">Navigation</div>
+>>>>>>> 2d3d62c5d004508496c215ced2ea02973e183bc3
     </div>
 
     <nav class="sidebar-nav">
@@ -18,7 +30,11 @@
             <path d="M7 14l3-3 4 4 6-8" />
           </svg>
         </span>
+<<<<<<< HEAD
         <span>Tableau de bord</span>
+=======
+        <span>Dashboard</span>
+>>>>>>> 2d3d62c5d004508496c215ced2ea02973e183bc3
       </a>
 
       <a *ngIf="isAdmin" routerLink="/admin/utilisateurs" routerLinkActive="active" class="nav-item">
@@ -44,7 +60,21 @@
             <path d="M17 13h2" />
           </svg>
         </span>
+<<<<<<< HEAD
         <span>Entreprises & responsables</span>
+=======
+        <span>Entreprises</span>
+      </a>
+
+      <a *ngIf="isAdmin" routerLink="/admin/representants" routerLinkActive="active" class="nav-item">
+        <span class="nav-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+            <circle cx="12" cy="7" r="4" />
+          </svg>
+        </span>
+        <span>Représentants</span>
+>>>>>>> 2d3d62c5d004508496c215ced2ea02973e183bc3
       </a>
 
       <a
@@ -59,6 +89,7 @@
             <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" />
           </svg>
         </span>
+<<<<<<< HEAD
         <span>Demandes</span>
       </a>
     </nav>
@@ -91,3 +122,11 @@
     <router-outlet></router-outlet>
   </main>
 </div>
+=======
+        <span>Demandes (validation)</span>
+      </a>
+    </nav>
+  </aside>
+</div>
+
+>>>>>>> 2d3d62c5d004508496c215ced2ea02973e183bc3

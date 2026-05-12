@@ -1,12 +1,20 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
+<<<<<<< HEAD
 import { timeout } from 'rxjs/operators';
 import { UserManagementService, User } from '../../services/user-management.service';
 import { Entreprise, EntreprisesService } from '../../services/entreprises.service';
 import { RoleUtilisateur } from '../../services/authentification.service';
 import { CurrentUserProfileService } from '../../services/current-user-profile.service';
 import { ProfileCompletionService } from '../../services/profile-completion.service';
+=======
+import { forkJoin, of } from 'rxjs';
+import { catchError } from 'rxjs/operators';
+import { UserManagementService, User } from '../../services/user-management.service';
+import { Entreprise, EntreprisesService } from '../../services/entreprises.service';
+import { RoleUtilisateur } from '../../services/authentification.service';
+>>>>>>> 2d3d62c5d004508496c215ced2ea02973e183bc3
 
 type ApiStatus = 'loading' | 'ok' | 'error';
 
@@ -26,6 +34,7 @@ export class AdminDashboard implements OnInit {
   };
 
   recentUsers: User[] = [];
+<<<<<<< HEAD
   errorMessage = '';
   profileCompletionMissingFields: string[] = [];
 
@@ -34,6 +43,14 @@ export class AdminDashboard implements OnInit {
   lastUpdatedAt: Date | null = null;
   isLoadingUsers = false;
   isLoadingEntreprises = false;
+=======
+  isLoading = false;
+  errorMessage = '';
+
+  greeting = 'Bonjour';
+  subtitle = 'Vue d’ensemble des utilisateurs, rôles et santé de la plateforme.';
+  lastUpdatedAt: Date | null = null;
+>>>>>>> 2d3d62c5d004508496c215ced2ea02973e183bc3
 
   apiStatus: { users: ApiStatus; entreprises: ApiStatus } = {
     users: 'loading',
@@ -64,6 +81,7 @@ export class AdminDashboard implements OnInit {
 
   constructor(
     private userManagementService: UserManagementService,
+<<<<<<< HEAD
     private entreprisesService: EntreprisesService,
     private currentUserProfileService: CurrentUserProfileService,
     public profileCompletionService: ProfileCompletionService
@@ -164,6 +182,60 @@ export class AdminDashboard implements OnInit {
         } finally {
           this.isLoadingEntreprises = false;
         }
+=======
+    private entreprisesService: EntreprisesService
+  ) { }
+
+  ngOnInit(): void {
+    this.greeting = this.computeGreeting();
+    this.loadStats();
+  }
+
+  loadStats(): void {
+    console.log('[AdminDashboard] loadStats triggered');
+    this.isLoading = true;
+    this.errorMessage = '';
+    this.apiStatus.users = 'loading';
+    this.apiStatus.entreprises = 'loading';
+
+    forkJoin({
+      users: this.userManagementService.getAllUsers().pipe(
+        catchError((error) => {
+          console.error('Error loading users:', error);
+          this.apiStatus.users = 'error';
+          return of([] as User[]);
+        })
+      ),
+      entreprises: this.entreprisesService.list().pipe(
+        catchError((error) => {
+          console.error('Error loading entreprises:', error);
+          this.apiStatus.entreprises = 'error';
+          return of([] as Entreprise[]);
+        })
+      )
+    }).subscribe({
+      next: ({ users, entreprises }) => {
+        console.log('[AdminDashboard] loadStats success', { users: users?.length ?? 0, entreprises: entreprises?.length ?? 0 });
+        const safeUsers = users ?? [];
+        const safeEntreprises = entreprises ?? [];
+
+        this.apiStatus.users = this.apiStatus.users === 'error' ? 'error' : 'ok';
+        this.apiStatus.entreprises = this.apiStatus.entreprises === 'error' ? 'error' : 'ok';
+
+        this.applyUserStats(safeUsers);
+        this.applyEntrepriseStats(safeEntreprises);
+
+        this.recentUsers = [...safeUsers].slice(-5).reverse();
+        this.lastUpdatedAt = new Date();
+        this.isLoading = false;
+      },
+      error: (error) => {
+        console.error('Error loading stats:', error);
+        this.errorMessage = 'Erreur lors du chargement des statistiques.';
+        this.apiStatus.users = 'error';
+        this.apiStatus.entreprises = 'error';
+        this.isLoading = false;
+>>>>>>> 2d3d62c5d004508496c215ced2ea02973e183bc3
       }
     });
   }
@@ -213,6 +285,7 @@ export class AdminDashboard implements OnInit {
   }
 
   private applyEntrepriseStats(entreprises: Entreprise[]): void {
+<<<<<<< HEAD
     this.entreprises.total = entreprises.length;
     this.entreprises.active = entreprises.filter((e) => e.actif !== false).length;
     this.stats.companies = this.apiStatus.entreprises === 'error'
@@ -231,6 +304,17 @@ export class AdminDashboard implements OnInit {
     }
 
     return '';
+=======
+    if (this.apiStatus.entreprises === 'ok') {
+      this.entreprises.total = entreprises.length;
+      this.entreprises.active = entreprises.filter((e) => e.actif !== false).length;
+      this.stats.companies = entreprises.length;
+    } else {
+      this.entreprises.total = 0;
+      this.entreprises.active = 0;
+      this.stats.companies = this.kpis.entrepriseReps;
+    }
+>>>>>>> 2d3d62c5d004508496c215ced2ea02973e183bc3
   }
 
   private computeGreeting(now: Date = new Date()): string {
@@ -270,7 +354,11 @@ export class AdminDashboard implements OnInit {
     const labels: { [key: string]: string } = {
       ADMINISTRATEUR: 'Administrateur',
       STAGIAIRE: 'Stagiaire',
+<<<<<<< HEAD
       ENCADRANT_ACADEMIQUE: 'Encadrant academique',
+=======
+      ENCADRANT_ACADEMIQUE: 'Encadrant académique',
+>>>>>>> 2d3d62c5d004508496c215ced2ea02973e183bc3
       ENCADRANT_PROFESSIONNEL: 'Encadrant professionnel',
       RESPONSABLE_ENTREPRISE: 'Responsable entreprise',
       RESPONSABLE_SERVICE_STAGES: 'Responsable service stages'
