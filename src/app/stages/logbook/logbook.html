@@ -1,0 +1,69 @@
+<div class="company-page">
+  <header class="page-hero">
+    <div>
+      <h1>Journal de bord</h1>
+      <p *ngIf="stageId">Stage #{{ stageId }}</p>
+    </div>
+    <div class="hero-actions">
+      <button type="button" class="btn btn-secondary" (click)="recharger()" [disabled]="chargement">
+        Actualiser
+      </button>
+      <a class="btn btn-secondary" routerLink="/stages">Retour aux stages</a>
+      <button
+        type="button"
+        class="btn btn-primary"
+        *ngIf="cahier && peutSigner()"
+        (click)="signer()"
+        [disabled]="signatureEnCours"
+      >
+        {{ signatureEnCours ? 'Signature…' : 'Signer' }}
+      </button>
+    </div>
+  </header>
+
+  <div *ngIf="messageErreur" class="alert alert-error">{{ messageErreur }}</div>
+  <div *ngIf="messageSucces" class="alert alert-success">{{ messageSucces }}</div>
+  <div *ngIf="chargement" class="loading">Chargement du journal de bord…</div>
+
+  <section class="content-grid" *ngIf="!chargement">
+    <article class="panel" *ngIf="!cahier">
+      <div class="empty-card">Aucun journal de bord disponible pour ce stage.</div>
+    </article>
+
+    <article class="panel" *ngIf="cahier">
+      <div class="panel-header">
+        <div>
+          <h2>Détails</h2>
+          <div class="panel-subtitle">{{ cahier.stageTitre || ('Stage #' + cahier.stageId) }}</div>
+        </div>
+      </div>
+
+      <div class="detail-grid">
+        <div class="detail-item">
+          <span class="label">Date de génération</span>
+          <span class="value">{{ cahier.dateGeneration || '—' }}</span>
+        </div>
+        <div class="detail-item">
+          <span class="label">Date de signature</span>
+          <span class="value">{{ cahier.dateSignature || '—' }}</span>
+        </div>
+        <div class="detail-item">
+          <span class="label">Statut</span>
+          <span class="value">
+            <span class="status-pill" [ngClass]="cahier.estSigne ? 'status-positive' : 'status-warning'">
+              {{ cahier.estSigne ? 'Signé' : 'En attente de signatures' }}
+            </span>
+          </span>
+        </div>
+      </div>
+
+      <div class="detail-card">
+        <div class="info-title">Signatures</div>
+        <div class="info-meta">Stagiaire : {{ cahier.signeeStagiaire ? 'Signé' : 'En attente' }}</div>
+        <div class="info-meta">Encadrant académique : {{ cahier.signeeEncAcad ? 'Signé' : 'En attente' }}</div>
+        <div class="info-meta">Encadrant professionnel : {{ cahier.signeeEncPro ? 'Signé' : 'En attente' }}</div>
+        <div class="info-meta">Responsable entreprise : {{ cahier.signeeRespEntreprise ? 'Signé' : 'En attente' }}</div>
+      </div>
+    </article>
+  </section>
+</div>

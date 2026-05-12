@@ -1,0 +1,173 @@
+<div class="company-page student-page">
+  <section class="page-hero">
+    <div>
+      <h1>Réunions</h1>
+      <p>Consultez vos réunions planifiées et identifiez immédiatement l'encadrant concerné pour chaque échange.</p>
+    </div>
+  </section>
+
+  <div class="message-success" *ngIf="successMessage">{{ successMessage }}</div>
+  <div class="message-error" *ngIf="errorMessage">{{ errorMessage }}</div>
+
+  <section class="panel" *ngIf="internships.length">
+    <div class="panel-header">
+      <div>
+        <h2>Stage concerné</h2>
+        <p class="panel-subtitle">Sélectionnez le stage pour afficher ses réunions et les informations de vos encadrants.</p>
+      </div>
+    </div>
+
+    <select class="select stage-selector" [ngModel]="selectedStageId" (ngModelChange)="onStageChange($event)">
+      <option *ngFor="let internship of internships" [ngValue]="internship.id">
+        {{ internship.titre || internship.sujet || ('Stage #' + internship.id) }}
+      </option>
+    </select>
+  </section>
+
+  <div class="empty-card" *ngIf="isLoadingInternships">Chargement des stages...</div>
+  <div class="empty-card" *ngIf="!isLoadingInternships && !internships.length">Aucun stage disponible pour afficher des réunions.</div>
+
+  <div class="split-grid" *ngIf="selectedInternship">
+    <section class="panel">
+      <div class="panel-header">
+        <div>
+          <h2>À venir</h2>
+          <p class="panel-subtitle">{{ upcomingMeetings.length }} réunion(s) programmée(s)</p>
+        </div>
+      </div>
+
+      <div class="empty-card" *ngIf="isLoadingMeetings">Chargement des réunions...</div>
+      <div class="empty-card" *ngIf="!isLoadingMeetings && !stageMeetings.length">Aucune réunion programmée pour le moment.</div>
+      <div class="empty-card" *ngIf="!isLoadingMeetings && stageMeetings.length && !upcomingMeetings.length">Aucune réunion à venir.</div>
+
+      <div class="stack" *ngIf="upcomingMeetings.length">
+        <article class="detail-card meeting-card" *ngFor="let meeting of upcomingMeetings">
+          <div class="meeting-card-top">
+            <span class="status-pill" [ngClass]="getSupervisorBadgeClass(meeting)">
+              Encadrant {{ getSupervisorTypeLabel(meeting) }}
+            </span>
+            <span class="status-pill status-neutral">{{ meeting.source === 'FINALE' ? 'Réunion finale' : 'Réunion de suivi' }}</span>
+          </div>
+
+          <div class="cell-title meeting-title">{{ getMeetingTitle(meeting) }}</div>
+          <div class="cell-sub">{{ formatDate(meeting.date) }} · {{ meeting.heure || 'Heure non renseignée' }}</div>
+          <div class="meeting-summary">
+            <span class="meeting-meta-label">Nom de l'encadrant</span>
+            <strong>{{ getSupervisorName(meeting) }}</strong>
+          </div>
+          <div class="cell-sub">{{ meeting.observation || 'Aucune observation renseignée.' }}</div>
+
+          <button type="button" class="btn btn-ghost" (click)="selectMeeting(meeting)">Détails</button>
+        </article>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-header">
+        <div>
+          <h2>Historique</h2>
+          <p class="panel-subtitle">{{ pastMeetings.length }} réunion(s) passée(s)</p>
+        </div>
+      </div>
+
+      <div class="empty-card" *ngIf="!isLoadingMeetings && stageMeetings.length && !pastMeetings.length">Aucune réunion passée.</div>
+
+      <div class="stack" *ngIf="pastMeetings.length">
+        <article class="detail-card meeting-card" *ngFor="let meeting of pastMeetings">
+          <div class="meeting-card-top">
+            <span class="status-pill" [ngClass]="getSupervisorBadgeClass(meeting)">
+              Encadrant {{ getSupervisorTypeLabel(meeting) }}
+            </span>
+            <span class="status-pill status-neutral">{{ meeting.source === 'FINALE' ? 'Réunion finale' : 'Réunion de suivi' }}</span>
+          </div>
+
+          <div class="cell-title meeting-title">{{ getMeetingTitle(meeting) }}</div>
+          <div class="cell-sub">{{ formatDate(meeting.date) }} · {{ meeting.heure || 'Heure non renseignée' }}</div>
+          <div class="meeting-summary">
+            <span class="meeting-meta-label">Nom de l'encadrant</span>
+            <strong>{{ getSupervisorName(meeting) }}</strong>
+          </div>
+          <div class="cell-sub">{{ meeting.compteRendu || meeting.observation || 'Sans détail supplémentaire.' }}</div>
+
+          <button type="button" class="btn btn-ghost" (click)="selectMeeting(meeting)">Détails</button>
+        </article>
+      </div>
+    </section>
+  </div>
+
+  <div class="modal-overlay" *ngIf="selectedMeeting" (click)="closeMeetingDetails()">
+    <article class="modal" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h2>Détails de la réunion</h2>
+        <button type="button" class="btn-close" (click)="closeMeetingDetails()">x</button>
+      </div>
+
+      <div class="form">
+        <div class="meeting-detail-banner">
+          <span class="status-pill" [ngClass]="getSupervisorBadgeClass(selectedMeeting)">
+            Encadrant {{ getSupervisorTypeLabel(selectedMeeting) }}
+          </span>
+          <strong>{{ getSupervisorName(selectedMeeting) }}</strong>
+        </div>
+
+        <div class="detail-grid">
+          <div class="detail-item full-width">
+            <span class="label">Titre de la réunion</span>
+            <span class="value">{{ getMeetingTitle(selectedMeeting) }}</span>
+          </div>
+          <div class="detail-item">
+            <span class="label">Référence</span>
+            <span class="value">{{ selectedMeeting.numReunion || ('Réunion #' + selectedMeeting.id) }}</span>
+          </div>
+          <div class="detail-item">
+            <span class="label">Type</span>
+            <span class="value">{{ selectedMeeting.source === 'FINALE' ? 'Réunion finale' : 'Réunion de suivi' }}</span>
+          </div>
+          <div class="detail-item">
+            <span class="label">Date</span>
+            <span class="value">{{ formatDate(selectedMeeting.date) }}</span>
+          </div>
+          <div class="detail-item">
+            <span class="label">Heure</span>
+            <span class="value">{{ selectedMeeting.heure || 'Non renseignée' }}</span>
+          </div>
+          <div class="detail-item">
+            <span class="label">Stage</span>
+            <span class="value">{{ selectedMeeting.stageTitre || 'Non renseigné' }}</span>
+          </div>
+          <div class="detail-item">
+            <span class="label">Entreprise</span>
+            <span class="value">{{ selectedMeeting.entrepriseNom || 'Non renseignée' }}</span>
+          </div>
+          <div class="detail-item full-width">
+            <span class="label">Observation</span>
+            <span class="value">{{ selectedMeeting.observation || 'Aucune observation.' }}</span>
+          </div>
+          <div class="detail-item full-width">
+            <span class="label">Compte rendu</span>
+            <span class="value">{{ selectedMeeting.compteRendu || 'Aucun compte rendu disponible.' }}</span>
+          </div>
+          <div class="detail-item" *ngIf="selectedMeeting.source === 'FINALE'">
+            <span class="label">Formulaire d'évaluation</span>
+            <span class="value">{{ selectedMeeting.urlFormEvaluation || 'Aucun lien défini' }}</span>
+          </div>
+        </div>
+
+        <div class="inline-actions">
+          <div class="detail-item full-width" *ngIf="canEditReport(selectedMeeting)">
+            <span class="label">Saisir le compte rendu</span>
+            <textarea
+              class="textarea"
+              [(ngModel)]="reportDraft"
+              name="reportDraft"
+              placeholder="Renseignez ici le compte rendu de la réunion."></textarea>
+          </div>
+          <button type="button" class="btn btn-primary" (click)="saveReport()" [disabled]="isSavingReport" *ngIf="canEditReport(selectedMeeting)">
+            {{ isSavingReport ? 'Enregistrement...' : 'Enregistrer le compte rendu' }}
+          </button>
+          <button type="button" class="btn btn-secondary" (click)="closeMeetingDetails()">Fermer</button>
+        </div>
+      </div>
+    </article>
+  </div>
+</div>

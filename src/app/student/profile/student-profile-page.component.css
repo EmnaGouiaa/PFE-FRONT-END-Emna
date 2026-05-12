@@ -1,0 +1,113 @@
+.student-profile-shell {
+  min-height: 100%;
+}
+
+.student-profile-shell .primary-action {
+  background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+  border-color: transparent;
+  color: var(--white);
+}
+
+.student-profile-grid {
+  grid-template-columns: 0.9fr 1.4fr;
+}
+
+.profile-form {
+  display: grid;
+  gap: 1rem;
+}
+
+.profile-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.profile-field {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.profile-field-full {
+  grid-column: 1 / -1;
+}
+
+.profile-field-label {
+  color: var(--text-main);
+  font-weight: 800;
+}
+
+.field-hint {
+  color: var(--text-muted);
+  font-size: 0.88rem;
+}
+
+.field-error {
+  color: var(--primary-color);
+  font-size: 0.84rem;
+  font-weight: 700;
+}
+
+.readonly-input {
+  background: rgba(15, 23, 42, 0.04);
+  color: var(--text-main);
+  cursor: default;
+}
+
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: grid;
+  place-items: center;
+  padding: 1.25rem;
+  background: rgba(15, 23, 42, 0.48);
+  backdrop-filter: blur(4px);
+}
+
+.confirmation-modal {
+  width: min(100%, 460px);
+  border-radius: 8px;
+  background: var(--white);
+  box-shadow: 0 24px 70px rgba(15, 23, 42, 0.28);
+  padding: 1.5rem;
+}
+
+.confirmation-modal h2 {
+  margin: 0 0 0.55rem;
+  color: var(--text-main);
+  font-size: 1.25rem;
+}
+
+.confirmation-modal p {
+  margin: 0 0 1.1rem;
+  color: var(--text-muted);
+  font-weight: 700;
+  line-height: 1.55;
+}
+
+.modal-error {
+  margin: 0;
+}
+
+.modal-actions {
+  justify-content: flex-end;
+}
+
+.signature-reminder-copy p {
+  margin: 0;
+  color: var(--text-muted);
+  font-weight: 700;
+}
+
+@media (max-width: 1024px) {
+  .student-profile-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 720px) {
+  .profile-form-grid {
+    grid-template-columns: 1fr;
+  }
+}

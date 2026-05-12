@@ -1,0 +1,111 @@
+<div class="company-page student-page">
+  <section class="page-hero">
+    <div>
+      <h1>Rapport de stage</h1>
+      <p>Suivez l’état du cahier de stage et les informations générées par le backend pour votre rapport.</p>
+    </div>
+  </section>
+
+  <div class="message-success" *ngIf="successMessage">{{ successMessage }}</div>
+  <div class="message-error" *ngIf="errorMessage">{{ errorMessage }}</div>
+
+  <section class="panel" *ngIf="internships.length">
+    <div class="panel-header">
+      <div>
+        <h2>Choix du stage</h2>
+        <p class="panel-subtitle">Le cahier et le rapport dépendent du stage sélectionné.</p>
+      </div>
+    </div>
+
+    <select class="select stage-selector" [ngModel]="selectedStageId" (ngModelChange)="onStageChange($event)">
+      <option *ngFor="let internship of internships" [ngValue]="internship.id">
+        {{ internship.titre || internship.sujet || ('Stage #' + internship.id) }}
+      </option>
+    </select>
+  </section>
+
+  <div class="empty-card" *ngIf="isLoadingInternships">Chargement des stages...</div>
+  <div class="empty-card" *ngIf="!isLoadingInternships && !internships.length">Aucun stage disponible pour consulter le rapport.</div>
+
+  <div class="content-grid" *ngIf="selectedInternship">
+    <section class="panel">
+      <div class="panel-header">
+        <div>
+          <h2>Cahier de stage</h2>
+          <p class="panel-subtitle">État réel des signatures</p>
+        </div>
+      </div>
+
+      <div class="message-info">
+        Le backend actuel n’expose pas d’envoi de fichier de rapport. Cette page présente uniquement le cahier généré et son état de signature.
+      </div>
+
+      <div class="empty-card" *ngIf="isLoadingData">Chargement du cahier...</div>
+      <div class="empty-card" *ngIf="!isLoadingData && !report">Aucun cahier de stage disponible pour ce stage.</div>
+
+      <div class="detail-grid" *ngIf="report">
+        <div class="detail-item">
+          <span class="label">Date de génération</span>
+          <span class="value">{{ formatDate(report.dateGeneration) }}</span>
+        </div>
+        <div class="detail-item">
+          <span class="label">Date de signature</span>
+          <span class="value">{{ formatDate(report.dateSignature) }}</span>
+        </div>
+        <div class="detail-item">
+          <span class="label">Signature stagiaire</span>
+          <span class="value">{{ report.signeeStagiaire ? 'Signé' : 'En attente' }}</span>
+        </div>
+        <div class="detail-item">
+          <span class="label">État global</span>
+          <span class="value">{{ report.estSigne ? 'Complet' : 'Partiel' }}</span>
+        </div>
+      </div>
+
+      <div class="status-grid" *ngIf="report" style="margin-top: 16px;">
+        <div class="status-card">
+          <h4>Stagiaire</h4>
+          <p>{{ report.signeeStagiaire ? 'Signature enregistrée' : 'Signature en attente' }}</p>
+        </div>
+        <div class="status-card">
+          <h4>Encadrant académique</h4>
+          <p>{{ report.signeeEncAcad ? 'Signature enregistrée' : 'Signature en attente' }}</p>
+        </div>
+        <div class="status-card">
+          <h4>Encadrant professionnel</h4>
+          <p>{{ report.signeeEncPro ? 'Signature enregistrée' : 'Signature en attente' }}</p>
+        </div>
+        <div class="status-card">
+          <h4>Responsable entreprise</h4>
+          <p>{{ report.signeeRespEntreprise ? 'Signature enregistrée' : 'Signature en attente' }}</p>
+        </div>
+      </div>
+
+      <div class="button-row" style="margin-top: 16px;" *ngIf="report">
+        <button type="button" class="btn btn-primary" [disabled]="report.signeeStagiaire || isSigning" (click)="signReport()">
+          {{ isSigning ? 'Signature...' : 'Signer le cahier' }}
+        </button>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-header">
+        <div>
+          <h2>Synthèse du rapport</h2>
+          <p class="panel-subtitle">Données renvoyées par le point de génération du rapport du stage sélectionné.</p>
+        </div>
+      </div>
+
+      <div class="kv-list" *ngIf="summaryEntries.length">
+        <div class="kv-item" *ngFor="let entry of summaryEntries">
+          <span class="label">{{ entry.key }}</span>
+          <span class="value">{{ formatUnknown(entry.value) }}</span>
+        </div>
+      </div>
+
+      <div class="empty-card" *ngIf="!isLoadingData && !summaryEntries.length">
+        Aucune synthèse de rapport n’a été renvoyée pour ce stage.
+      </div>
+    </section>
+  </div>
+</div>

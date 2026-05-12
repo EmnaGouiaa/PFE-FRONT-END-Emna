@@ -1,0 +1,12 @@
+:host .offer-card-disabled {
+  opacity: 0.72;
+  filter: saturate(0.8);
+}
+
+:host .offer-card-disabled:hover {
+  transform: none;
+}
+
+:host .offer-card-disabled .btn-danger {
+  opacity: 0.55;
+}

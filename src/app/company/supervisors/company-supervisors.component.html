@@ -1,0 +1,156 @@
+<div class="company-page">
+  <header class="page-hero">
+    <div>
+      <h1>Encadrants professionnels</h1>
+      <p>
+        Gerez les encadrants professionnels rattaches a votre entreprise. Les nouveaux comptes recoivent
+        automatiquement leurs identifiants par email.
+      </p>
+    </div>
+    <div class="hero-actions">
+      <button type="button" class="btn btn-secondary" (click)="loadSupervisors()" [disabled]="isLoading || isSaving">Actualiser</button>
+      <button type="button" class="btn btn-primary" (click)="openCreate()" [disabled]="isSaving">Nouvel encadrant</button>
+    </div>
+  </header>
+
+  <div *ngIf="errorMessage" class="alert alert-error">{{ errorMessage }}</div>
+  <div *ngIf="successMessage" class="alert alert-success">{{ successMessage }}</div>
+  <div *ngIf="isLoading" class="loading">Chargement des encadrants...</div>
+
+  <section class="content-grid" *ngIf="!isLoading">
+    <article class="panel">
+      <div class="table-wrap" *ngIf="supervisors.length > 0">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>Nom</th>
+              <th>Email</th>
+              <th>Telephone</th>
+              <th>Poste</th>
+              <th>Service</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let supervisor of supervisors" (click)="selectedSupervisor = supervisor">
+              <td>{{ supervisor.prenom }} {{ supervisor.nom }}</td>
+              <td>{{ supervisor.email || '-' }}</td>
+              <td>{{ supervisor.telephone || '-' }}</td>
+              <td>{{ supervisor.poste || '-' }}</td>
+              <td>{{ supervisor.service || '-' }}</td>
+              <td class="actions">
+                <button type="button" class="btn btn-secondary" (click)="openEdit(supervisor); $event.stopPropagation()" [disabled]="isSaving">
+                  Modifier
+                </button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="empty-card" *ngIf="supervisors.length === 0">Aucun encadrant professionnel disponible.</div>
+    </article>
+
+    <article class="panel">
+      <div class="panel-header">
+        <div>
+          <h2>Fiche encadrant</h2>
+          <div class="panel-subtitle">Details du collaborateur selectionne</div>
+        </div>
+      </div>
+
+      <div class="empty-card" *ngIf="!selectedSupervisor">Selectionnez un encadrant pour afficher sa fiche.</div>
+
+      <div class="detail-grid" *ngIf="selectedSupervisor">
+        <div class="detail-item">
+          <span class="label">Nom complet</span>
+          <span class="value">{{ selectedSupervisor.prenom }} {{ selectedSupervisor.nom }}</span>
+        </div>
+        <div class="detail-item">
+          <span class="label">Email</span>
+          <span class="value">{{ selectedSupervisor.email || '-' }}</span>
+        </div>
+        <div class="detail-item">
+          <span class="label">Telephone</span>
+          <span class="value">{{ selectedSupervisor.telephone || '-' }}</span>
+        </div>
+        <div class="detail-item">
+          <span class="label">Poste</span>
+          <span class="value">{{ selectedSupervisor.poste || '-' }}</span>
+        </div>
+        <div class="detail-item">
+          <span class="label">Service</span>
+          <span class="value">{{ selectedSupervisor.service || '-' }}</span>
+        </div>
+        <div class="detail-item">
+          <span class="label">Entreprise</span>
+          <span class="value">{{ selectedSupervisor.entrepriseNom || '-' }}</span>
+        </div>
+      </div>
+    </article>
+  </section>
+
+  <div class="modal-overlay" *ngIf="showForm" (click)="closeForm()">
+    <div class="modal" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <div>
+          <h2>{{ isEditMode ? 'Modifier un encadrant' : 'Creer un encadrant' }}</h2>
+          <p class="modal-subtitle" *ngIf="!isEditMode">
+            Le mot de passe est genere automatiquement et envoye par email a l'encadrant professionnel.
+          </p>
+        </div>
+        <button type="button" class="btn-close" (click)="closeForm()">x</button>
+      </div>
+
+      <form [formGroup]="supervisorForm" class="form" (ngSubmit)="saveSupervisor()">
+        <div class="form-grid">
+          <div class="form-field">
+            <label>Nom *</label>
+            <input class="input" formControlName="nom" autofocus />
+            <div class="field-error" *ngIf="getFieldError('nom')">{{ getFieldError('nom') }}</div>
+          </div>
+
+          <div class="form-field">
+            <label>Prenom *</label>
+            <input class="input" formControlName="prenom" />
+            <div class="field-error" *ngIf="getFieldError('prenom')">{{ getFieldError('prenom') }}</div>
+          </div>
+
+          <div class="form-field">
+            <label>Email *</label>
+            <input class="input" type="email" formControlName="email" />
+            <div class="field-error" *ngIf="getFieldError('email')">{{ getFieldError('email') }}</div>
+          </div>
+
+          <div class="form-field">
+            <label>Telephone *</label>
+            <input class="input" formControlName="telephone" />
+            <div class="field-error" *ngIf="getFieldError('telephone')">{{ getFieldError('telephone') }}</div>
+          </div>
+
+          <div class="form-field">
+            <label>Poste</label>
+            <input class="input" formControlName="poste" />
+          </div>
+
+          <div class="form-field">
+            <label>Service</label>
+            <input class="input" formControlName="service" />
+          </div>
+        </div>
+
+        <div class="form-note" *ngIf="!isEditMode">
+          L'entreprise de l'encadrant est rattachee automatiquement a votre compte. Aucun mot de passe manuel n'est demande.
+        </div>
+
+        <div class="form-actions">
+          <button type="button" class="btn btn-secondary" (click)="closeForm()" [disabled]="isSaving">Annuler</button>
+          <button type="submit" class="btn btn-primary" [disabled]="isSaving">
+            <span class="btn-spinner" *ngIf="isSaving"></span>
+            {{ isSaving ? (isEditMode ? 'Mise a jour...' : 'Creation...') : 'Enregistrer' }}
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>

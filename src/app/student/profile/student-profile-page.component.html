@@ -1,0 +1,180 @@
+<div class="admin-container student-profile-shell">
+  <div class="dot-pattern"></div>
+  <div class="shape-1"></div>
+  <div class="shape-2"></div>
+
+  <div class="admin-wrapper">
+    <header class="admin-header">
+      <div class="header-top">
+        <div class="header-content">
+          <h1>Mon profil</h1>
+          <p class="header-subtitle">
+            Consultez vos informations, activez l'édition, puis enregistrez vos changements.
+          </p>
+        </div>
+        <div class="header-actions">
+          <a routerLink="/etudiant/tableau-de-bord" class="refresh-btn">Retour au tableau de bord</a>
+          <button type="button" class="refresh-btn" (click)="reloadProfile()" [disabled]="isSaving || isSavingEmail || isLoading">Actualiser</button>
+          <button type="button" class="refresh-btn primary-action" (click)="saveProfile()" [disabled]="isSaving || isSavingEmail || isLoading">
+            {{ isEditing ? (isSaving ? 'Enregistrement...' : 'Enregistrer') : 'Modifier' }}
+          </button>
+          <button type="button" class="refresh-btn" *ngIf="isEditing" (click)="cancelEditing()" [disabled]="isSaving || isSavingEmail">Annuler</button>
+        </div>
+      </div>
+
+      <div class="header-kpis" *ngIf="profile">
+        <div class="mini-kpi">
+          <span class="mini-label">Nom</span>
+          <span class="mini-value">{{ profile.prenom }} {{ profile.nom }}</span>
+        </div>
+        <div class="mini-kpi">
+          <span class="mini-label">Filière</span>
+          <span class="mini-value">{{ profile.filiereNom || 'Non renseignée' }}</span>
+        </div>
+        <div class="mini-kpi">
+          <span class="mini-label">Niveau</span>
+          <span class="mini-value">{{ profile.niveau || 'N/A' }}</span>
+        </div>
+        <div class="mini-kpi">
+          <span class="mini-label">Matricule</span>
+          <span class="mini-value">{{ profile.matricule || 'Non renseigné' }}</span>
+        </div>
+        <div class="mini-kpi">
+          <span class="mini-label">Signature</span>
+          <span class="mini-value">{{ hasSignature() ? 'Disponible' : 'Manquante' }}</span>
+        </div>
+      </div>
+    </header>
+
+    <div class="dashboard-error" *ngIf="errorMessage">{{ errorMessage }}</div>
+    <div class="alert alert-success supervisor-alert" *ngIf="successMessage">{{ successMessage }}</div>
+    <div class="empty-inline" *ngIf="isLoading">Chargement du profil...</div>
+
+    <ng-container *ngIf="!isLoading && profile">
+      <div class="analytics-grid student-profile-grid">
+        <section class="analytics-card">
+          <div class="card-header">
+            <h2>Identité</h2>
+            <span class="pill">{{ profile.role || 'STAGIAIRE' }}</span>
+          </div>
+          <div class="detail-grid">
+            <div class="detail-item">
+              <span class="label">Matricule</span>
+              <span class="value">{{ profile.matricule || 'Non renseigné' }}</span>
+            </div>
+            <div class="detail-item">
+              <span class="label">Date de naissance</span>
+              <span class="value">{{ formatDate(profile.dateNaiss) }}</span>
+            </div>
+            <div class="detail-item">
+              <span class="label">Niveau</span>
+              <span class="value">{{ profile.niveau || 'Non renseigné' }}</span>
+            </div>
+            <div class="detail-item full-width">
+              <span class="label">Signature actuelle</span>
+              <span class="value">{{ profile.nomFichierSignature || 'Non renseignée' }}</span>
+            </div>
+          </div>
+        </section>
+
+        <section class="analytics-card">
+          <div class="card-header">
+            <h2>Informations modifiables</h2>
+            <span class="pill soft">{{ isEditing ? 'Édition' : 'Lecture seule' }}</span>
+          </div>
+
+          <form [formGroup]="profileForm" class="profile-form" (ngSubmit)="saveProfile()">
+            <div class="profile-form-grid">
+              <label class="profile-field profile-field-full">
+                <span class="profile-field-label">Adresse e-mail</span>
+                <input class="input" type="email" formControlName="email" placeholder="nom@exemple.com" [readonly]="!isEditing" [class.readonly-input]="!isEditing" />
+                <span class="field-error" *ngIf="isInvalid('email')">Saisissez une adresse e-mail valide.</span>
+              </label>
+
+              <label class="profile-field">
+                <span class="profile-field-label">Nom</span>
+                <input class="input" type="text" formControlName="nom" placeholder="Votre nom" [readonly]="!isEditing" [class.readonly-input]="!isEditing" />
+                <span class="field-error" *ngIf="isInvalid('nom')">Le nom est requis et doit rester court.</span>
+              </label>
+
+              <label class="profile-field">
+                <span class="profile-field-label">Prénom</span>
+                <input class="input" type="text" formControlName="prenom" placeholder="Votre prénom" [readonly]="!isEditing" [class.readonly-input]="!isEditing" />
+                <span class="field-error" *ngIf="isInvalid('prenom')">Le prénom est requis et doit rester court.</span>
+              </label>
+
+              <label class="profile-field">
+                <span class="profile-field-label">Téléphone</span>
+                <input class="input" type="tel" formControlName="telephone" placeholder="+216..." [readonly]="!isEditing" [class.readonly-input]="!isEditing" />
+                <span class="field-hint">Laissez vide si vous ne souhaitez pas le renseigner.</span>
+                <span class="field-error" *ngIf="isInvalid('telephone')">Le téléphone est trop long.</span>
+              </label>
+
+              <label class="profile-field profile-field-full">
+                <span class="profile-field-label">Adresse</span>
+                <input class="input" type="text" formControlName="adresse" [readonly]="!isEditing" [class.readonly-input]="!isEditing" />
+                <span class="field-error" *ngIf="isInvalid('adresse')">L'adresse est trop longue.</span>
+              </label>
+
+              <label class="profile-field">
+                <span class="profile-field-label">Matricule</span>
+                <input class="input" type="text" formControlName="matricule" [readonly]="!isEditing" [class.readonly-input]="!isEditing" />
+                <span class="field-error" *ngIf="isInvalid('matricule')">Le matricule est trop long.</span>
+              </label>
+
+              <label class="profile-field">
+                <span class="profile-field-label">Date de naissance</span>
+                <input class="input" type="date" formControlName="dateNaiss" [readonly]="!isEditing" [class.readonly-input]="!isEditing" />
+              </label>
+
+              <label class="profile-field">
+                <span class="profile-field-label">Niveau</span>
+                <input class="input readonly-input" type="text" [value]="profile.niveau || 'Non renseigné'" readonly />
+                <span class="field-hint">Le niveau est affiché à titre informatif et n'est pas modifiable ici.</span>
+              </label>
+
+              <label class="profile-field profile-field-full">
+                <span class="profile-field-label">URL ou chemin de signature</span>
+                <input class="input" type="text" formControlName="nomFichierSignature" placeholder="https://.../signature.png" [readonly]="!isEditing" [class.readonly-input]="!isEditing" />
+                <span class="field-hint">Cette référence sera réutilisée pour les documents du stage.</span>
+                <span class="field-error" *ngIf="isInvalid('nomFichierSignature')">La référence de signature est trop longue.</span>
+              </label>
+            </div>
+
+            <div class="form-actions">
+              <button type="button" class="btn btn-secondary" *ngIf="!isEditing" (click)="startEditing()">Modifier</button>
+              <button type="submit" class="btn btn-primary" *ngIf="isEditing" [disabled]="isSaving || isSavingEmail">
+                {{ isSaving ? 'Enregistrement...' : 'Enregistrer le profil' }}
+              </button>
+              <button type="button" class="btn btn-secondary" *ngIf="isEditing" (click)="cancelEditing()" [disabled]="isSaving || isSavingEmail">Annuler</button>
+            </div>
+          </form>
+        </section>
+      </div>
+    </ng-container>
+  </div>
+
+  <div class="modal-backdrop" *ngIf="showEmailConfirmation" (click)="cancelEmailChange()">
+    <section class="confirmation-modal" role="dialog" aria-modal="true" aria-labelledby="student-confirmation-email-title" (click)="$event.stopPropagation()">
+      <h2 id="student-confirmation-email-title">Confirmation requise</h2>
+      <p>Veuillez saisir votre mot de passe pour confirmer la modification de votre adresse e-mail.</p>
+
+      <form [formGroup]="emailConfirmationForm" class="profile-form" (ngSubmit)="confirmEmailChange()">
+        <label class="profile-field">
+          <span class="profile-field-label">Mot de passe</span>
+          <input class="input" type="password" formControlName="motDePasse" autocomplete="current-password" />
+          <span class="field-error" *ngIf="isConfirmationInvalid()">Le mot de passe est requis.</span>
+        </label>
+
+        <div class="dashboard-error modal-error" *ngIf="emailConfirmationError">{{ emailConfirmationError }}</div>
+
+        <div class="form-actions modal-actions">
+          <button type="submit" class="btn btn-primary" [disabled]="isSavingEmail">
+            {{ isSavingEmail ? 'Confirmation...' : 'Confirmer' }}
+          </button>
+          <button type="button" class="btn btn-secondary" (click)="cancelEmailChange()" [disabled]="isSavingEmail">Annuler</button>
+        </div>
+      </form>
+    </section>
+  </div>
+</div>

@@ -1,0 +1,132 @@
+<div class="student-dashboard">
+  <!-- Header -->
+  <header class="dashboard-header">
+    <div class="header-content">
+      <div class="welcome-section">
+        <h1>Bienvenue, {{ currentUser?.prenom }} {{ currentUser?.nom }} !</h1>
+        <p>Gérez vos demandes de stage et suivez leur avancement</p>
+      </div>
+      <div class="header-actions">
+        <button class="btn btn-primary" (click)="navigateToForm()">
+          Nouvelle demande
+        </button>
+        <button class="btn btn-secondary" (click)="logout()">
+          Déconnexion
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <main class="dashboard-content">
+    
+    <!-- Statistics Cards -->
+    <section class="stats-section">
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-info">
+            <h3>{{ demandesStage.length }}</h3>
+            <p>Total des demandes</p>
+          </div>
+        </div>
+
+        <div class="stat-card pending">
+          <div class="stat-info">
+            <h3>{{ demandesStage.filter(r => r.statut === 'EN_ATTENTE').length }}</h3>
+            <p>En attente</p>
+          </div>
+        </div>
+
+        <div class="stat-card approved">
+          <div class="stat-info">
+            <h3>{{ demandesStage.filter(r => r.statut === 'APPROUVEE' || r.statut === 'APPROUVEE_ADMIN').length }}</h3>
+            <p>Approuvées</p>
+          </div>
+        </div>
+
+        <div class="stat-card in-progress">
+          <div class="stat-info">
+            <h3>{{ demandesStage.filter(r => r.statut === 'EN_COURS').length }}</h3>
+            <p>En cours</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Internship Requests List -->
+    <section class="requests-section">
+      <div class="section-header">
+        <h2>Vos demandes de stage</h2>
+        <button class="btn btn-primary" (click)="navigateToForm()">
+          Soumettre une nouvelle demande
+        </button>
+      </div>
+
+      <!-- Loading State -->
+      <div *ngIf="isLoading" class="loading-container">
+        <div class="spinner"></div>
+        <p>Chargement de vos demandes…</p>
+      </div>
+
+      <!-- Empty State -->
+      <div *ngIf="!isLoading && demandesStage.length === 0" class="empty-state">
+        <h3>Aucune demande de stage</h3>
+        <p>Soumettez votre première demande de stage pour commencer.</p>
+        <button class="btn btn-primary" (click)="navigateToForm()">
+          Créer ma première demande
+        </button>
+      </div>
+
+      <!-- Requests List -->
+      <div *ngIf="!isLoading && demandesStage.length > 0" class="requests-list">
+        <div *ngFor="let request of demandesStage" class="request-card">
+          <div class="request-header">
+            <div class="request-title">
+              <span class="status-badge" [style.color]="getStatusColor(request.statut)">
+                {{ getStatusIcon(request.statut) }} {{ request.statut }}
+              </span>
+              <h3>{{ request.sujetStage }}</h3>
+            </div>
+            <div class="request-date">
+              {{ formatDate(request.creeLe) }}
+            </div>
+          </div>
+          
+          <div class="request-content">
+            <div class="request-details">
+              <div class="detail-row">
+                <span class="label">Entreprise :</span>
+                <span class="value">{{ request.nomEntreprise }}</span>
+              </div>
+              <div class="detail-row">
+                <span class="label">Encadrant :</span>
+                <span class="value">{{ request.nomEncadrant }}</span>
+              </div>
+              <div class="detail-row">
+                <span class="label">Email de l’encadrant :</span>
+                <span class="value">{{ request.emailEncadrant }}</span>
+              </div>
+              <div class="detail-row" *ngIf="request.dateDebut && request.dateFin">
+                <span class="label">Période :</span>
+                <span class="value">
+                  {{ formatDate(request.dateDebut) }} - {{ formatDate(request.dateFin) }}
+                </span>
+              </div>
+              <div class="detail-row" *ngIf="request.descriptionStage">
+                <span class="label">Description :</span>
+                <span class="value description">{{ request.descriptionStage }}</span>
+              </div>
+            </div>
+          </div>
+          
+          <div class="request-actions">
+            <button class="btn btn-outline-primary" (click)="viewRequestDetails(request.id)">
+              Voir les détails
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+</div>

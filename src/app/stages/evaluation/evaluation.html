@@ -1,0 +1,67 @@
+<div class="company-page">
+  <header class="page-hero">
+    <div>
+      <h1>Fiche d’évaluation</h1>
+      <p *ngIf="stageId">Stage #{{ stageId }}</p>
+    </div>
+    <div class="hero-actions">
+      <button type="button" class="btn btn-secondary" (click)="recharger()" [disabled]="chargement">
+        Actualiser
+      </button>
+      <a class="btn btn-secondary" routerLink="/stages">Retour aux stages</a>
+    </div>
+  </header>
+
+  <div *ngIf="messageErreur" class="alert alert-error">{{ messageErreur }}</div>
+  <div *ngIf="chargement" class="loading">Chargement de l’évaluation…</div>
+
+  <section class="content-grid" *ngIf="!chargement">
+    <article class="panel" *ngIf="!evaluation">
+      <div class="empty-card">Aucune fiche d’évaluation disponible pour ce stage.</div>
+    </article>
+
+    <article class="panel" *ngIf="evaluation">
+      <div class="panel-header">
+        <div>
+          <h2>Détails</h2>
+          <div class="panel-subtitle">{{ evaluation.stageTitre || ('Stage #' + evaluation.stageId) }}</div>
+        </div>
+      </div>
+
+      <div class="detail-grid">
+        <div class="detail-item">
+          <span class="label">Note finale</span>
+          <span class="value">{{ evaluation.noteFinale ?? '—' }}</span>
+        </div>
+        <div class="detail-item">
+          <span class="label">Complète</span>
+          <span class="value">{{ evaluation.complete ? 'Oui' : 'Non' }}</span>
+        </div>
+        <div class="detail-item">
+          <span class="label">Verrouillée</span>
+          <span class="value">{{ evaluation.verrouillee ? 'Oui' : 'Non' }}</span>
+        </div>
+        <div class="detail-item">
+          <span class="label">Signatures complètes</span>
+          <span class="value">{{ evaluation.signaturesCompletes ? 'Oui' : 'Non' }}</span>
+        </div>
+      </div>
+
+      <div class="detail-card">
+        <div class="info-title">Encadrant professionnel</div>
+        <div class="info-meta"><strong>Points forts :</strong> {{ evaluation.pointFortEncadrantPro || '—' }}</div>
+        <div class="info-meta"><strong>Axes d’amélioration :</strong> {{ evaluation.axeAmeliorationEncadrantPro || '—' }}</div>
+        <div class="info-meta"><strong>Signature :</strong> {{ evaluation.signatureEncadrantProfessionnel ? 'Présente' : 'Absente' }}</div>
+        <div class="info-meta"><strong>Date :</strong> {{ formatDateTime(evaluation.dateSignatureEncadrantProfessionnel) }}</div>
+      </div>
+
+      <div class="detail-card">
+        <div class="info-title">Responsable entreprise</div>
+        <div class="info-meta"><strong>Points forts :</strong> {{ evaluation.pointFortResponsableEntreprise || '—' }}</div>
+        <div class="info-meta"><strong>Axes d’amélioration :</strong> {{ evaluation.axeAmeliorationResponsableEntreprise || '—' }}</div>
+        <div class="info-meta"><strong>Signature :</strong> {{ evaluation.signatureRepresentantEntreprise ? 'Présente' : 'Absente' }}</div>
+        <div class="info-meta"><strong>Date :</strong> {{ formatDateTime(evaluation.dateSignatureRepresentantEntreprise) }}</div>
+      </div>
+    </article>
+  </section>
+</div>

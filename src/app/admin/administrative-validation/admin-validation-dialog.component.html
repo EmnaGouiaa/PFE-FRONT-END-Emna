@@ -1,0 +1,81 @@
+<h2 mat-dialog-title>
+  <mat-icon>assignment_turned_in</mat-icon>
+  Confirmation du stage
+</h2>
+
+<mat-dialog-content class="dialog-content">
+  <div class="details-section">
+    <h3>Détails de la demande</h3>
+    <div class="info-grid">
+      <div class="info-item">
+        <label>Nom de l’étudiant</label>
+        <span>{{ request.student.prenom }} {{ request.student.nom }}</span>
+      </div>
+      <div class="info-item">
+        <label>Sujet</label>
+        <span>{{ request.internshipSubject }}</span>
+      </div>
+    </div>
+  </div>
+
+  <mat-divider></mat-divider>
+
+  <div class="details-section">
+    <h3>Encadrant professionnel</h3>
+    <div class="info-grid">
+      <div class="info-item">
+        <label>Nom</label>
+        <span>{{ request.supervisorName }}</span>
+      </div>
+      <div class="info-item">
+        <label>Email</label>
+        <span>{{ request.supervisorEmail }}</span>
+      </div>
+      <div class="info-item">
+        <label>Entreprise</label>
+        <span>{{ request.companyName }}</span>
+      </div>
+    </div>
+  </div>
+
+  <mat-divider></mat-divider>
+
+  <div class="details-section">
+    <h3>Validation académique</h3>
+    <div class="info-grid">
+      <div class="info-item full-width">
+        <label>Commentaire de l’encadrant</label>
+        <p class="comment-text">{{ request.academicComments || 'Aucun commentaire fourni.' }}</p>
+      </div>
+      <div class="info-item">
+        <label>Date</label>
+        <span>{{ request.academicValidationDate | date:'medium' }}</span>
+      </div>
+    </div>
+  </div>
+
+  <mat-divider></mat-divider>
+
+  <form [formGroup]="validationForm" class="action-form">
+    <mat-form-field appearance="outline" class="full-width">
+      <mat-label>Commentaire administratif</mat-label>
+      <textarea matInput formControlName="comment" placeholder="Saisissez la confirmation finale ou le motif du refus..." rows="3"></textarea>
+      <mat-hint>Le commentaire est obligatoire en cas de refus.</mat-hint>
+      <mat-error *ngIf="validationForm.get('comment')?.hasError('required')">
+        Un commentaire est requis pour un refus.
+      </mat-error>
+    </mat-form-field>
+  </form>
+</mat-dialog-content>
+
+<mat-dialog-actions align="end">
+  <button mat-button (click)="onCancel()" [disabled]="isProcessing">Annuler</button>
+  <button mat-flat-button color="warn" (click)="onReject()" [disabled]="isProcessing">
+    <mat-icon>cancel</mat-icon>
+    Refuser
+  </button>
+  <button mat-flat-button color="primary" (click)="onApprove()" [disabled]="isProcessing">
+    <mat-icon>check_circle</mat-icon>
+    Officialiser
+  </button>
+</mat-dialog-actions>

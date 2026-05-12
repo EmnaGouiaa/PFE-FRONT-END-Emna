@@ -1,0 +1,252 @@
+.teacher-sidebar .teacher-header {
+  margin-bottom: 18px;
+}
+
+.teacher-identity {
+  position: relative;
+  z-index: 1;
+  margin-bottom: 18px;
+  padding: 16px 18px;
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.88);
+  border: 1px solid rgba(16, 71, 120, 0.08);
+  box-shadow: 0 12px 24px rgba(16, 71, 120, 0.08);
+}
+
+.identity-name {
+  font-weight: 800;
+  color: var(--text-main);
+}
+
+.identity-meta {
+  margin-top: 4px;
+  color: var(--text-muted);
+  font-size: 0.88rem;
+  font-weight: 600;
+  word-break: break-word;
+}
+
+.teacher-page {
+  max-width: 1440px;
+}
+
+.teacher-hero {
+  align-items: center;
+}
+
+.hero-copy {
+  max-width: 760px;
+}
+
+.teacher-stats {
+  margin-bottom: 24px;
+}
+
+.teacher-stat {
+  min-height: 208px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.accent-stat {
+  background:
+    radial-gradient(circle at top right, rgba(203, 216, 18, 0.24), transparent 28%),
+    rgba(255, 255, 255, 0.94);
+}
+
+.stat-icon-box {
+  width: 52px;
+  height: 52px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 18px;
+  background: linear-gradient(135deg, rgba(16, 71, 120, 0.12), rgba(37, 150, 190, 0.18));
+  color: var(--primary-color);
+}
+
+.stat-icon-box svg {
+  width: 22px;
+  height: 22px;
+}
+
+.teacher-layout {
+  grid-template-columns: minmax(0, 1.55fr) minmax(320px, 0.95fr);
+  align-items: start;
+}
+
+.teacher-side-stack {
+  display: grid;
+  gap: 18px;
+}
+
+.teacher-main-panel {
+  min-width: 0;
+}
+
+.teacher-panel-header {
+  align-items: center;
+}
+
+.summary-chip {
+  display: inline-flex;
+  align-items: center;
+  min-height: 34px;
+  padding: 0 12px;
+  border-radius: 999px;
+  background: rgba(16, 71, 120, 0.08);
+  color: var(--primary-color);
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+
+.teacher-table-wrap {
+  overflow-x: auto;
+  border-radius: 22px;
+  border: 1px solid rgba(16, 71, 120, 0.08);
+}
+
+.teacher-table {
+  width: 100%;
+  min-width: 980px;
+  border-collapse: collapse;
+  background: rgba(255, 255, 255, 0.94);
+}
+
+.teacher-table thead {
+  background: rgba(236, 239, 207, 0.42);
+}
+
+.teacher-table th,
+.teacher-table td {
+  padding: 16px;
+  text-align: left;
+  vertical-align: top;
+  border-bottom: 1px solid rgba(16, 71, 120, 0.08);
+}
+
+.teacher-table th {
+  color: var(--text-muted);
+  font-size: 0.78rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.teacher-table tbody tr:hover {
+  background: rgba(16, 71, 120, 0.03);
+}
+
+.subject-text {
+  min-width: 180px;
+  color: var(--text-main);
+  line-height: 1.5;
+}
+
+.status-stack {
+  display: grid;
+  gap: 8px;
+}
+
+.btn-small {
+  min-height: 38px;
+  padding: 0 14px;
+}
+
+.priority-list {
+  display: grid;
+  gap: 12px;
+}
+
+.priority-card {
+  padding: 16px 18px;
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid rgba(16, 71, 120, 0.08);
+  box-shadow: 0 10px 22px rgba(16, 71, 120, 0.05);
+}
+
+.priority-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.priority-title {
+  color: var(--text-main);
+  font-weight: 800;
+}
+
+.priority-meta {
+  margin-top: 8px;
+  color: var(--primary-color);
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+.priority-text {
+  margin: 10px 0 0;
+  color: var(--text-muted);
+  line-height: 1.5;
+}
+
+.quick-actions-grid {
+  display: grid;
+  gap: 12px;
+}
+
+.quick-action-card {
+  display: block;
+  padding: 18px;
+  border-radius: 20px;
+  border: 1px solid rgba(16, 71, 120, 0.1);
+  background:
+    radial-gradient(circle at top right, rgba(37, 150, 190, 0.08), transparent 28%),
+    rgba(255, 255, 255, 0.94);
+  text-decoration: none;
+  box-shadow: 0 14px 28px rgba(16, 71, 120, 0.06);
+  transition: var(--transition);
+}
+
+.quick-action-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 18px 32px rgba(16, 71, 120, 0.1);
+}
+
+.quick-action-button {
+  width: 100%;
+  cursor: pointer;
+  text-align: left;
+  font: inherit;
+}
+
+.quick-action-title {
+  display: block;
+  color: var(--primary-color);
+  font-weight: 800;
+}
+
+.quick-action-text {
+  display: block;
+  margin-top: 8px;
+  color: var(--text-muted);
+  line-height: 1.5;
+}
+
+.compact-empty {
+  padding: 18px;
+}
+
+@media (max-width: 1080px) {
+  .teacher-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 960px) {
+  .teacher-table {
+    min-width: 760px;
+  }
+}

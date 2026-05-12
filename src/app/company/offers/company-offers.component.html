@@ -1,0 +1,344 @@
+<div class="company-page">
+  <header class="page-hero">
+    <div>
+      <h1>Offres de stage</h1>
+      <p>
+        Creez et suivez les offres de stage de votre entreprise.
+        Chaque offre doit etre validee par le responsable universitaire avant d'etre visible aux etudiants.
+      </p>
+    </div>
+    <div class="hero-actions">
+      <button type="button" class="btn btn-secondary" (click)="loadOffers()" [disabled]="isLoading">Rafraichir</button>
+      <button type="button" class="btn btn-primary" (click)="openCreate()">Nouvelle offre</button>
+    </div>
+  </header>
+
+  <div *ngIf="errorMessage" class="alert alert-error">{{ errorMessage }}</div>
+  <div *ngIf="successMessage" class="alert alert-success">{{ successMessage }}</div>
+  <div class="support-banner">
+    Workflow : <strong>EN_ATTENTE</strong> apres creation, <strong>VALIDEE</strong> apres accord academique,
+    <strong>AFFECTEE</strong> des qu'un etudiant est rattache et que le stage est cree.
+    Une affectation peut ensuite etre annulee par le representant de l'entreprise si necessaire.
+  </div>
+  <div *ngIf="isLoading" class="loading">Chargement des offres...</div>
+
+  <section *ngIf="!isLoading">
+    <article class="panel">
+      <div class="panel-header">
+        <div>
+          <h2>Offres actives</h2>
+          <div class="panel-subtitle">{{ activeOffers.length }} offre(s) encore disponibles pour gestion ou affectation</div>
+        </div>
+      </div>
+
+      <div class="empty-card" *ngIf="activeOffers.length === 0">Aucune offre active disponible.</div>
+
+      <div class="offer-card-grid" *ngIf="activeOffers.length > 0">
+        <article class="offer-card" *ngFor="let offer of activeOffers" (click)="openOfferDetails(offer)">
+          <div class="offer-card-top">
+            <div>
+              <h3>{{ offer.titre }}</h3>
+              <p>{{ offer.entrepriseNom || 'Entreprise non renseignee' }}</p>
+            </div>
+            <span class="status-pill" [ngClass]="'status-' + offer.statut">{{ getOfferStatusLabel(offer) }}</span>
+          </div>
+
+          <p class="offer-card-description">{{ offer.descriptionMissions || 'Aucune description disponible.' }}</p>
+
+          <div class="offer-card-meta">
+            <div class="offer-meta-item">
+              <span class="label">Profil</span>
+              <span class="value">{{ offer.profilRecherche || 'Non precise' }}</span>
+            </div>
+            <div class="offer-meta-item">
+              <span class="label">Debut</span>
+              <span class="value">{{ offer.dateDebutPrevue || '-' }}</span>
+            </div>
+            <div class="offer-meta-item">
+              <span class="label">Duree</span>
+              <span class="value">{{ offer.duree || '-' }} mois</span>
+            </div>
+          </div>
+
+          <div class="inline-actions">
+            <button
+              type="button"
+              class="btn btn-secondary"
+              (click)="openOfferDetails(offer); $event.stopPropagation()"
+            >
+              Voir details
+            </button>
+            <button
+              type="button"
+              class="btn btn-secondary"
+              (click)="openEdit(offer); $event.stopPropagation()"
+              [disabled]="!canEdit(offer)"
+            >
+              Modifier
+            </button>
+            <button
+              type="button"
+              class="btn btn-secondary"
+              *ngIf="offer.statut === 'PUBLIEE' || offer.statut === 'VALIDEE'"
+              (click)="close(offer); $event.stopPropagation()"
+            >
+              Fermer
+            </button>
+            <button
+              type="button"
+              class="btn btn-primary"
+              (click)="openAssign(offer); $event.stopPropagation()"
+              [disabled]="!canAssign(offer)"
+            >
+              Affecter un etudiant
+            </button>
+            <button
+              type="button"
+              class="btn btn-secondary"
+              *ngIf="canCancelAssignment(offer)"
+              (click)="cancelAssignment(offer); $event.stopPropagation()"
+              [disabled]="isCancelling"
+            >
+              {{ isCancelling ? "Annulation..." : "Annuler l'affectation" }}
+            </button>
+          </div>
+
+          <div class="offer-card-foot" *ngIf="getAssignDisabledReason(offer) as assignReason">
+            <span class="status-pill status-FERMEE">{{ assignReason }}</span>
+          </div>
+          <div class="offer-card-foot" *ngIf="getEditDisabledReason(offer) as editReason">
+            <span class="status-pill status-FERMEE">{{ editReason }}</span>
+          </div>
+        </article>
+      </div>
+
+      <div class="panel-header history-header" *ngIf="archivedOffers.length > 0">
+        <div>
+          <h2>Historique des offres</h2>
+          <div class="panel-subtitle">{{ archivedOffers.length }} offre(s) archivee(s) ou pourvue(s)</div>
+        </div>
+      </div>
+
+      <div class="offer-card-grid compact-grid" *ngIf="archivedOffers.length > 0">
+        <article class="offer-card archived-card" *ngFor="let offer of archivedOffers" (click)="openOfferDetails(offer)">
+          <div class="offer-card-top">
+            <div>
+              <h3>{{ offer.titre }}</h3>
+              <p>{{ offer.entrepriseNom || 'Entreprise non renseignee' }}</p>
+            </div>
+            <span class="status-pill" [ngClass]="'status-' + offer.statut">{{ getOfferStatusLabel(offer) }}</span>
+          </div>
+
+          <div class="offer-card-meta">
+            <div class="offer-meta-item">
+              <span class="label">Profil</span>
+              <span class="value">{{ offer.profilRecherche || 'Non precise' }}</span>
+            </div>
+            <div class="offer-meta-item">
+              <span class="label">Debut</span>
+              <span class="value">{{ offer.dateDebutPrevue || '-' }}</span>
+            </div>
+            <div class="offer-meta-item">
+              <span class="label">Duree</span>
+              <span class="value">{{ offer.duree || '-' }} mois</span>
+            </div>
+          </div>
+
+          <div class="inline-actions">
+            <button
+              type="button"
+              class="btn btn-secondary"
+              (click)="openOfferDetails(offer); $event.stopPropagation()"
+            >
+              Voir details
+            </button>
+            <button
+              type="button"
+              class="btn btn-secondary"
+              *ngIf="canCancelAssignment(offer)"
+              (click)="cancelAssignment(offer); $event.stopPropagation()"
+              [disabled]="isCancelling"
+            >
+              {{ isCancelling ? "Annulation..." : "Annuler l'affectation" }}
+            </button>
+          </div>
+        </article>
+      </div>
+    </article>
+  </section>
+
+  <div class="modal-overlay" *ngIf="showDetailsModal && selectedOffer" (click)="closeOfferDetails()">
+    <div class="modal" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h2>Detail de l'offre</h2>
+        <button type="button" class="btn-close" (click)="closeOfferDetails()">x</button>
+      </div>
+
+      <div class="form">
+        <div class="detail-card">
+          <div class="panel-header">
+            <div>
+              <h3>{{ selectedOffer.titre }}</h3>
+              <div class="panel-subtitle">{{ selectedOffer.profilRecherche || 'Profil non precise' }}</div>
+            </div>
+            <span class="status-pill" [ngClass]="'status-' + selectedOffer.statut">{{ getOfferStatusLabel(selectedOffer) }}</span>
+          </div>
+
+          <div class="detail-grid">
+            <div class="detail-item">
+              <span class="label">Entreprise</span>
+              <span class="value">{{ selectedOffer.entrepriseNom || '-' }}</span>
+            </div>
+            <div class="detail-item">
+              <span class="label">Date de debut prevue</span>
+              <span class="value">{{ selectedOffer.dateDebutPrevue || '-' }}</span>
+            </div>
+            <div class="detail-item">
+              <span class="label">Duree</span>
+              <span class="value">{{ selectedOffer.duree || '-' }} mois</span>
+            </div>
+            <div class="detail-item">
+              <span class="label">Validee par</span>
+              <span class="value">{{ selectedOffer.valideeParNomComplet || 'En attente de validation' }}</span>
+            </div>
+            <div class="detail-item full-width">
+              <span class="label">Description des missions</span>
+              <span class="value">{{ selectedOffer.descriptionMissions || '-' }}</span>
+            </div>
+            <div class="detail-item full-width" *ngIf="selectedOffer.motifRefus">
+              <span class="label">Motif de refus</span>
+              <span class="value">{{ selectedOffer.motifRefus }}</span>
+            </div>
+            <div class="detail-item full-width" *ngIf="selectedOffer.stageCree || selectedOffer.statut === 'AFFECTEE'">
+              <span class="label">Etat de l'offre</span>
+              <span class="value">Cette offre a deja ete pourvue. Le suivi se fait maintenant depuis le stage cree.</span>
+            </div>
+            <div class="detail-item full-width" *ngIf="canCancelAssignment(selectedOffer)">
+              <span class="label">Annulation de l'affectation</span>
+              <span class="value">
+                Vous pouvez annuler cette affectation. L'etudiant ne sera plus considere comme ayant un stage actif et l'offre redeviendra disponible.
+              </span>
+            </div>
+            <div class="detail-item full-width" *ngIf="getAssignDisabledReason(selectedOffer) as detailAssignReason">
+              <span class="label">Affectation</span>
+              <span class="value">{{ detailAssignReason }}</span>
+            </div>
+            <div class="detail-item full-width" *ngIf="getEditDisabledReason(selectedOffer) as detailEditReason">
+              <span class="label">Modification</span>
+              <span class="value">{{ detailEditReason }}</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="inline-actions">
+          <button type="button" class="btn btn-secondary" (click)="closeOfferDetails()">Fermer</button>
+          <button
+            type="button"
+            class="btn btn-secondary"
+            (click)="closeOfferDetails(); openEdit(selectedOffer)"
+            [disabled]="!canEdit(selectedOffer)"
+          >
+            Modifier
+          </button>
+          <button
+            type="button"
+            class="btn btn-secondary"
+            *ngIf="selectedOffer.statut === 'PUBLIEE' || selectedOffer.statut === 'VALIDEE'"
+            (click)="closeOfferDetails(); close(selectedOffer)"
+          >
+            Fermer l'offre
+          </button>
+          <button
+            type="button"
+            class="btn btn-primary"
+            (click)="closeOfferDetails(); openAssign(selectedOffer)"
+            [disabled]="!canAssign(selectedOffer)"
+          >
+            Affecter un etudiant
+          </button>
+          <button
+            type="button"
+            class="btn btn-secondary"
+            *ngIf="canCancelAssignment(selectedOffer)"
+            (click)="closeOfferDetails(); cancelAssignment(selectedOffer)"
+            [disabled]="isCancelling"
+          >
+            {{ isCancelling ? "Annulation..." : "Annuler l'affectation" }}
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-overlay" *ngIf="showForm" (click)="closeForm()">
+    <div class="modal" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h2>{{ isEditMode ? 'Modifier une offre' : 'Creer une offre' }}</h2>
+        <button type="button" class="btn-close" (click)="closeForm()">x</button>
+      </div>
+
+      <form [formGroup]="offerForm" class="form">
+        <label>Titre</label>
+        <input class="input" formControlName="titre" autofocus />
+        <div class="alert alert-error" *ngIf="getOfferFieldError('titre')">{{ getOfferFieldError('titre') }}</div>
+
+        <label>Description des missions</label>
+        <textarea class="textarea" formControlName="descriptionMissions"></textarea>
+        <div class="alert alert-error" *ngIf="getOfferFieldError('descriptionMissions')">
+          {{ getOfferFieldError('descriptionMissions') }}
+        </div>
+
+        <label>Profil recherche</label>
+        <input class="input" formControlName="profilRecherche" />
+        <div class="alert alert-error" *ngIf="getOfferFieldError('profilRecherche')">
+          {{ getOfferFieldError('profilRecherche') }}
+        </div>
+
+        <label>Duree (mois)</label>
+        <input class="input" type="number" formControlName="duree" />
+        <div class="alert alert-error" *ngIf="getOfferFieldError('duree')">{{ getOfferFieldError('duree') }}</div>
+
+        <label>Date de debut prevue</label>
+        <input class="input" type="date" formControlName="dateDebutPrevue" />
+        <div class="alert alert-error" *ngIf="getOfferFieldError('dateDebutPrevue')">
+          {{ getOfferFieldError('dateDebutPrevue') }}
+        </div>
+
+        <div class="form-actions">
+          <button type="button" class="btn btn-secondary" (click)="closeForm()">Annuler</button>
+          <button type="button" class="btn btn-primary" (click)="saveOffer()" [disabled]="isSaving">
+            {{ isSaving ? 'Enregistrement...' : 'Enregistrer' }}
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="modal-overlay" *ngIf="showAssignForm" (click)="closeAssignForm()">
+    <div class="modal" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h2>Affecter un etudiant</h2>
+        <button type="button" class="btn-close" (click)="closeAssignForm()">x</button>
+      </div>
+
+      <form [formGroup]="assignForm" class="form">
+        <div class="support-banner warning-banner">
+          Cette action cree un stage reel a partir de l'offre et retire l'offre des disponibilites actives.
+        </div>
+
+        <label>Offre concernee</label>
+        <input class="input" [value]="offerToAssign?.titre || ''" readonly />
+
+        <label>Email de l'etudiant</label>
+        <input class="input" type="email" formControlName="emailEtudiant" placeholder="etudiant@exemple.com" autofocus />
+
+        <div class="form-actions">
+          <button type="button" class="btn btn-secondary" (click)="closeAssignForm()">Annuler</button>
+          <button type="button" class="btn btn-primary" (click)="assignStudent()" [disabled]="isAssigning">
+            {{ isAssigning ? 'Affectation...' : "Confirmer l'affectation" }}
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>

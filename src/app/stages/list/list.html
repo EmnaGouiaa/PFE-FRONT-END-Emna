@@ -1,0 +1,128 @@
+<div class="company-page">
+  <header class="page-hero">
+    <div>
+      <h1>Stages</h1>
+      <p>Liste des stages accessibles selon votre rôle.</p>
+    </div>
+    <div class="hero-actions">
+      <button type="button" class="btn btn-secondary" (click)="chargerStages()" [disabled]="chargement">
+        Actualiser
+      </button>
+    </div>
+  </header>
+
+  <div *ngIf="messageErreur" class="alert alert-error">{{ messageErreur }}</div>
+
+  <section class="toolbar">
+    <input
+      class="input"
+      type="text"
+      placeholder="Rechercher par titre, sujet, entreprise, stagiaire…"
+      [(ngModel)]="recherche"
+      (input)="appliquerFiltre()"
+    />
+  </section>
+
+  <div *ngIf="chargement" class="loading">Chargement des stages…</div>
+
+  <section class="content-grid" *ngIf="!chargement">
+    <article class="panel">
+      <div class="panel-header">
+        <div>
+          <h2>Liste</h2>
+          <div class="panel-subtitle">{{ stagesFiltres.length }} stage(s)</div>
+        </div>
+      </div>
+
+      <div class="empty-card" *ngIf="stagesFiltres.length === 0">Aucun stage à afficher.</div>
+
+      <div class="table-wrap" *ngIf="stagesFiltres.length > 0">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>Stage</th>
+              <th>Entreprise</th>
+              <th>Stagiaire</th>
+              <th>Période</th>
+              <th>Statut</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let stage of stagesFiltres" (click)="selectionner(stage)">
+              <td>
+                <div class="cell-title">{{ stage.titre || ('Stage #' + stage.id) }}</div>
+                <div class="cell-sub">{{ stage.sujet || 'Sujet non renseigné' }}</div>
+              </td>
+              <td>{{ stage.entreprise?.nom || '-' }}</td>
+              <td>{{ stage.stagiaire ? ((stage.stagiaire.prenom || '') + ' ' + (stage.stagiaire.nom || '')).trim() : '-' }}</td>
+              <td>{{ stage.dateDebut || '-' }} → {{ stage.dateFin || '-' }}</td>
+              <td><span class="status-pill" [ngClass]="'status-' + (stage.statut || 'neutral')">{{ stage.statut || 'N/D' }}</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </article>
+
+    <article class="panel">
+      <div class="panel-header">
+        <div>
+          <h2>Détails</h2>
+          <div class="panel-subtitle">Informations du stage sélectionné</div>
+        </div>
+      </div>
+
+      <div class="empty-card" *ngIf="!stageSelectionne">Sélectionnez un stage pour afficher ses détails.</div>
+
+      <div class="stack" *ngIf="stageSelectionne">
+        <div class="detail-grid">
+          <div class="detail-item">
+            <span class="label">Titre</span>
+            <span class="value">{{ stageSelectionne.titre || '-' }}</span>
+          </div>
+          <div class="detail-item">
+            <span class="label">Entreprise</span>
+            <span class="value">{{ stageSelectionne.entreprise?.nom || '-' }}</span>
+          </div>
+          <div class="detail-item">
+            <span class="label">Stagiaire</span>
+            <span class="value">{{ stageSelectionne.stagiaire ? ((stageSelectionne.stagiaire.prenom || '') + ' ' + (stageSelectionne.stagiaire.nom || '')).trim() : '-' }}</span>
+          </div>
+          <div class="detail-item">
+            <span class="label">E-mail</span>
+            <span class="value">{{ stageSelectionne.stagiaire?.email || '-' }}</span>
+          </div>
+          <div class="detail-item">
+            <span class="label">Période</span>
+            <span class="value">{{ stageSelectionne.dateDebut || '-' }} → {{ stageSelectionne.dateFin || '-' }}</span>
+          </div>
+          <div class="detail-item">
+            <span class="label">Sujet</span>
+            <span class="value">{{ stageSelectionne.sujet || '—' }}</span>
+          </div>
+          <div class="detail-item">
+            <span class="label">Convention</span>
+            <span class="value">
+              <ng-container *ngIf="chargementConvention">Chargement…</ng-container>
+              <ng-container *ngIf="!chargementConvention && conventionSelectionnee">
+                #{{ conventionSelectionnee.numConv || conventionSelectionnee.id }}
+              </ng-container>
+              <ng-container *ngIf="!chargementConvention && !conventionSelectionnee">Aucune convention associée</ng-container>
+            </span>
+          </div>
+        </div>
+
+        <div class="inline-actions">
+          <a
+            class="btn btn-secondary"
+            *ngIf="conventionSelectionnee"
+            [routerLink]="['/stages/convention', conventionSelectionnee.id]"
+          >
+            Afficher la convention
+          </a>
+          <a class="btn btn-secondary" [routerLink]="['/stages/evaluation', stageSelectionne.id]">Afficher l’évaluation</a>
+          <a class="btn btn-secondary" [routerLink]="['/stages/journal-de-bord', stageSelectionne.id]">Afficher le journal de bord</a>
+        </div>
+      </div>
+    </article>
+  </section>
+</div>

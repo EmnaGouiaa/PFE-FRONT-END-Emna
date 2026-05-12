@@ -1,0 +1,165 @@
+<div class="dashboard-container">
+    <!-- Background elements matching login page -->
+    <div class="dot-pattern"></div>
+    <div class="shape-1"></div>
+    <div class="shape-2"></div>
+
+    <!-- Navbar -->
+    <nav class="navbar">
+        <div class="nav-brand">
+            <i class="fas fa-user-graduate"></i>
+            <span>Student Portal</span>
+        </div>
+        <div class="nav-menu">
+            <a class="nav-link" (click)="navigateTo('/student/dashboard')">
+                <i class="fas fa-tachometer-alt"></i> Dashboard
+            </a>
+            <a class="nav-link" (click)="navigateTo('/stages')">
+                <i class="fas fa-briefcase"></i> My Internship
+            </a>
+            <a class="nav-link" (click)="navigateTo('/stages/logbook/' + internshipId)">
+                <i class="fas fa-book"></i> Logbook
+            </a>
+            <a class="nav-link" (click)="navigateTo('/student/tasks')">
+                <i class="fas fa-tasks"></i> Tasks
+            </a>
+        </div>
+        <div class="nav-user">
+            <span class="user-info">{{ userName$ | async }}</span>
+            <a class="nav-link" (click)="navigateTo('/etudiant/profil')">
+                <i class="fas fa-user"></i> Gérer profil
+            </a>
+            <button class="logout-btn" (click)="logout()">
+                <i class="fas fa-sign-out-alt"></i> Logout
+            </button>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="main-content">
+        <!-- Welcome Section -->
+        <div class="welcome-section">
+            <div class="welcome-card">
+                <h1>
+                    <i class="fas fa-user-graduate"></i>
+                    Student Dashboard
+                </h1>
+                <p>{{ welcomeMessage$ | async }}</p>
+            </div>
+        </div>
+
+        <!-- Internship Details -->
+        <div class="internship-section">
+            <h2>My Internship</h2>
+            <div class="internship-card">
+                <div class="internship-header">
+                    <div class="company-info">
+                        <h3>{{ internshipData?.company || 'Tech Solutions Inc.' }}</h3>
+                        <p><i class="fas fa-map-marker-alt"></i> {{ internshipData?.location || 'Tunis, Tunisia' }}</p>
+                    </div>
+                    <div class="internship-status">
+                        <span class="status-badge status-active">Active</span>
+                    </div>
+                </div>
+                <div class="internship-details">
+                    <div class="detail-item">
+                        <i class="fas fa-briefcase"></i>
+                        <div>
+                            <strong>Position:</strong>
+                            <p>{{ internshipData?.position || 'Software Development Intern' }}</p>
+                        </div>
+                    </div>
+                    <div class="detail-item">
+                        <i class="fas fa-calendar"></i>
+                        <div>
+                            <strong>Duration:</strong>
+                            <p>{{ internshipData?.duration || '3 months' }} ({{ internshipData?.remainingDays || 45 }}
+                                days remaining)</p>
+                        </div>
+                    </div>
+                    <div class="detail-item">
+                        <i class="fas fa-user-tie"></i>
+                        <div>
+                            <strong>Supervisor:</strong>
+                            <p>{{ internshipData?.supervisor || 'Dr. Mohamed Ali' }}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Weekly Progress -->
+        <div class="progress-section">
+            <h2>Weekly Progress</h2>
+            <div class="progress-grid">
+                <div class="progress-card" *ngFor="let week of weeklyProgress">
+                    <div class="progress-header">
+                        <h3>{{ week.title }}</h3>
+                        <span class="progress-status" [ngClass]="'status-' + week.status">{{ week.statusText }}</span>
+                    </div>
+                    <p>{{ week.description }}</p>
+                    <div class="progress-bar">
+                        <div class="progress-fill" [ngClass]="week.status" [style.width.%]="week.progress"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tasks Integration -->
+        <div class="tasks-section">
+            <h2>External Tasks</h2>
+            <div class="tasks-container">
+                <div class="tasks-header">
+                    <div class="task-source">
+                        <i class="fab fa-jira"></i>
+                        <h3>Jira Tasks</h3>
+                    </div>
+                    <button class="sync-btn" (click)="syncTasks()">
+                        <i class="fas fa-sync"></i> Sync
+                    </button>
+                </div>
+                <div class="tasks-list">
+                    <div class="task-item" *ngFor="let task of tasks">
+                        <div class="task-priority" [ngClass]="'priority-' + task.priority"></div>
+                        <div class="task-content">
+                            <h4>{{ task.title }}</h4>
+                            <p>{{ task.description }}</p>
+                            <div class="task-meta">
+                                <span><i class="fas fa-calendar"></i> {{ task.dueDate }}</span>
+                                <span><i class="fas fa-flag"></i> {{ task.priority }}</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Update Submission -->
+        <div class="update-section">
+            <h2>Submit Update</h2>
+            <div class="update-form">
+                <div class="form-group">
+                    <label for="update-type">Update Type</label>
+                    <select id="update-type" class="form-control" [(ngModel)]="updateType">
+                        <option>Weekly Progress</option>
+                        <option>Task Completion</option>
+                        <option>Issue Report</option>
+                        <option>General Update</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="update-content">Content</label>
+                    <textarea id="update-content" class="form-control" rows="4" [(ngModel)]="updateContent"
+                        placeholder="Describe your progress, achievements, or any issues..."></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="update-file">Attachment (optional)</label>
+                    <input type="file" id="update-file" class="form-control" accept=".pdf,.doc,.docx,.jpg,.png">
+                </div>
+                <button class="submit-btn" (click)="submitUpdate()">
+                    <i class="fas fa-paper-plane"></i> Submit Update
+                </button>
+            </div>
+        </div>
+    </div>
+</div>

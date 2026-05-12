@@ -1,0 +1,76 @@
+<div class="company-page student-page">
+  <section class="page-hero student-hero dashboard-top-header">
+    <div>
+      <span class="dashboard-kicker">Centre de notifications</span>
+      <h1>Mes notifications</h1>
+      <p>
+        Retrouvez ici les validations importantes et les affectations de stage générées par les événements du backend.
+      </p>
+      <div class="hero-badges">
+        <span class="hero-badge">{{ unreadCount }} non lue(s)</span>
+        <span class="hero-badge">{{ notifications.length }} notification(s)</span>
+      </div>
+    </div>
+    <div class="hero-actions">
+      <a routerLink="/etudiant/tableau-de-bord" class="btn btn-secondary">Retour au tableau de bord</a>
+      <a routerLink="/etudiant/mon-stage" class="btn btn-primary">Voir mon stage</a>
+    </div>
+  </section>
+
+  <div class="message-success" *ngIf="successMessage">{{ successMessage }}</div>
+  <div class="message-error" *ngIf="errorMessage">{{ errorMessage }}</div>
+  <div class="empty-card" *ngIf="isLoading">Chargement des notifications...</div>
+
+  <section class="panel dashboard-panel" *ngIf="!isLoading">
+    <div class="panel-header">
+      <div>
+        <h2>Activité récente</h2>
+        <p class="panel-subtitle">Les nouvelles arrivées sont affichées en premier.</p>
+      </div>
+    </div>
+
+    <div class="empty-card" *ngIf="notifications.length === 0">
+      Aucune notification pour le moment.
+    </div>
+
+    <div class="notifications-list" *ngIf="notifications.length > 0">
+      <article
+        class="notification-card"
+        [class.notification-unread]="!notification.read"
+        *ngFor="let notification of notifications; trackBy: trackByNotificationId"
+      >
+        <div class="notification-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9" />
+            <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+          </svg>
+        </div>
+
+        <div class="notification-copy">
+          <div class="notification-topline">
+            <h3>{{ notification.title }}</h3>
+            <span class="status-pill" [ngClass]="getNotificationBadgeClass(notification)">
+              {{ getNotificationBadgeLabel(notification) }}
+            </span>
+          </div>
+          <p>{{ notification.message }}</p>
+          <div class="mini-offer-meta">
+            <span>{{ formatDate(notification.dateTime) }}</span>
+            <span *ngIf="notification.relatedEntityType && notification.relatedEntityId">
+              {{ notification.relatedEntityType }} #{{ notification.relatedEntityId }}
+            </span>
+          </div>
+        </div>
+
+        <button
+          type="button"
+          class="btn btn-secondary"
+          [disabled]="notification.read || markingId === notification.id"
+          (click)="markAsRead(notification)"
+        >
+          {{ notification.read ? 'Déjà lue' : (markingId === notification.id ? 'Traitement...' : 'Marquer comme lue') }}
+        </button>
+      </article>
+    </div>
+  </section>
+</div>

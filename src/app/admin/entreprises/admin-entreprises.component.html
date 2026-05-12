@@ -1,0 +1,305 @@
+<div class="page">
+  <div class="page-bg"></div>
+
+  <header class="page-header">
+    <div>
+      <span class="eyebrow">Admin</span>
+      <h1>Entreprises & responsables</h1>
+      <p>Creation des entreprises puis rattachement du responsable et des encadrants professionnels a une entreprise existante.</p>
+    </div>
+    <div class="header-actions">
+      <button class="btn btn-primary" (click)="openCreate()" [disabled]="isLoading || isSubmitting">
+        + Ajouter une entreprise
+      </button>
+    </div>
+  </header>
+
+  <section class="summary-grid">
+    <article class="summary-card">
+      <span class="summary-label">Entreprises</span>
+      <strong>{{ companyAccounts.length }}</strong>
+      <p>Structures gerees depuis un seul formulaire.</p>
+    </article>
+    <article class="summary-card">
+      <span class="summary-label">Representants relies</span>
+      <strong>{{ linkedRepresentativeCount }}</strong>
+      <p>Comptes relies automatiquement a leur entreprise.</p>
+    </article>
+    <article class="summary-card">
+      <span class="summary-label">Emails renseignes</span>
+      <strong>{{ configuredEmailCount }}</strong>
+      <p>Necessaires pour la transmission des identifiants.</p>
+    </article>
+  </section>
+
+  <section class="toolbar">
+    <div class="search-box">
+      <input
+        class="input"
+        type="text"
+        placeholder="Rechercher une entreprise, un responsable ou un contact..."
+        [(ngModel)]="searchQuery"
+        (input)="filter()"
+      />
+    </div>
+    <button class="btn btn-secondary" (click)="load()" [disabled]="isLoading || isSubmitting">Rafraichir</button>
+  </section>
+
+  <div *ngIf="errorMessage" class="alert alert-error">{{ errorMessage }}</div>
+  <div *ngIf="successMessage" class="alert alert-success">{{ successMessage }}</div>
+
+  <section class="table-card">
+    <div class="table-status" *ngIf="isLoading">
+      <span class="spinner"></span>
+      Chargement...
+    </div>
+
+    <div *ngIf="!isLoading && filtered.length === 0" class="empty">
+      <h3>Aucune fiche disponible</h3>
+      <p>Ajoutez d'abord une entreprise, puis rattachez-lui un responsable entreprise.</p>
+      <button class="btn btn-primary" (click)="openCreate()" [disabled]="isSubmitting">Ajouter une entreprise</button>
+    </div>
+
+    <div *ngIf="!isLoading && filtered.length > 0" class="table-wrap">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Entreprise</th>
+            <th>Contact entreprise</th>
+            <th>Representant</th>
+            <th>Contact representant</th>
+            <th>Secteur</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let item of filtered">
+            <td>
+              <div class="main-info">
+                <strong>{{ item.nomEntreprise }}</strong>
+                <span>{{ item.adresse || 'Adresse non renseignee' }}</span>
+              </div>
+            </td>
+            <td>
+              <div class="contact-stack">
+                <span>{{ item.emailEntreprise || 'Email non renseigne' }}</span>
+                <span>{{ item.telephoneEntreprise || 'Telephone non renseigne' }}</span>
+              </div>
+            </td>
+            <td>
+              <div class="main-info">
+                <strong>{{ item.prenomResponsable }} {{ item.nomResponsable }}</strong>
+                <span>{{ item.representantId ? 'Compte lie' : 'Compte a completer' }}</span>
+              </div>
+            </td>
+            <td>
+              <div class="contact-stack">
+                <span>{{ item.emailResponsable || 'Email non renseigne' }}</span>
+                <span>{{ item.telephoneResponsable || 'Telephone non renseigne' }}</span>
+              </div>
+            </td>
+            <td>{{ item.secteurActivite || '-' }}</td>
+            <td class="actions">
+              <button class="btn btn-secondary" (click)="openRepresentativeForm(item)" [disabled]="isSubmitting">
+                {{ item.representantId ? 'Modifier responsable entreprise' : 'Ajouter un responsable entreprise' }}
+              </button>
+              <button class="btn btn-secondary" (click)="openSupervisorCreate(item)" [disabled]="isSubmitting">
+                Ajouter un encadrant professionnel
+              </button>
+              <button class="btn btn-secondary" (click)="openEdit(item)" [disabled]="isSubmitting">Modifier</button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <div class="modal-overlay" *ngIf="showForm" (click)="closeForm()">
+    <div class="modal" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <div>
+          <h2>{{ isEditMode ? 'Modifier l entreprise' : 'Nouvelle entreprise' }}</h2>
+          <p>
+            {{ isEditMode
+              ? 'Mettez a jour les coordonnees de l entreprise.'
+              : 'Creez d abord l entreprise, puis ajoutez le responsable entreprise depuis sa fiche.' }}
+          </p>
+        </div>
+        <button class="btn-close" (click)="closeForm()" aria-label="Fermer">x</button>
+      </div>
+
+      <form [formGroup]="form" (ngSubmit)="submit()" class="form">
+        <section class="form-section">
+          <div class="section-title">Entreprise</div>
+          <div class="form-grid">
+            <div class="form-group">
+              <label>Nom entreprise *</label>
+              <input class="input" formControlName="nomEntreprise" autofocus />
+              <div class="field-error" *ngIf="getFieldError('nomEntreprise')">{{ getFieldError('nomEntreprise') }}</div>
+            </div>
+
+            <div class="form-group">
+              <label>Secteur d'activite</label>
+              <input class="input" formControlName="secteurActivite" />
+            </div>
+
+            <div class="form-group">
+              <label>Email entreprise</label>
+              <input class="input" type="email" formControlName="emailEntreprise" />
+              <div class="field-error" *ngIf="getFieldError('emailEntreprise')">{{ getFieldError('emailEntreprise') }}</div>
+            </div>
+
+            <div class="form-group">
+              <label>Telephone entreprise</label>
+              <input class="input" formControlName="telephoneEntreprise" />
+              <div class="field-error" *ngIf="getFieldError('telephoneEntreprise')">{{ getFieldError('telephoneEntreprise') }}</div>
+            </div>
+
+            <div class="form-group form-group-full">
+              <label>Adresse</label>
+              <input class="input" formControlName="adresse" />
+            </div>
+          </div>
+        </section>
+
+        <div class="info-banner">
+          L'unicite des emails et telephones est verifiee cote serveur. Le responsable entreprise se cree ensuite depuis la fiche de l'entreprise.
+        </div>
+
+        <div class="form-actions">
+          <button type="button" class="btn btn-secondary" (click)="closeForm()" [disabled]="isSubmitting">Annuler</button>
+          <button type="submit" class="btn btn-primary" [disabled]="isSubmitting">
+            <span class="spinner small" *ngIf="isSubmitting"></span>
+            {{ isSubmitting ? (isEditMode ? 'Mise a jour...' : 'Creation...') : (isEditMode ? 'Mettre a jour' : 'Creer l entreprise') }}
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="modal-overlay" *ngIf="showRepresentativeForm" (click)="closeRepresentativeForm()">
+    <div class="modal" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <div>
+          <h2>{{ selectedRepresentativeCompany?.representantId ? 'Modifier le responsable entreprise' : 'Ajouter un responsable entreprise' }}</h2>
+          <p>
+            {{ selectedRepresentativeCompany?.nomEntreprise || 'Entreprise selectionnee' }} :
+            le responsable sera rattache a cette entreprise existante.
+          </p>
+        </div>
+        <button class="btn-close" (click)="closeRepresentativeForm()" aria-label="Fermer">x</button>
+      </div>
+
+      <form [formGroup]="representativeForm" (ngSubmit)="saveRepresentative()" class="form">
+        <section class="form-section">
+          <div class="section-title">Responsable entreprise</div>
+          <div class="form-grid">
+            <div class="form-group">
+              <label>Prenom *</label>
+              <input class="input" formControlName="prenom" autofocus />
+              <div class="field-error" *ngIf="getRepresentativeFieldError('prenom')">{{ getRepresentativeFieldError('prenom') }}</div>
+            </div>
+
+            <div class="form-group">
+              <label>Nom *</label>
+              <input class="input" formControlName="nom" />
+              <div class="field-error" *ngIf="getRepresentativeFieldError('nom')">{{ getRepresentativeFieldError('nom') }}</div>
+            </div>
+
+            <div class="form-group">
+              <label>Email *</label>
+              <input class="input" type="email" formControlName="email" />
+              <div class="field-error" *ngIf="getRepresentativeFieldError('email')">{{ getRepresentativeFieldError('email') }}</div>
+            </div>
+
+            <div class="form-group">
+              <label>Telephone</label>
+              <input class="input" formControlName="telephone" />
+              <div class="field-error" *ngIf="getRepresentativeFieldError('telephone')">{{ getRepresentativeFieldError('telephone') }}</div>
+            </div>
+          </div>
+        </section>
+
+        <div class="info-banner">
+          Ce responsable entreprise est cree ou modifie uniquement depuis une entreprise deja existante.
+        </div>
+
+        <div class="form-actions">
+          <button type="button" class="btn btn-secondary" (click)="closeRepresentativeForm()" [disabled]="isSubmitting">Annuler</button>
+          <button type="submit" class="btn btn-primary" [disabled]="isSubmitting">
+            <span class="spinner small" *ngIf="isSubmitting"></span>
+            {{ isSubmitting ? 'Enregistrement...' : (selectedRepresentativeCompany?.representantId ? 'Mettre a jour le responsable' : 'Creer le responsable') }}
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="modal-overlay" *ngIf="showSupervisorForm" (click)="closeSupervisorForm()">
+    <div class="modal" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <div>
+          <h2>Ajouter un encadrant professionnel</h2>
+          <p>
+            {{ selectedSupervisorCompany?.nomEntreprise || 'Entreprise selectionnee' }} :
+            l'encadrant sera automatiquement rattache a cette entreprise.
+          </p>
+        </div>
+        <button class="btn-close" (click)="closeSupervisorForm()" aria-label="Fermer">x</button>
+      </div>
+
+      <form [formGroup]="supervisorForm" (ngSubmit)="saveSupervisor()" class="form">
+        <section class="form-section">
+          <div class="section-title">Encadrant professionnel</div>
+          <div class="form-grid">
+            <div class="form-group">
+              <label>Prenom *</label>
+              <input class="input" formControlName="prenom" autofocus />
+              <div class="field-error" *ngIf="getSupervisorFieldError('prenom')">{{ getSupervisorFieldError('prenom') }}</div>
+            </div>
+
+            <div class="form-group">
+              <label>Nom *</label>
+              <input class="input" formControlName="nom" />
+              <div class="field-error" *ngIf="getSupervisorFieldError('nom')">{{ getSupervisorFieldError('nom') }}</div>
+            </div>
+
+            <div class="form-group">
+              <label>Email *</label>
+              <input class="input" type="email" formControlName="email" />
+              <div class="field-error" *ngIf="getSupervisorFieldError('email')">{{ getSupervisorFieldError('email') }}</div>
+            </div>
+
+            <div class="form-group">
+              <label>Telephone *</label>
+              <input class="input" formControlName="telephone" />
+              <div class="field-error" *ngIf="getSupervisorFieldError('telephone')">{{ getSupervisorFieldError('telephone') }}</div>
+            </div>
+
+            <div class="form-group">
+              <label>Poste</label>
+              <input class="input" formControlName="poste" />
+            </div>
+
+            <div class="form-group">
+              <label>Service</label>
+              <input class="input" formControlName="service" />
+            </div>
+          </div>
+        </section>
+
+        <div class="info-banner">
+          Cet encadrant professionnel sera cree uniquement pour l'entreprise selectionnee et ne passe pas par la popup generale des utilisateurs.
+        </div>
+
+        <div class="form-actions">
+          <button type="button" class="btn btn-secondary" (click)="closeSupervisorForm()" [disabled]="isSubmitting">Annuler</button>
+          <button type="submit" class="btn btn-primary" [disabled]="isSubmitting">
+            <span class="spinner small" *ngIf="isSubmitting"></span>
+            {{ isSubmitting ? 'Creation...' : "Creer l'encadrant professionnel" }}
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>

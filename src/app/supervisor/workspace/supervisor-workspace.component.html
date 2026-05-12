@@ -1,0 +1,931 @@
+<div class="admin-container supervisor-container">
+  <div class="dot-pattern"></div>
+  <div class="shape-1"></div>
+  <div class="shape-2"></div>
+
+  <div class="admin-wrapper">
+    <header class="admin-header">
+      <div class="header-top">
+        <div class="header-content">
+          <h1>
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M3 13h8V3H3z" />
+              <path d="M13 21h8v-6h-8z" />
+              <path d="M13 11h8V3h-8z" />
+              <path d="M3 21h8v-6H3z" />
+            </svg>
+            {{ pageTitle }}
+          </h1>
+          <p class="header-subtitle">{{ roleLabel }} - {{ pageSubtitle }}</p>
+        </div>
+
+        <div class="header-actions">
+          <button type="button" class="refresh-btn" (click)="loadAll()" [disabled]="isLoading">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21 12a9 9 0 1 1-2.64-6.36" />
+              <polyline points="21 3 21 9 15 9" />
+            </svg>
+            Actualiser
+          </button>
+
+          <button *ngIf="section === 'reunions'" type="button" class="refresh-btn primary-action" (click)="openMeetingModal()">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M12 5v14" />
+              <path d="M5 12h14" />
+            </svg>
+            Créer réunion
+          </button>
+
+          <div class="sync-pill" [class.sync-error]="!!errorMessage">
+            <span class="status-dot" [class.ok]="!isLoading && !errorMessage" [class.error]="!!errorMessage" [class.loading]="isLoading"></span>
+            <span>{{ isLoading && !lastUpdatedAt ? 'Synchronisation...' : (lastUpdatedAt ? (lastUpdatedAt | date: 'short') : 'En attente') }}</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="header-kpis">
+        <div class="mini-kpi">
+          <span class="mini-label">Stagiaires</span>
+          <span class="mini-value">{{ stats.students }}</span>
+        </div>
+        <div class="mini-kpi">
+          <span class="mini-label">Stages en cours</span>
+          <span class="mini-value">{{ stats.ongoing }}</span>
+        </div>
+        <div class="mini-kpi">
+          <span class="mini-label">Réunions prévues</span>
+          <span class="mini-value">{{ stats.upcomingMeetings }}</span>
+        </div>
+        <div class="mini-kpi">
+          <span class="mini-label">Notifications</span>
+          <span class="mini-value">{{ stats.unreadNotifications }}</span>
+        </div>
+      </div>
+    </header>
+
+    <div *ngIf="errorMessage" class="dashboard-error">{{ errorMessage }}</div>
+    <div *ngIf="successMessage" class="alert alert-success supervisor-alert">{{ successMessage }}</div>
+
+    <ng-container *ngIf="isLoading; else workspaceContent">
+      <div class="stats-grid">
+        <div class="stat-card skeleton"></div>
+        <div class="stat-card skeleton"></div>
+        <div class="stat-card skeleton"></div>
+        <div class="stat-card skeleton"></div>
+      </div>
+      <div class="analytics-grid">
+        <div class="analytics-card big-skeleton skeleton"></div>
+        <div class="analytics-card big-skeleton skeleton"></div>
+      </div>
+    </ng-container>
+
+    <ng-template #workspaceContent>
+      <ng-container [ngSwitch]="section">
+        <ng-container *ngSwitchCase="'dashboard'">
+          <section class="analytics-card signature-reminder-card" *ngIf="showProfileCompletionReminder">
+            <div class="signature-reminder-copy">
+              <span class="pill soft">Profil incomplet</span>
+              <h2>{{ profileCompletionService.alertTitle }}</h2>
+              <p>{{ profileCompletionService.alertMessage }}</p>
+              <div class="missing-fields-list" aria-label="Informations manquantes">
+                <span class="missing-field-chip" *ngFor="let field of profileCompletionMissingFields">{{ field }}</span>
+              </div>
+            </div>
+            <a [routerLink]="[basePath, 'profil']" class="action-btn action-primary">Compléter mon profil</a>
+          </section>
+
+          <app-satisfaction-survey-section></app-satisfaction-survey-section>
+
+          <div class="stats-grid">
+            <div class="stat-card stat-students">
+              <div class="stat-icon">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M22 10v6M2 10l10-5 10 5-10 5z" />
+                  <path d="M6 12v5c3 2 6 2 9 0v-5" />
+                </svg>
+              </div>
+              <div class="stat-info">
+                <div class="stat-top">
+                  <p>{{ role === 'ENCADRANT_ACADEMIQUE' ? 'Stagiaires suivis' : 'Stagiaires encadrés' }}</p>
+                  <span class="stat-chip">{{ internships.length }} stages</span>
+                </div>
+                <h3>{{ stats.students }}</h3>
+                <div class="stat-sub"><span class="muted">Affectations actives</span></div>
+              </div>
+            </div>
+
+            <div class="stat-card stat-total">
+              <div class="stat-icon">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M9 11l3 3L22 4" />
+                  <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" />
+                </svg>
+              </div>
+              <div class="stat-info">
+                <div class="stat-top">
+                  <p>Stages en cours</p>
+                  <span class="stat-chip">{{ stats.pendingSubjects }} sujets en attente</span>
+                </div>
+                <h3>{{ stats.ongoing }}</h3>
+                <div class="stat-sub"><span class="muted">Suivi opérationnel</span></div>
+              </div>
+            </div>
+
+            <div class="stat-card stat-teachers">
+              <div class="stat-icon">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M8 2v4" />
+                  <path d="M16 2v4" />
+                  <rect x="3" y="4" width="18" height="18" rx="2" />
+                  <path d="M3 10h18" />
+                </svg>
+              </div>
+              <div class="stat-info">
+                <div class="stat-top">
+                  <p>Réunions prévues</p>
+                  <span class="stat-chip">{{ meetings.length }} total</span>
+                </div>
+                <h3>{{ stats.upcomingMeetings }}</h3>
+                <div class="stat-sub"><span class="muted">À venir</span></div>
+              </div>
+            </div>
+
+            <div class="stat-card stat-companies">
+              <div class="stat-icon">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                  <polyline points="14 2 14 8 20 8" />
+                </svg>
+              </div>
+              <div class="stat-info">
+                <div class="stat-top">
+                  <p>Documents signés</p>
+                  <span class="stat-chip">{{ stats.signedLogbooks }} cahiers</span>
+                </div>
+                <h3>{{ stats.signedAgreements }}</h3>
+                <div class="stat-sub"><span class="muted">Conventions</span></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="analytics-grid">
+            <div class="analytics-card">
+              <div class="card-header">
+                <h2>Stages actifs</h2>
+                <span class="pill">{{ internships.length }} stage(s)</span>
+              </div>
+              <div class="stage-mini-list" *ngIf="internships.length; else noInternshipsDashboard">
+                <div class="stage-mini-row" *ngFor="let internship of internships.slice(0, 5)">
+                  <div class="user-name">
+                    <span class="user-avatar">{{ (internship.student.fullName || 'ST').slice(0, 2).toUpperCase() }}</span>
+                    <div class="user-name-meta">
+                      <div class="user-fullname">{{ internship.titre || 'Stage sans titre' }}</div>
+                      <div class="user-mini">{{ internship.student.fullName || '-' }} - {{ internship.company.nom || '-' }}</div>
+                    </div>
+                  </div>
+                  <span class="status-pill" [ngClass]="'status-' + internship.statut">{{ internship.statut || 'N/A' }}</span>
+                  <div class="actions">
+                    <button type="button" class="btn btn-primary" (click)="openFollowUpModal(internship)">Suivi</button>
+                    <button type="button" class="btn btn-secondary" (click)="openStageModal(internship)">Détail</button>
+                    <button *ngIf="role === 'ENCADRANT_ACADEMIQUE' && internship.statutSujet === 'EN_ATTENTE'" type="button" class="btn btn-primary" (click)="validateSubject(internship)">Valider</button>
+                  </div>
+                </div>
+              </div>
+              <ng-template #noInternshipsDashboard>
+                <div class="empty-inline">Aucun stage affecté pour le moment.</div>
+              </ng-template>
+            </div>
+
+            <div class="health-card">
+              <div class="card-header">
+                <h2>Activité récente</h2>
+                <span class="pill soft">Réunions & notifications</span>
+              </div>
+              <div class="activity-list">
+                <div class="health-item" *ngFor="let meeting of meetings.slice(0, 3)">
+                  <span class="status-dot ok"></span>
+                  <div>
+                    <div class="health-title">{{ meeting.numReunion || 'Réunion' }} - {{ meeting.stageTitre || 'Stage' }}</div>
+                    <div class="health-sub">{{ meeting.date }} à {{ meeting.heure }} - {{ meeting.studentName || 'Stagiaire' }}</div>
+                  </div>
+                </div>
+                <div class="health-item" *ngFor="let notification of notifications.slice(0, 3)">
+                  <span class="status-dot" [class.warn]="!notification.read" [class.ok]="notification.read"></span>
+                  <div>
+                    <div class="health-title">{{ notification.title || 'Notification' }}</div>
+                    <div class="health-sub">{{ notification.message }}</div>
+                  </div>
+                </div>
+                <div class="empty-inline" *ngIf="!meetings.length && !notifications.length">Aucune activité récente.</div>
+              </div>
+            </div>
+          </div>
+
+          
+        </ng-container>
+
+        <ng-container *ngSwitchCase="'stagiaires'">
+          <section class="recent-users-section">
+            <div class="section-header">
+              <h2>Stagiaires / Stages</h2>
+              <span class="pill">{{ filteredInternships.length }} résultat(s)</span>
+            </div>
+            <div class="filters">
+              <input class="input" type="search" [(ngModel)]="searchTerm" placeholder="Rechercher par stagiaire, entreprise, sujet..." />
+              <select class="select" [(ngModel)]="statusFilter">
+                <option value="ALL">Tous les statuts</option>
+                <option *ngFor="let status of uniqueStatuses" [value]="status">{{ status }}</option>
+              </select>
+            </div>
+            <div class="table-wrap" *ngIf="filteredInternships.length; else noInternships">
+              <table class="table">
+                <thead>
+                  <tr>
+                    <th>Stagiaire</th>
+                    <th>Stage</th>
+                    <th>Entreprise</th>
+                    <th>Statut</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr *ngFor="let internship of filteredInternships">
+                    <td>
+                      <div class="cell-title">{{ internship.student.fullName || '-' }}</div>
+                      <div class="cell-sub">{{ internship.student.email || '-' }}</div>
+                    </td>
+                    <td>
+                      <div class="cell-title">{{ internship.titre || 'Stage sans titre' }}</div>
+                      <div class="cell-sub">{{ internship.sujet || 'Sujet non renseigné' }}</div>
+                    </td>
+                    <td>
+                      <div class="cell-title">{{ internship.company.nom || '-' }}</div>
+                      <div class="cell-sub">{{ internship.professionalSupervisor.fullName || internship.academicSupervisor.fullName || '-' }}</div>
+                    </td>
+                    <td>
+                      <span class="status-pill" [ngClass]="'status-' + internship.statut">{{ internship.statut || 'N/A' }}</span>
+                      <div class="cell-sub">{{ internship.statutSujet || '-' }}</div>
+                    </td>
+                    <td class="actions">
+                      <button type="button" class="btn btn-primary" (click)="openFollowUpModal(internship)">Suivi</button>
+                      <button type="button" class="btn btn-secondary" (click)="openStageModal(internship)">Détail</button>
+                      <button type="button" class="btn btn-secondary" (click)="loadTrello(internship)">Trello</button>
+                      <button *ngIf="role === 'ENCADRANT_ACADEMIQUE' && internship.statutSujet === 'EN_ATTENTE'" type="button" class="btn btn-primary" (click)="validateSubject(internship)">Valider</button>
+                      <button *ngIf="role === 'ENCADRANT_ACADEMIQUE' && internship.statutSujet === 'EN_ATTENTE'" type="button" class="btn btn-danger" (click)="rejectSubject(internship)">Refuser</button>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <ng-template #noInternships>
+              <div class="empty-state">Aucun stagiaire ne correspond aux filtres.</div>
+            </ng-template>
+          </section>
+        </ng-container>
+
+        <ng-container *ngSwitchCase="'reunions'">
+          <section class="recent-users-section">
+            <div class="section-header">
+              <h2>Réunions</h2>
+              <span class="pill">{{ filteredMeetings.length }} réunion(s)</span>
+            </div>
+            <div class="filters">
+              <input class="input" type="search" [(ngModel)]="searchTerm" placeholder="Rechercher une réunion..." />
+              <button type="button" class="btn btn-primary" (click)="openMeetingModal()">Créer réunion</button>
+            </div>
+            <div class="analytics-grid" *ngIf="filteredMeetings.length">
+              <div class="analytics-card">
+                <div class="card-header">
+                  <h2>A venir</h2>
+                  <span class="pill">{{ upcomingMeetingsList.length }}</span>
+                </div>
+                <div class="empty-inline" *ngIf="!upcomingMeetingsList.length">Aucune reunion a venir.</div>
+                <div class="activity-list" *ngIf="upcomingMeetingsList.length">
+                  <div class="health-item" *ngFor="let meeting of upcomingMeetingsList">
+                    <span class="status-dot ok"></span>
+                    <div>
+                      <div class="health-title">{{ meeting.numReunion || 'Reunion' }} - {{ meeting.stageTitre || 'Stage' }}</div>
+                      <div class="health-sub">{{ meeting.date }} a {{ meeting.heure }} - {{ meeting.studentName || 'Stagiaire' }}</div>
+                      <div class="health-sub">{{ meeting.companyName || '-' }} - {{ meeting.source }}</div>
+                    </div>
+                    <div class="actions">
+                      <button type="button" class="btn btn-secondary" (click)="openMeetingDetails(meeting)">Détails</button>
+                      <button type="button" class="btn btn-primary" (click)="openReportModal(meeting)">Ajouter observation</button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="analytics-card">
+                <div class="card-header">
+                  <h2>Historique</h2>
+                  <span class="pill">{{ pastMeetingsList.length }}</span>
+                </div>
+                <div class="empty-inline" *ngIf="!pastMeetingsList.length">Aucune reunion passee.</div>
+                <div class="activity-list" *ngIf="pastMeetingsList.length">
+                  <div class="health-item" *ngFor="let meeting of pastMeetingsList">
+                    <span class="status-dot warn"></span>
+                    <div>
+                      <div class="health-title">{{ meeting.numReunion || 'Reunion' }} - {{ meeting.stageTitre || 'Stage' }}</div>
+                      <div class="health-sub">{{ meeting.date }} a {{ meeting.heure }} - {{ meeting.studentName || 'Stagiaire' }}</div>
+                      <div class="health-sub">{{ meeting.observation || meeting.compteRendu || 'Aucun détail disponible' }}</div>
+                    </div>
+                    <div class="actions">
+                      <button type="button" class="btn btn-secondary" (click)="openMeetingDetails(meeting)">Détails</button>
+                      <button type="button" class="btn btn-primary" (click)="openReportModal(meeting)">
+                        {{ meeting.observation ? 'Modifier observation' : 'Ajouter observation' }}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="table-wrap" *ngIf="filteredMeetings.length; else noMeetings">
+              <table class="table">
+                <thead>
+                  <tr>
+                    <th>Réunion</th>
+                    <th>Stage</th>
+                    <th>Date</th>
+                    <th>Observation</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr *ngFor="let meeting of filteredMeetings">
+                    <td>
+                      <div class="cell-title">{{ meeting.numReunion || 'Réunion' }}</div>
+                      <div class="cell-sub">{{ meeting.source }}</div>
+                    </td>
+                    <td>
+                      <div class="cell-title">{{ meeting.stageTitre || '-' }}</div>
+                      <div class="cell-sub">{{ meeting.studentName || 'Stagiaire' }}</div>
+                    </td>
+                    <td>{{ meeting.date }} à {{ meeting.heure }}</td>
+                    <td>
+                      <div class="cell-sub">{{ meeting.observation || 'En attente' }}</div>
+                    </td>
+                    <td class="actions">
+                      <button type="button" class="btn btn-secondary" (click)="openMeetingDetails(meeting)">Détails</button>
+                      <button type="button" class="btn btn-secondary" (click)="openMeetingModal(meeting)" [disabled]="!canModifyMeeting(meeting)">Modifier</button>
+                      <button type="button" class="btn btn-secondary" (click)="openReportModal(meeting)">
+                        {{ meeting.observation ? 'Modifier observation' : 'Ajouter observation' }}
+                      </button>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <ng-template #noMeetings>
+              <div class="empty-state">Aucune réunion trouvée.</div>
+            </ng-template>
+          </section>
+        </ng-container>
+
+        <ng-container *ngSwitchCase="'documents'">
+          <ng-container *ngTemplateOutlet="documentsTable; context: { type: 'conventions' }"></ng-container>
+          <ng-container *ngTemplateOutlet="documentsTable; context: { type: 'cahier' }"></ng-container>
+          <ng-container *ngIf="role === 'ENCADRANT_PROFESSIONNEL'">
+            <ng-container *ngTemplateOutlet="documentsTable; context: { type: 'evaluations' }"></ng-container>
+          </ng-container>
+        </ng-container>
+
+        <ng-container *ngSwitchCase="'cahier'">
+          <ng-container *ngTemplateOutlet="documentsTable; context: { type: 'cahier' }"></ng-container>
+        </ng-container>
+
+        <ng-container *ngSwitchCase="'conventions'">
+          <ng-container *ngTemplateOutlet="documentsTable; context: { type: 'conventions' }"></ng-container>
+        </ng-container>
+
+        <ng-container *ngSwitchCase="'evaluations'">
+          <div *ngIf="role === 'ENCADRANT_ACADEMIQUE'" class="empty-state">
+            L'encadrant académique ne participe pas à la fiche d'évaluation.
+          </div>
+          <ng-container *ngIf="role === 'ENCADRANT_PROFESSIONNEL'">
+            <ng-container *ngTemplateOutlet="documentsTable; context: { type: 'evaluations' }"></ng-container>
+          </ng-container>
+        </ng-container>
+
+        <ng-container *ngSwitchCase="'notifications'">
+          <section class="recent-users-section">
+            <div class="section-header">
+              <h2>Notifications</h2>
+              <span class="pill">{{ stats.unreadNotifications }} non lue(s)</span>
+            </div>
+            <div class="filters">
+              <input class="input" type="search" [(ngModel)]="searchTerm" placeholder="Rechercher une notification..." />
+              <select class="select" [(ngModel)]="statusFilter">
+                <option value="ALL">Toutes</option>
+                <option value="UNREAD">Non lues</option>
+                <option value="READ">Lues</option>
+              </select>
+            </div>
+            <div class="notification-list" *ngIf="filteredNotifications.length; else noNotifications">
+              <article class="notification-card" [class.unread]="!notification.read" *ngFor="let notification of filteredNotifications">
+                <div>
+                  <div class="notification-title">{{ notification.title || 'Notification' }}</div>
+                  <div class="notification-meta">{{ notification.dateTime || '-' }}</div>
+                  <p>{{ notification.message }}</p>
+                </div>
+                <div class="notification-actions">
+                  <span class="status-pill" [class.active]="notification.read" [class.inactive]="!notification.read">
+                    {{ notification.read ? 'Lue' : 'Non lue' }}
+                  </span>
+                  <button *ngIf="!notification.read" type="button" class="btn btn-secondary" (click)="markNotificationRead(notification)">Marquer lue</button>
+                </div>
+              </article>
+            </div>
+            <ng-template #noNotifications>
+              <div class="empty-state">Aucune notification.</div>
+            </ng-template>
+          </section>
+        </ng-container>
+      </ng-container>
+    </ng-template>
+  </div>
+</div>
+
+<ng-template #documentsTable let-type="type">
+  <section class="recent-users-section">
+    <div class="section-header">
+      <h2>{{ type === 'cahier' ? 'Cahier de stage' : (type === 'conventions' ? 'Conventions' : 'Fiches d’évaluation') }}</h2>
+      <span class="pill">{{ filteredInternships.length }} stage(s)</span>
+    </div>
+    <div class="filters">
+      <input class="input" type="search" [(ngModel)]="searchTerm" placeholder="Rechercher par stage, stagiaire, entreprise..." />
+      <select class="select" [(ngModel)]="statusFilter">
+        <option value="ALL">Tous les statuts</option>
+        <option *ngFor="let status of uniqueStatuses" [value]="status">{{ status }}</option>
+      </select>
+    </div>
+
+    <div class="table-wrap" *ngIf="filteredInternships.length; else noDocuments">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Stage</th>
+            <th>Stagiaire</th>
+            <th>Document</th>
+            <th>Signature</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let internship of filteredInternships">
+            <td>
+              <div class="cell-title">{{ internship.titre || 'Stage sans titre' }}</div>
+              <div class="cell-sub">{{ internship.company.nom || '-' }}</div>
+            </td>
+            <td>
+              <div class="cell-title">{{ internship.student.fullName || '-' }}</div>
+              <div class="cell-sub">{{ internship.student.email || '-' }}</div>
+            </td>
+            <td>
+              <ng-container *ngIf="type === 'conventions'">
+                <ng-container *ngIf="agreementsByStage.get(internship.id) as agreement; else missingDocument">
+                  <div class="cell-title">Convention n° {{ agreement.numConv || agreement.id }}</div>
+                  <div class="cell-sub">{{ agreement.dateDebut || '-' }} - {{ agreement.dateFin || '-' }}</div>
+                  <div class="cell-sub" *ngIf="getConventionStatus(internship.id)?.raisonAbsence">{{ getConventionStatus(internship.id)?.raisonAbsence }}</div>
+                </ng-container>
+              </ng-container>
+              <ng-container *ngIf="type === 'cahier'">
+                <ng-container *ngIf="logbooksByStage.get(internship.id) as logbook; else missingDocument">
+                  <div class="cell-title">Cahier de stage</div>
+                  <div class="cell-sub">Généré le {{ logbook.dateGeneration || '-' }}</div>
+                </ng-container>
+              </ng-container>
+              <ng-container *ngIf="type === 'evaluations'">
+                <ng-container *ngIf="evaluationsByStage.get(internship.id) as evaluation; else missingDocument">
+                  <div class="cell-title">{{ evaluation.stageTitre || 'Fiche d’évaluation' }}</div>
+                  <div class="cell-sub">{{ evaluation.verrouillee ? 'Verrouillée' : 'Modifiable' }}</div>
+                </ng-container>
+              </ng-container>
+            </td>
+            <td>
+              <ng-container *ngIf="type === 'conventions' && agreementsByStage.get(internship.id) as agreement">
+                <span class="status-pill" [class.active]="role === 'ENCADRANT_ACADEMIQUE' ? agreement.signeeEncAca : agreement.signeeEncPro">
+                  {{ (role === 'ENCADRANT_ACADEMIQUE' ? agreement.signeeEncAca : agreement.signeeEncPro) ? 'Signée' : 'En attente' }}
+                </span>
+              </ng-container>
+              <ng-container *ngIf="type === 'cahier' && logbooksByStage.get(internship.id) as logbook">
+                <span class="status-pill" [class.active]="role === 'ENCADRANT_ACADEMIQUE' ? logbook.signeeEncAcad : logbook.signeeEncPro">
+                  {{ (role === 'ENCADRANT_ACADEMIQUE' ? logbook.signeeEncAcad : logbook.signeeEncPro) ? 'Signé' : 'En attente' }}
+                </span>
+              </ng-container>
+              <ng-container *ngIf="type === 'evaluations' && evaluationsByStage.get(internship.id) as evaluation">
+                <span class="status-pill" [class.active]="!!evaluation.signatureEncadrantProfessionnel">
+                  {{ evaluation.signatureEncadrantProfessionnel ? 'Signée' : 'En attente' }}
+                </span>
+              </ng-container>
+            </td>
+            <td class="actions">
+              <ng-container *ngIf="type === 'conventions' && agreementsByStage.get(internship.id) as agreement">
+                <button type="button" class="btn btn-primary" (click)="signAgreement(agreement)">Signer</button>
+                <button type="button" class="btn btn-secondary" (click)="download(internship.id, 'convention')" [disabled]="!getConventionStatus(internship.id)?.disponible">PDF</button>
+              </ng-container>
+              <ng-container *ngIf="type === 'cahier' && logbooksByStage.get(internship.id) as logbook">
+                <button type="button" class="btn btn-primary" (click)="signLogbook(logbook)">Valider et signer</button>
+                <button type="button" class="btn btn-secondary" (click)="download(internship.id, 'cahier-stage')" [disabled]="!getLogbookStatus(internship.id)?.disponible">PDF</button>
+              </ng-container>
+              <button
+                *ngIf="type === 'cahier' && !logbooksByStage.get(internship.id)"
+                type="button"
+                class="btn btn-primary"
+                (click)="generateLogbook(internship)"
+                [disabled]="isSaving || !getLogbookStatus(internship.id)?.generationAutorisee"
+              >
+                Générer
+              </button>
+              <ng-container *ngIf="type === 'evaluations' && evaluationsByStage.get(internship.id) as evaluation">
+                <button type="button" class="btn btn-secondary" (click)="openEvaluationModal(evaluation)">Remplir</button>
+                <button type="button" class="btn btn-primary" (click)="signEvaluation(evaluation)">Signer</button>
+                <button type="button" class="btn btn-secondary" (click)="download(internship.id, 'fiche-evaluation')" [disabled]="!getEvaluationStatus(internship.id)?.disponible">PDF</button>
+              </ng-container>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <ng-template #noDocuments>
+      <div class="empty-state">Aucun document disponible pour cette sélection.</div>
+    </ng-template>
+  </section>
+</ng-template>
+
+<ng-template #missingDocument>
+  <div class="cell-title">Non disponible</div>
+  <div class="cell-sub">Document pas encore généré.</div>
+</ng-template>
+
+<div class="modal-overlay" *ngIf="stageModal" (click)="closeModals()">
+  <article class="modal" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h2>{{ stageModal.titre || 'Détail du stage' }}</h2>
+      <button type="button" class="btn-close" (click)="closeModals()">×</button>
+    </div>
+    <div class="form">
+      <div class="section-card muted-card">
+        <div class="section-card__title">Informations générales</div>
+        <div class="section-card__grid">
+          <div>
+            <span class="mini-label">Stagiaire</span>
+            <strong>{{ stageModal.student.fullName || '-' }}</strong>
+          </div>
+          <div>
+            <span class="mini-label">Section</span>
+            <strong>{{ stageModal.student.secondary || '-' }}</strong>
+          </div>
+          <div>
+            <span class="mini-label">Entreprise</span>
+            <strong>{{ stageModal.company.nom || '-' }}</strong>
+          </div>
+          <div>
+            <span class="mini-label">Réunion finale</span>
+            <strong>{{ stageModal.statut || '-' }}</strong>
+          </div>
+        </div>
+      </div>
+      <div class="form-grid">
+        <div class="detail-item"><span class="label">Stagiaire</span><span class="value">{{ stageModal.student.fullName || '-' }}</span></div>
+        <div class="detail-item"><span class="label">Entreprise</span><span class="value">{{ stageModal.company.nom || '-' }}</span></div>
+        <div class="detail-item"><span class="label">Dates</span><span class="value">{{ stageModal.dateDebut || '-' }} - {{ stageModal.dateFin || '-' }}</span></div>
+        <div class="detail-item"><span class="label">Statut</span><span class="value">{{ stageModal.statut || '-' }}</span></div>
+        <div class="detail-item full-width"><span class="label">Sujet</span><span class="value">{{ stageModal.sujet || '-' }}</span></div>
+      </div>
+    </div>
+  </article>
+</div>
+
+<div class="modal-overlay" *ngIf="meetingDetailsModal" (click)="closeModals()">
+  <article class="modal" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h2>Détails de la réunion</h2>
+      <button type="button" class="btn-close" (click)="closeModals()">×</button>
+    </div>
+    <div class="form">
+      <div class="form-grid">
+        <div class="detail-item"><span class="label">Type</span><span class="value">{{ meetingDetailsModal.source === 'FINALE' ? 'Réunion finale' : 'Réunion hebdomadaire' }}</span></div>
+        <div class="detail-item"><span class="label">Référence</span><span class="value">{{ meetingDetailsModal.numReunion || ('Réunion #' + meetingDetailsModal.id) }}</span></div>
+        <div class="detail-item"><span class="label">Stage</span><span class="value">{{ meetingDetailsModal.stageTitre || '-' }}</span></div>
+        <div class="detail-item"><span class="label">Stagiaire</span><span class="value">{{ meetingDetailsModal.studentName || '-' }}</span></div>
+        <div class="detail-item"><span class="label">Entreprise</span><span class="value">{{ meetingDetailsModal.companyName || '-' }}</span></div>
+        <div class="detail-item"><span class="label">Date</span><span class="value">{{ meetingDetailsModal.date || '-' }}</span></div>
+        <div class="detail-item"><span class="label">Heure</span><span class="value">{{ meetingDetailsModal.heure || '-' }}</span></div>
+        <div class="detail-item full-width"><span class="label">Participants</span><span class="value">{{ meetingDetailsModal.participantNames?.length ? meetingDetailsModal.participantNames.join(', ') : 'Aucun participant renseigné' }}</span></div>
+        <div class="detail-item full-width"><span class="label">Observation</span><span class="value">{{ meetingDetailsModal.observation || 'Aucune observation' }}</span></div>
+        <div class="detail-item full-width"><span class="label">Compte rendu</span><span class="value">{{ meetingDetailsModal.compteRendu || 'Aucun compte rendu disponible' }}</span></div>
+      </div>
+      <div class="form-actions">
+        <button type="button" class="btn-cancel" (click)="closeModals()">Fermer</button>
+      </div>
+    </div>
+  </article>
+</div>
+
+<div class="modal-overlay" *ngIf="followUpModal" (click)="closeModals()">
+  <article class="modal modal-wide" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h2>Suivi du stage</h2>
+      <button type="button" class="btn-close" (click)="closeModals()">×</button>
+    </div>
+    <div class="form">
+      <section class="follow-up-block">
+        <div class="card-header">
+          <h2>{{ followUpModal.titre || 'Stage sans titre' }}</h2>
+          <span class="pill">{{ followUpModal.statut || 'N/A' }}</span>
+        </div>
+        <div class="form-grid">
+          <div class="detail-item"><span class="label">Stagiaire</span><span class="value">{{ followUpModal.student.fullName || '-' }}</span></div>
+          <div class="detail-item"><span class="label">Entreprise</span><span class="value">{{ followUpModal.company.nom || '-' }}</span></div>
+          <div class="detail-item"><span class="label">Encadrant académique</span><span class="value">{{ followUpModal.academicSupervisor.fullName || '-' }}</span></div>
+          <div class="detail-item"><span class="label">Encadrant professionnel</span><span class="value">{{ followUpModal.professionalSupervisor.fullName || '-' }}</span></div>
+          <div class="detail-item"><span class="label">Début</span><span class="value">{{ followUpModal.dateDebut || '-' }}</span></div>
+          <div class="detail-item"><span class="label">Fin</span><span class="value">{{ followUpModal.dateFin || '-' }}</span></div>
+          <div class="detail-item full-width"><span class="label">Sujet</span><span class="value">{{ followUpModal.sujet || '-' }}</span></div>
+        </div>
+      </section>
+
+      <section class="follow-up-block">
+        <div class="card-header">
+          <h2>Suivi du stage (Trello)</h2>
+          <span class="pill soft">{{ followUpHasTrelloBoard ? 'Board disponible' : 'Board à créer' }}</span>
+        </div>
+        <p class="trello-section-copy">
+          Un aperçu clair du board permet de comprendre en un coup d'oeil où en est le stage.
+        </p>
+        <div class="empty-inline" *ngIf="isLoadingFollowUp">Synchronisation Trello...</div>
+        <div class="alert alert-error" *ngIf="followUpInfoMessage">{{ followUpInfoMessage }}</div>
+        <div class="trello-progress-head">
+          <span class="trello-progress-label">Progression globale</span>
+          <strong class="trello-progress-value">{{ followUpProgressPercent }}% completed</strong>
+        </div>
+        <div class="progress-track">
+          <div class="progress-fill" [style.width.%]="followUpProgressPercent"></div>
+        </div>
+        <div class="trello-progress-note">
+          {{ followUpTrello?.nombreTachesTerminees || 0 }} tâche(s) terminée(s) sur {{ followUpTrello?.nombreTotalTaches || 0 }}
+        </div>
+        <div class="trello-empty-state" *ngIf="!followUpHasTrelloBoard">
+          <div class="trello-empty-icon">
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="3" y="4" width="18" height="16" rx="2" />
+              <path d="M7 8h4v8H7z" />
+              <path d="M13 8h4v5h-4z" />
+            </svg>
+          </div>
+          <div>
+            <div class="trello-empty-title">Aucun board Trello n'est associé à ce stage.</div>
+            <p>Le board peut être créé automatiquement puis ouvert dans un nouvel onglet.</p>
+          </div>
+        </div>
+        <div class="stats-grid compact-stats trello-stats-grid">
+          <div class="mini-kpi"><span class="mini-label">Total tasks</span><span class="mini-value">{{ followUpTrello?.nombreTotalTaches || 0 }}</span></div>
+          <div class="mini-kpi"><span class="mini-label">À faire</span><span class="mini-value">{{ followUpTrello?.nombreTachesAFaire || 0 }}</span></div>
+          <div class="mini-kpi"><span class="mini-label">En cours</span><span class="mini-value">{{ followUpTrello?.nombreTachesEnCours || 0 }}</span></div>
+          <div class="mini-kpi"><span class="mini-label">Terminées</span><span class="mini-value">{{ followUpTrello?.nombreTachesTerminees || 0 }}</span></div>
+        </div>
+        <div class="trello-board-actions">
+          <a
+            *ngIf="followUpHasTrelloBoard"
+            class="btn btn-primary trello-primary-button"
+            [href]="followUpModal.trelloBoardUrl"
+            target="_blank"
+            rel="noopener"
+          >
+            Ouvrir le board Trello
+          </a>
+          <button
+            *ngIf="!followUpHasTrelloBoard"
+            type="button"
+            class="btn btn-primary trello-primary-button"
+            (click)="openTrelloBoard(followUpModal)"
+            [disabled]="openingTrelloStageId === followUpModal.id"
+          >
+            {{ openingTrelloStageId === followUpModal.id ? 'Création...' : 'Créer automatiquement le board' }}
+          </button>
+          <button
+            *ngIf="followUpHasTrelloBoard"
+            type="button"
+            class="btn btn-secondary"
+            (click)="openTrelloBoard(followUpModal)"
+            [disabled]="openingTrelloStageId === followUpModal.id"
+          >
+            {{ openingTrelloStageId === followUpModal.id ? 'Ouverture...' : 'Actualiser et ouvrir' }}
+          </button>
+        </div>
+      </section>
+
+      <section class="follow-up-block">
+        <div class="card-header">
+          <h2>Observations et comptes rendus</h2>
+          <span class="pill">{{ followUpObservations.length }} élément(s)</span>
+        </div>
+        <div class="empty-inline" *ngIf="!followUpObservations.length">Aucune observation disponible pour ce stage.</div>
+        <div class="table-wrap" *ngIf="followUpObservations.length">
+          <table class="table">
+            <thead>
+              <tr>
+                <th>Réunion</th>
+                <th>Date</th>
+                <th>Observation</th>
+                <th>Compte rendu</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let meeting of followUpObservations">
+                <td>
+                  <div class="cell-title">{{ meeting.numReunion || ('Réunion #' + meeting.id) }}</div>
+                  <div class="cell-sub">{{ meeting.source }}</div>
+                </td>
+                <td>{{ meeting.date }} à {{ meeting.heure || '-' }}</td>
+                <td>{{ meeting.observation || 'Aucune observation' }}</td>
+                <td>{{ meeting.compteRendu || 'Aucun compte rendu' }}</td>
+                <td class="actions"><button type="button" class="btn btn-secondary" (click)="openReportModal(meeting)">Modifier observation</button></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="follow-up-block">
+        <div class="card-header">
+          <h2>Cahier de stage</h2>
+          <span class="pill">{{ logbooksByStage.get(followUpModal.id) ? 'Disponible' : 'À générer' }}</span>
+        </div>
+        <div class="alert alert-error" *ngIf="getLogbookStatus(followUpModal.id)?.raisonAbsence">{{ getLogbookStatus(followUpModal.id)?.raisonAbsence }}</div>
+        <ng-container *ngIf="logbooksByStage.get(followUpModal.id) as logbook; else followUpMissingLogbook">
+          <div class="form-grid">
+            <div class="detail-item"><span class="label">Encadrant académique</span><span class="value">{{ logbook.signeeEncAcad ? 'Signé' : 'En attente' }}</span></div>
+            <div class="detail-item"><span class="label">Encadrant professionnel</span><span class="value">{{ logbook.signeeEncPro ? 'Signé' : 'En attente' }}</span></div>
+          </div>
+          <div class="form-actions">
+            <button type="button" class="btn-submit" (click)="signLogbook(logbook)" [disabled]="isSaving">Valider et signer</button>
+            <button type="button" class="btn-cancel" (click)="download(followUpModal.id, 'cahier-stage')" [disabled]="!getLogbookStatus(followUpModal.id)?.disponible">Ouvrir PDF</button>
+          </div>
+        </ng-container>
+        <ng-template #followUpMissingLogbook>
+          <div class="empty-inline">Le cahier de stage n'est pas encore généré.</div>
+          <div class="form-actions">
+            <button type="button" class="btn-submit" (click)="generateLogbook(followUpModal)" [disabled]="isSaving">Générer le cahier</button>
+          </div>
+        </ng-template>
+      </section>
+    </div>
+  </article>
+</div>
+
+<div class="modal-overlay" *ngIf="trelloModal" (click)="closeModals()">
+  <article class="modal" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h2>Progression Trello</h2>
+      <button type="button" class="btn-close" (click)="closeModals()">×</button>
+    </div>
+    <div class="form">
+      <div class="stats-grid compact-stats">
+        <div class="mini-kpi"><span class="mini-label">Total</span><span class="mini-value">{{ trelloModal.nombreTotalTaches }}</span></div>
+        <div class="mini-kpi"><span class="mini-label">À faire</span><span class="mini-value">{{ trelloModal.nombreTachesAFaire }}</span></div>
+        <div class="mini-kpi"><span class="mini-label">En cours</span><span class="mini-value">{{ trelloModal.nombreTachesEnCours }}</span></div>
+        <div class="mini-kpi"><span class="mini-label">Terminées</span><span class="mini-value">{{ trelloModal.nombreTachesTerminees }}</span></div>
+      </div>
+      <a *ngIf="trelloModal.trelloBoardUrl" class="btn btn-primary" [href]="trelloModal.trelloBoardUrl" target="_blank" rel="noreferrer">Ouvrir Trello</a>
+    </div>
+  </article>
+</div>
+
+<div class="modal-overlay" *ngIf="meetingModalOpen" (click)="closeModals()">
+  <form class="modal" (click)="$event.stopPropagation()" (ngSubmit)="saveMeeting()">
+    <div class="modal-header">
+      <h2>{{ meetingDraft.id ? 'Modifier réunion' : 'Créer réunion' }}</h2>
+      <button type="button" class="btn-close" (click)="closeModals()">×</button>
+    </div>
+    <div class="form form-grid">
+      <label>Stage
+        <select class="select" [(ngModel)]="meetingDraft.stageId" name="stageId" required>
+          <option [ngValue]="0">Sélectionner</option>
+          <option *ngFor="let internship of internships" [ngValue]="internship.id">{{ internship.titre }} - {{ internship.student.fullName }}</option>
+        </select>
+      </label>
+      <label>Type de réunion
+        <select class="select" [(ngModel)]="meetingDraft.typeReunion" name="typeReunion" required>
+          <option value="HEBDOMADAIRE">Réunion de suivi</option>
+        </select>
+      </label>
+      <label>Date
+        <input class="input" type="date" [(ngModel)]="meetingDraft.date" name="date" required />
+      </label>
+      <label>Heure
+        <input class="input" type="time" [(ngModel)]="meetingDraft.heure" name="heure" required />
+      </label>
+      <label class="full-width">Description
+        <textarea class="textarea" [(ngModel)]="meetingDraft.observation" name="observation" required></textarea>
+      </label>
+      <div class="full-width">
+        <div class="label">Participants</div>
+        <div class="filters" *ngIf="getMeetingParticipantOptions(meetingDraft.stageId).length; else noParticipantOptions">
+          <label class="cell-sub" *ngFor="let participant of getMeetingParticipantOptions(meetingDraft.stageId)">
+            <input
+              type="checkbox"
+              [checked]="isMeetingParticipantSelected(participant.id)"
+              (change)="toggleMeetingParticipant(participant.id, $any($event.target).checked)"
+            />
+            {{ participant.label }}
+          </label>
+        </div>
+        <ng-template #noParticipantOptions>
+          <div class="cell-sub">Aucun participant disponible pour ce stage.</div>
+        </ng-template>
+      </div>
+      <div class="form-actions full-width">
+        <button type="button" class="btn-cancel" (click)="closeModals()">Annuler</button>
+        <button type="submit" class="btn-submit" [disabled]="isSaving">Enregistrer</button>
+      </div>
+    </div>
+  </form>
+</div>
+
+<div class="modal-overlay" *ngIf="reportModal" (click)="closeModals()">
+  <form class="modal" (click)="$event.stopPropagation()" (ngSubmit)="saveReport()">
+    <div class="modal-header">
+      <h2>Observation</h2>
+      <button type="button" class="btn-close" (click)="closeModals()">×</button>
+    </div>
+    <div class="form">
+      <label>Observation
+        <textarea class="textarea" [(ngModel)]="reportText" name="reportText" required></textarea>
+      </label>
+      <div class="form-actions">
+        <button type="submit" class="btn-submit" [disabled]="isSaving">Enregistrer</button>
+      </div>
+    </div>
+  </form>
+</div>
+
+<div class="modal-overlay" *ngIf="evaluationModal" (click)="closeModals()">
+  <form class="modal" (click)="$event.stopPropagation()" (ngSubmit)="saveEvaluationSheet()">
+    <div class="modal-header">
+      <h2>Fiche d'évaluation du stage</h2>
+      <button type="button" class="btn-close" (click)="closeModals()">×</button>
+    </div>
+    <div class="form">
+      <div class="section-card muted-card">
+        <div class="section-card__title">Informations générales</div>
+        <div class="section-card__grid">
+          <div>
+            <span class="mini-label">Stagiaire</span>
+            <strong>{{ evaluationModal.stagiaireNomComplet || '-' }}</strong>
+          </div>
+          <div>
+            <span class="mini-label">Section</span>
+            <strong>{{ evaluationModal.sectionStagiaire || '-' }}</strong>
+          </div>
+          <div>
+            <span class="mini-label">Entreprise</span>
+            <strong>{{ evaluationModal.entrepriseNom || '-' }}</strong>
+          </div>
+          <div>
+            <span class="mini-label">Réunion finale</span>
+            <strong>{{ evaluationModal.reunionFinaleNumero || '-' }}</strong>
+          </div>
+        </div>
+      </div>
+      <label>Points forts
+        <textarea class="textarea" [(ngModel)]="evaluationDraft.pointFortEncadrantPro" name="pointFortEncadrantPro" required></textarea>
+      </label>
+      <label>Axes d'amélioration
+        <textarea class="textarea" [(ngModel)]="evaluationDraft.axeAmeliorationEncadrantPro" name="axeAmeliorationEncadrantPro" required></textarea>
+      </label>
+      <div class="section-card">
+        <div class="card-header">
+          <h2>Notes attribuées</h2>
+          <button type="button" class="btn btn-secondary" (click)="addEvaluationNote()" [disabled]="evaluationModal.verrouillee">Ajouter un critère</button>
+        </div>
+        <div class="empty-inline" *ngIf="!evaluationDraft.notesAttribuees.length">Aucune note n'a encore été renseignée.</div>
+        <div class="form-grid" *ngFor="let note of evaluationDraft.notesAttribuees; let i = index">
+          <label>Critère
+            <input class="input" [(ngModel)]="note.critereLibelle" [name]="'critereLibelle' + i" required />
+          </label>
+          <label>Note / 5
+            <input class="input" type="number" min="0" max="5" [(ngModel)]="note.note" [name]="'note' + i" (ngModelChange)="updateEvaluationNoteScore(note)" required />
+          </label>
+          <label>Coefficient
+            <input class="input" type="number" min="1" [(ngModel)]="note.poids" [name]="'poids' + i" (ngModelChange)="updateEvaluationNoteScore(note)" required />
+          </label>
+          <label>Score pondéré
+            <input class="input" [value]="note.scorePondere == null ? '' : note.scorePondere.toFixed(2)" readonly />
+          </label>
+          <label class="full-width">Commentaire
+            <textarea class="textarea" [(ngModel)]="note.commentaire" [name]="'commentaire' + i"></textarea>
+          </label>
+          <div class="form-actions full-width">
+            <button type="button" class="btn-cancel" (click)="removeEvaluationNote(i)" [disabled]="evaluationModal.verrouillee">Retirer</button>
+          </div>
+        </div>
+      </div>
+      <div class="form-actions">
+        <button type="submit" class="btn-submit" [disabled]="isSaving || evaluationModal.verrouillee">Enregistrer</button>
+      </div>
+    </div>
+  </form>
+</div>
+

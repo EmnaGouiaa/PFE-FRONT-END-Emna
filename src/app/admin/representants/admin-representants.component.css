@@ -1,0 +1,36 @@
+:host {
+  display: block;
+}
+
+.page {
+  position: relative;
+}
+
+.page::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image: radial-gradient(var(--primary-color) 1.5px, transparent 1.5px);
+  background-size: 30px 30px;
+  opacity: 0.03;
+  pointer-events: none;
+}
+
+.page-header,
+.filters,
+.alert,
+.loading,
+.empty,
+.table-wrap {
+  position: relative;
+  z-index: 1;
+}
+
+.table {
+  min-width: 860px;
+}
+
+.table th:nth-child(5),
+.table td:nth-child(5) {
+  min-width: 200px;
+}

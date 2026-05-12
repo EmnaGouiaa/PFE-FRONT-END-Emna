@@ -1,0 +1,56 @@
+:host {
+  display: block;
+}
+
+.modal-subtitle {
+  margin: 6px 0 0;
+  color: var(--text-muted);
+  font-size: 0.92rem;
+}
+
+.form-field {
+  display: grid;
+  gap: 8px;
+}
+
+.field-error {
+  color: var(--primary-color);
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+.form-note {
+  padding: 14px 16px;
+  border-radius: 18px;
+  background: rgba(37, 150, 190, 0.08);
+  border: 1px solid rgba(37, 150, 190, 0.14);
+  color: var(--text-main);
+  line-height: 1.55;
+}
+
+.btn-spinner {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.4);
+  border-top-color: var(--white);
+  animation: spin 0.8s linear infinite;
+}
+
+button.btn.btn-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+
+button.btn:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}

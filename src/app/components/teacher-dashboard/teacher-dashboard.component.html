@@ -1,0 +1,245 @@
+<div class="admin-shell">
+  <aside class="admin-sidebar teacher-sidebar">
+    <div class="sidebar-header teacher-header">
+      <div class="title">Encadrement</div>
+      <div class="subtitle">{{ roleLabel }}</div>
+    </div>
+
+    <div class="teacher-identity">
+      <div class="identity-name">{{ fullName }}</div>
+      <div class="identity-meta">{{ totalStages }} stage(s) rattache(s)</div>
+      <div class="identity-meta" *ngIf="isAcademicSupervisor">Validation des sujets academiques activee</div>
+    </div>
+
+    <nav class="sidebar-nav">
+      <a routerLink="/enseignant/tableau-de-bord" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }" class="nav-item">
+        <span class="nav-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M3 13h8V3H3z" />
+            <path d="M13 21h8v-6h-8z" />
+            <path d="M13 11h8V3h-8z" />
+            <path d="M3 21h8v-6H3z" />
+          </svg>
+        </span>
+        <span>Tableau de bord</span>
+      </a>
+
+      <a routerLink="/stages" routerLinkActive="active" class="nav-item">
+        <span class="nav-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M22 10v6M2 10l10-5 10 5-10 5z" />
+            <path d="M6 12v5c3 2 6 2 9 0v-5" />
+          </svg>
+        </span>
+        <span>Stages</span>
+      </a>
+
+      <a routerLink="/profil" routerLinkActive="active" class="nav-item">
+        <span class="nav-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="7" r="4" />
+            <path d="M5.5 21a6.5 6.5 0 0 1 13 0" />
+          </svg>
+        </span>
+        <span>Gérer profil</span>
+      </a>
+    </nav>
+
+    <div class="sidebar-footer">
+      <button type="button" class="nav-item nav-item-logout" (click)="logout()">
+        <span class="nav-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+            <path d="M16 17l5-5-5-5" />
+            <path d="M21 12H9" />
+          </svg>
+        </span>
+        <span>Deconnexion</span>
+      </button>
+    </div>
+  </aside>
+
+  <main class="admin-content">
+    <div class="company-page teacher-page">
+      <header class="page-hero teacher-hero dashboard-top-header">
+        <div class="hero-copy">
+          <span class="hero-kicker">Pilotage encadrant</span>
+          <h1>Tableau de bord</h1>
+          <p>
+            Suivez vos stages, priorisez les sujets en attente et gardez une vue claire sur les etudiants
+            rattaches a votre accompagnement.
+          </p>
+
+          <div class="hero-badges">
+            <span class="hero-badge">{{ fullName }}</span>
+            <span class="hero-badge">{{ roleLabel }}</span>
+            <span class="hero-badge">{{ totalStages }} stage(s)</span>
+          </div>
+        </div>
+
+        <div class="hero-actions">
+          <button type="button" class="btn btn-secondary" (click)="loadStages()" [disabled]="isLoading">
+            Actualiser
+          </button>
+          <a routerLink="/stages" class="btn btn-secondary">Voir tous les stages</a>
+        </div>
+      </header>
+
+      <div *ngIf="errorMessage" class="alert alert-error">{{ errorMessage }}</div>
+      <div *ngIf="successMessage" class="alert alert-success">{{ successMessage }}</div>
+      <div *ngIf="isLoading" class="loading">Chargement des stages...</div>
+
+      <ng-container *ngIf="!isLoading">
+        <section class="signature-reminder-card" *ngIf="showProfileCompletionReminder">
+          <div class="signature-reminder-copy">
+            <span class="dashboard-kicker">Profil incomplet</span>
+            <h2>{{ profileCompletionService.alertTitle }}</h2>
+            <p>{{ profileCompletionService.alertMessage }}</p>
+            <div class="missing-fields-list" aria-label="Informations manquantes">
+              <span class="missing-field-chip" *ngFor="let field of profileCompletionMissingFields">{{ field }}</span>
+            </div>
+          </div>
+          <a routerLink="/profil" class="btn btn-primary">Compléter mon profil</a>
+        </section>
+
+        <section class="stats-grid teacher-stats">
+          <article class="stat-card teacher-stat">
+            <div class="stat-icon-box">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M22 10v6M2 10l10-5 10 5-10 5z" />
+                <path d="M6 12v5c3 2 6 2 9 0v-5" />
+              </svg>
+            </div>
+            <span class="stat-label">Stages suivis</span>
+            <span class="stat-value">{{ totalStages }}</span>
+            <div class="stat-subtitle">Tous les stages visibles depuis votre role.</div>
+          </article>
+
+          <article class="stat-card teacher-stat">
+            <div class="stat-icon-box">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M3 3v18h18" />
+                <path d="M7 14l3-3 4 4 6-8" />
+              </svg>
+            </div>
+            <span class="stat-label">Stages actifs</span>
+            <span class="stat-value">{{ activeStages }}</span>
+            <div class="stat-subtitle">Dossiers encore en cours de suivi.</div>
+          </article>
+
+          <article class="stat-card teacher-stat">
+            <div class="stat-icon-box">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M12 3l8 4v6c0 5-3.5 7.5-8 8-4.5-.5-8-3-8-8V7l8-4z" />
+                <path d="M9 12l2 2 4-4" />
+              </svg>
+            </div>
+            <span class="stat-label">Sujets valides</span>
+            <span class="stat-value">{{ validatedTopics }}</span>
+            <div class="stat-subtitle">Sujets confirmes et deja traites.</div>
+          </article>
+
+          <article class="stat-card teacher-stat accent-stat">
+            <div class="stat-icon-box">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10" />
+                <path d="M12 8v4l3 3" />
+              </svg>
+            </div>
+            <span class="stat-label">Sujets en attente</span>
+            <span class="stat-value">{{ pendingTopics }}</span>
+            <div class="stat-subtitle">Priorites immediates a verifier.</div>
+          </article>
+        </section>
+
+        <section class="content-grid teacher-layout">
+          <article class="panel teacher-panel teacher-main-panel">
+            <div class="panel-header teacher-panel-header">
+              <div>
+                <h2>Mes stages encadres</h2>
+                <div class="panel-subtitle">Vue detaillee de vos stages, etudiants et sujets.</div>
+              </div>
+              <span class="summary-chip">{{ totalStages }} dossier(s)</span>
+            </div>
+
+            <div *ngIf="stages.length === 0" class="empty-card">
+              Aucun stage n est associe a votre compte pour le moment.
+            </div>
+
+            <div class="teacher-table-wrap" *ngIf="stages.length > 0">
+              <table class="teacher-table">
+                <thead>
+                  <tr>
+                    <th>Stage</th>
+                    <th>Stagiaire</th>
+                    <th>Entreprise</th>
+                    <th>Periode</th>
+                    <th>Sujet</th>
+                    <th>Statuts</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr *ngFor="let stage of stages">
+                    <td>
+                      <div class="cell-title">{{ stage.titre || ('Stage #' + stage.id) }}</div>
+                      <div class="cell-sub">Ref #{{ stage.id }}</div>
+                    </td>
+                    <td>
+                      <div class="cell-title">{{ getStagiaireNom(stage) }}</div>
+                      <div class="cell-sub">{{ stage.stagiaire?.email || '-' }}</div>
+                    </td>
+                    <td>
+                      <div class="cell-title">{{ stage.entreprise?.nom || '-' }}</div>
+                    </td>
+                    <td>{{ formatPeriod(stage) }}</td>
+                    <td>
+                      <div class="subject-text">{{ stage.sujet || 'Sujet non renseigne' }}</div>
+                    </td>
+                    <td>
+                      <div class="status-stack">
+                        <span class="status-pill" [ngClass]="statutStageClass(stage.statut)">{{ stage.statut || 'INCONNU' }}</span>
+                        <span class="status-pill" [ngClass]="statutSujetClass(stage.statutSujet)">
+                          {{ statutSujetLabel(stage.statutSujet) }}
+                        </span>
+                      </div>
+                    </td>
+                    <td>
+                      <div class="inline-actions">
+                        <button
+                          type="button"
+                          class="btn btn-secondary btn-small"
+                          *ngIf="peutValiderSujet(stage)"
+                          (click)="validerSujet(stage)"
+                          [disabled]="isUpdating"
+                        >
+                          Valider
+                        </button>
+                        <button
+                          type="button"
+                          class="btn btn-secondary btn-small"
+                          *ngIf="peutValiderSujet(stage)"
+                          (click)="refuserSujet(stage)"
+                          [disabled]="isUpdating"
+                        >
+                          Refuser
+                        </button>
+                        <span *ngIf="!peutValiderSujet(stage)" class="muted">Aucune action</span>
+                      </div>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </article>
+
+          <div class="teacher-side-stack">
+            
+
+          </div>
+        </section>
+      </ng-container>
+    </div>
+  </main>
+</div>
+

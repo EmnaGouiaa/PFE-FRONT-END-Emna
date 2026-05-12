@@ -1,0 +1,67 @@
+<div class="admin-validation-container">
+  <div class="header">
+    <h1>Validation administrative</h1>
+    <p>Confirmez l’affectation finale de l’étudiant et de l’encadrant pour les demandes validées académiquement.</p>
+  </div>
+
+  <div *ngIf="isLoading" class="loading-spinner">
+    <mat-spinner diameter="40"></mat-spinner>
+    <span>Chargement des demandes...</span>
+  </div>
+
+  <div *ngIf="!isLoading && dataSource.length === 0" class="no-data">
+    <mat-icon inline>info</mat-icon>
+    <span>Aucune demande de stage n’est en attente de validation administrative.</span>
+  </div>
+
+  <div class="table-container mat-elevation-z2" *ngIf="!isLoading && dataSource.length > 0">
+    <table mat-table [dataSource]="dataSource">
+      <ng-container matColumnDef="studentName">
+        <th mat-header-cell *matHeaderCellDef> Étudiant </th>
+        <td mat-cell *matCellDef="let element">
+          <div class="student-info">
+            <span class="name">{{ element.student.prenom }} {{ element.student.nom }}</span>
+            <span class="email">{{ element.student.email }}</span>
+          </div>
+        </td>
+      </ng-container>
+
+      <ng-container matColumnDef="company">
+        <th mat-header-cell *matHeaderCellDef> Entreprise </th>
+        <td mat-cell *matCellDef="let element"> {{ element.companyName }} </td>
+      </ng-container>
+
+      <ng-container matColumnDef="supervisor">
+        <th mat-header-cell *matHeaderCellDef> Encadrant </th>
+        <td mat-cell *matCellDef="let element"> {{ element.supervisorName }} </td>
+      </ng-container>
+
+      <ng-container matColumnDef="academicDate">
+        <th mat-header-cell *matHeaderCellDef> Validation académique </th>
+        <td mat-cell *matCellDef="let element"> {{ element.academicValidationDate | date:'mediumDate' }} </td>
+      </ng-container>
+
+      <ng-container matColumnDef="status">
+        <th mat-header-cell *matHeaderCellDef> Statut </th>
+        <td mat-cell *matCellDef="let element">
+          <span class="status-badge" [ngClass]="getStatusClass(element.status)">
+            {{ getStatusLabel(element.status) }}
+          </span>
+        </td>
+      </ng-container>
+
+      <ng-container matColumnDef="actions">
+        <th mat-header-cell *matHeaderCellDef> Actions </th>
+        <td mat-cell *matCellDef="let element">
+          <button mat-flat-button color="primary" (click)="openValidationDialog(element)">
+            <mat-icon>visibility</mat-icon>
+            Valider
+          </button>
+        </td>
+      </ng-container>
+
+      <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+      <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
+    </table>
+  </div>
+</div>

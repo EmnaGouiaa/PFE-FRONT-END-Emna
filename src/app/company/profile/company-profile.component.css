@@ -1,0 +1,45 @@
+.readonly-input {
+  background: rgba(15, 23, 42, 0.04);
+  color: var(--text-main);
+  cursor: default;
+}
+
+.field-error {
+  margin-top: 6px;
+  color: var(--primary-color);
+  font-size: 0.84rem;
+  font-weight: 700;
+}
+
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 18px;
+}
+
+.confirmation-modal {
+  width: min(100%, 480px);
+  border-radius: 8px;
+}
+
+.confirmation-modal .modal-header {
+  align-items: flex-start;
+}
+
+.confirmation-modal h2 {
+  margin: 0;
+  font-size: 1.25rem;
+}
+
+.confirmation-modal p {
+  margin: 8px 0 0;
+  color: var(--text-muted);
+  font-weight: 700;
+  line-height: 1.55;
+}
+
+.modal-actions {
+  margin-top: 0;
+}

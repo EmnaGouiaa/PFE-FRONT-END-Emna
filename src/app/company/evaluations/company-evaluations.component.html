@@ -1,0 +1,150 @@
+<div class="company-page">
+  <header class="page-hero">
+    <div>
+      <h1>Fiche d'évaluation</h1>
+      <p>Complétez uniquement la partie réservée au représentant de l'entreprise et consultez l'ensemble de la fiche.</p>
+    </div>
+    <div class="hero-actions">
+      <button type="button" class="btn btn-secondary" (click)="loadEvaluations()" [disabled]="isLoading">Actualiser</button>
+    </div>
+  </header>
+
+  <div *ngIf="errorMessage" class="alert alert-error">{{ errorMessage }}</div>
+  <div *ngIf="successMessage" class="alert alert-success">{{ successMessage }}</div>
+  <div *ngIf="isLoading" class="loading">Chargement des évaluations...</div>
+
+  <section class="content-grid" *ngIf="!isLoading">
+    <article class="panel evaluations-panel">
+      <div class="panel-header">
+        <div>
+          <h2>Évaluations disponibles</h2>
+          <div class="panel-subtitle">Chaque fiche indique son état d'avancement et la note finale calculée automatiquement.</div>
+        </div>
+      </div>
+
+      <div class="evaluation-list" *ngIf="evaluations.length > 0">
+        <button type="button" class="evaluation-item" *ngFor="let evaluation of evaluations" (click)="selectEvaluation(evaluation)">
+          <div>
+            <div class="evaluation-item__title">{{ evaluation.stageTitre || ('Stage #' + evaluation.stageId) }}</div>
+            <div class="evaluation-item__meta">{{ evaluation.stagiaireNomComplet || 'Stagiaire non renseigné' }}</div>
+          </div>
+          <div class="evaluation-item__meta">Note finale : {{ getEvaluationNoteLabel(evaluation.noteFinale) }}</div>
+          <span class="status-pill" [ngClass]="getCompletionBadgeClass(evaluation)">
+            {{ getCompletionLabel(evaluation) }}
+          </span>
+        </button>
+      </div>
+
+      <div class="empty-card" *ngIf="evaluations.length === 0">Aucune fiche d'évaluation n'est encore disponible pour vos stages.</div>
+    </article>
+
+    <article class="panel editor-panel">
+      <div class="panel-header">
+        <div>
+          <h2>Votre partie</h2>
+          <div class="panel-subtitle">Renseignez vos observations, puis signez lorsque votre partie est finalisée.</div>
+        </div>
+      </div>
+
+      <form [formGroup]="evaluationForm" class="form">
+        <label>Stage</label>
+        <select class="select" formControlName="stageId">
+          <option [ngValue]="null">Sélectionner un stage</option>
+          <option *ngFor="let internship of internships" [ngValue]="internship.id">
+            {{ internship.titre || internship.sujet || ('Stage #' + internship.id) }}
+          </option>
+        </select>
+
+        <div class="section-card muted-card" *ngIf="selectedEvaluation">
+          <div class="section-card__title">Informations générales</div>
+          <div class="section-card__grid">
+            <div>
+              <span class="mini-label">Stagiaire</span>
+              <strong>{{ selectedEvaluation.stagiaireNomComplet || '-' }}</strong>
+            </div>
+            <div>
+              <span class="mini-label">Section</span>
+              <strong>{{ selectedEvaluation.sectionStagiaire || '-' }}</strong>
+            </div>
+            <div>
+              <span class="mini-label">Entreprise</span>
+              <strong>{{ selectedEvaluation.entrepriseNom || '-' }}</strong>
+            </div>
+            <div>
+              <span class="mini-label">Période</span>
+              <strong>{{ selectedEvaluation.stageDateDebut || '-' }} - {{ selectedEvaluation.stageDateFin || '-' }}</strong>
+            </div>
+          </div>
+        </div>
+
+        <div class="section-card" *ngIf="selectedEvaluation">
+          <div class="section-card__title">Notes attribuées par l'encadrant professionnel</div>
+          <div class="empty-card" *ngIf="!selectedEvaluation.notesAttribuees.length">Aucune note n'a encore été enregistrée.</div>
+          <div class="table-wrap" *ngIf="selectedEvaluation.notesAttribuees.length">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>Critère</th>
+                  <th>Note / 5</th>
+                  <th>Coefficient</th>
+                  <th>Score pondéré</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let note of selectedEvaluation.notesAttribuees">
+                  <td>{{ note.critereLibelle || '-' }}</td>
+                  <td>{{ note.note ?? '-' }}</td>
+                  <td>{{ note.poids ?? '-' }}</td>
+                  <td>{{ getEvaluationNoteLabel(note.scorePondere) }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="readonly-text">
+            <strong>Note finale :</strong>
+            <span>{{ getEvaluationNoteLabel(selectedEvaluation.noteFinale) }}</span>
+          </div>
+        </div>
+
+        <div class="section-card">
+          <div class="section-card__title">Partie représentant de l'entreprise</div>
+
+          <label>Points forts</label>
+          <textarea class="textarea" formControlName="pointFortResponsableEntreprise"></textarea>
+
+          <label>Axes d'amélioration</label>
+          <textarea class="textarea" formControlName="axeAmeliorationResponsableEntreprise"></textarea>
+        </div>
+
+        <div class="section-card muted-card" *ngIf="selectedEvaluation">
+          <div class="section-card__title">Partie encadrant professionnel</div>
+          <div class="readonly-text">
+            <strong>Points forts :</strong>
+            <span>{{ selectedEvaluation.pointFortEncadrantPro || 'Non renseignés pour le moment.' }}</span>
+          </div>
+          <div class="readonly-text">
+            <strong>Axes d'amélioration :</strong>
+            <span>{{ selectedEvaluation.axeAmeliorationEncadrantPro || 'Non renseignés pour le moment.' }}</span>
+          </div>
+          <div class="readonly-text">
+            <strong>Signature :</strong>
+            <span>{{ selectedEvaluation.nomSignataireEncadrantProfessionnel || 'En attente' }}</span>
+          </div>
+        </div>
+
+        <div class="support-banner warning-banner" *ngIf="selectedEvaluation && isReadOnly(selectedEvaluation)">
+          Cette fiche est déjà signée ou verrouillée. Vous pouvez la consulter, mais plus la modifier.
+        </div>
+
+        <div class="form-actions">
+          <button type="button" class="btn btn-primary" (click)="saveEvaluation()" [disabled]="isSaving || (selectedEvaluation && isReadOnly(selectedEvaluation))">
+            {{ isSaving ? 'Enregistrement...' : 'Enregistrer ma partie' }}
+          </button>
+          <button type="button" class="btn btn-secondary" *ngIf="selectedEvaluation && !isReadOnly(selectedEvaluation)" (click)="signEvaluation(selectedEvaluation)">
+            Signer ma partie
+          </button>
+        </div>
+      </form>
+    </article>
+  </section>
+</div>
