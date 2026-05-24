@@ -1,0 +1,171 @@
+<div class="enquete-page">
+
+  <!-- ── En-tête ──────────────────────────────────────────────────────────── -->
+  <header class="enq-hero">
+    <div class="enq-hero__content">
+      <div class="enq-hero__icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" width="28" height="28">
+          <path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/>
+          <path d="M9 5a3 3 0 0 1 6 0"/>
+          <path d="M9 12l2 2 4-4"/>
+        </svg>
+      </div>
+      <div>
+        <h1 class="enq-hero__title">Enquête de satisfaction</h1>
+        <p class="enq-hero__subtitle">
+          Donnez votre avis sur votre expérience de stage en répondant au formulaire ci-dessous.
+          Le formulaire s'ouvrira dans un nouvel onglet et votre session restera active.
+        </p>
+      </div>
+    </div>
+    <button
+      type="button"
+      class="enq-btn enq-btn--secondary"
+      (click)="load()"
+      [disabled]="isLoading"
+    >
+      Actualiser
+    </button>
+  </header>
+
+  <!-- ── Vérification de période en cours ─────────────────────────────────── -->
+  <div class="enq-loading" *ngIf="isPeriodChecking">
+    <span class="enq-spinner" aria-hidden="true"></span>
+    Vérification de la période d'accès...
+  </div>
+
+  <!-- ── Période non ouverte ───────────────────────────────────────────────── -->
+  <div class="enq-period-locked" *ngIf="!isPeriodChecking && !isPeriodOpen" role="alert">
+    <div class="enq-period-locked__icon" aria-hidden="true">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" width="40" height="40">
+        <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+        <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+      </svg>
+    </div>
+    <div class="enq-period-locked__body">
+      <h2>Section non disponible</h2>
+      <p>
+        L'accès à l'enquête de satisfaction est conditionné par la tenue de la
+        <strong>réunion finale</strong> ou par la <strong>date de fin du stage</strong>.
+      </p>
+      <p *ngIf="periodStatus?.openDate">
+        Cette section sera accessible à partir du
+        <strong>{{ periodStatus!.openDate | date:'dd/MM/yyyy' }}</strong>.
+      </p>
+      <p *ngIf="!periodStatus?.openDate">
+        Aucune date d'ouverture n'a encore été définie pour votre stage.
+        Contactez votre responsable des stages.
+      </p>
+    </div>
+  </div>
+
+  <!-- ── Chargement enquête ────────────────────────────────────────────────── -->
+  <ng-container *ngIf="!isPeriodChecking && isPeriodOpen">
+
+  <div class="enq-loading" *ngIf="isLoading">
+    <span class="enq-spinner" aria-hidden="true"></span>
+    Chargement de l'enquête...
+  </div>
+
+  <!-- ── Erreur (E1 / E2 / E3) ────────────────────────────────────────────── -->
+  <div class="enq-alert enq-alert--error" *ngIf="!isLoading && errorMessage" role="alert">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18" aria-hidden="true">
+      <circle cx="12" cy="12" r="10"/>
+      <path d="M12 8v4M12 16h.01"/>
+    </svg>
+    {{ errorMessage }}
+  </div>
+
+  <!-- ── Contenu principal ─────────────────────────────────────────────────── -->
+  <div class="enq-body" *ngIf="!isLoading && !errorMessage && enquete">
+
+    <!-- Carte de l'enquête -->
+    <article class="enq-card" [class.enq-card--open]="urlValide" [class.enq-card--closed]="!urlValide">
+      <!-- Badge de statut -->
+      <div class="enq-card__top">
+        <span class="enq-badge" [ngClass]="statusClass">{{ statusLabel }}</span>
+      </div>
+
+      <!-- Informations de l'enquête -->
+      <div class="enq-card__body">
+        <h2 class="enq-card__title">{{ enquete.titre }}</h2>
+        <p class="enq-card__desc">{{ enquete.description }}</p>
+      </div>
+
+      <!-- Cas : enquête active et URL valide → bouton principal -->
+      <div class="enq-card__action" *ngIf="urlValide">
+        <button
+          type="button"
+          class="enq-btn enq-btn--primary"
+          (click)="ouvrirFormulaire()"
+        >
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" width="18" height="18" aria-hidden="true">
+            <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
+            <polyline points="15 3 21 3 21 9"/>
+            <line x1="10" y1="14" x2="21" y2="3"/>
+          </svg>
+          Répondre à l'enquête
+        </button>
+        <p class="enq-hint">
+          Le formulaire s'ouvrira dans un <strong>nouvel onglet</strong>.
+          Votre session dans l'application restera active.
+        </p>
+      </div>
+
+      <!-- Cas : enquête inactive -->
+      <div class="enq-card__notice" *ngIf="!enquete.active">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20" aria-hidden="true">
+          <circle cx="12" cy="12" r="10"/>
+          <path d="M12 8v4M12 16h.01"/>
+        </svg>
+        <span>L'enquête de satisfaction est temporairement désactivée. Elle sera disponible prochainement.</span>
+      </div>
+
+      <!-- Cas : enquête active mais URL non configurée (E1) -->
+      <div class="enq-card__notice enq-card__notice--warn" *ngIf="enquete.active && !urlValide">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20" aria-hidden="true">
+          <path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+          <line x1="12" y1="9" x2="12" y2="13"/>
+          <line x1="12" y1="17" x2="12.01" y2="17"/>
+        </svg>
+        <span>
+          E1 — Lien invalide ou expiré. Le formulaire externe n'est pas encore configuré.
+          Veuillez contacter le responsable des stages.
+        </span>
+      </div>
+    </article>
+
+    <!-- Confirmation après ouverture du formulaire -->
+    <div class="enq-confirmation" *ngIf="formOpened" role="status">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" width="20" height="20" aria-hidden="true">
+        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+        <polyline points="22 4 12 14.01 9 11.01"/>
+      </svg>
+      Le formulaire a bien été ouvert dans un nouvel onglet. Merci de répondre à l'enquête.
+    </div>
+
+    <!-- Informations complémentaires -->
+    <div class="enq-info-block">
+      <h3 class="enq-info-block__title">À propos de cette enquête</h3>
+      <ul class="enq-info-list">
+        <li>Vos réponses sont anonymes et enregistrées dans le système externe lié à l'enquête.</li>
+        <li>L'ouverture du formulaire externe ne vous déconnecte pas de l'application.</li>
+        <li>Vous pouvez soumettre le formulaire à tout moment pendant la période d'ouverture.</li>
+        <li>En cas de problème technique, contactez le responsable des stages.</li>
+      </ul>
+    </div>
+
+  </div>
+
+  <!-- ── État vide (enquête introuvable) ─────────────────────────────────── -->
+  <div class="enq-empty" *ngIf="!isLoading && !errorMessage && !enquete">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="40" height="40" aria-hidden="true">
+      <path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/>
+      <path d="M9 5a3 3 0 0 1 6 0"/>
+    </svg>
+    <p>Aucune enquête de satisfaction n'est disponible pour le moment.</p>
+  </div>
+
+  </ng-container><!-- /isPeriodOpen -->
+
+</div>

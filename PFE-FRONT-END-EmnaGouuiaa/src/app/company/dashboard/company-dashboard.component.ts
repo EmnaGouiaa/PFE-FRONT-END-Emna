@@ -8,12 +8,10 @@ import { CompanyOffersService } from '../../services/company/company-offers.serv
 import { CompanyInternshipsService } from '../../services/company/company-internships.service';
 import { CompanyContext, CompanyInternship, CompanyOffer } from '../../services/company/company.models';
 import { ProfileCompletionService } from '../../services/profile-completion.service';
-import { SatisfactionSurveySectionComponent } from '../../components/satisfaction-survey-section.component';
-
 @Component({
   selector: 'app-company-dashboard-page',
   standalone: true,
-  imports: [CommonModule, RouterModule, SatisfactionSurveySectionComponent],
+  imports: [CommonModule, RouterModule],
   templateUrl: './company-dashboard.component.html',
   styleUrls: ['../company-shared.css']
 })
@@ -58,7 +56,7 @@ export class CompanyDashboardPageComponent implements OnInit {
 
         const entrepriseId = context.responsable.entrepriseId;
         if (!entrepriseId) {
-          this.errorMessage = 'Aucune entreprise n’est rattachée à ce compte.';
+          this.errorMessage = "Aucune entreprise n'est rattachée à ce compte.";
           this.isLoading = false;
           return;
         }
@@ -107,6 +105,50 @@ export class CompanyDashboardPageComponent implements OnInit {
 
   get showProfileCompletionReminder(): boolean {
     return !this.isLoading && this.profileCompletionMissingFields.length > 0;
+  }
+
+  // ── Display helpers (moved from template to keep HTML clean) ─────────────
+
+  get nomEntrepriseDashboard(): string {
+    return this.context?.entreprise?.nomEntreprise
+      || this.context?.responsable?.entrepriseNom
+      || 'votre entreprise';
+  }
+
+  getTitreStage(internship: CompanyInternship): string {
+    return internship?.titre || internship?.sujet || 'Stage sans titre';
+  }
+
+  getStagiaireNom(internship: CompanyInternship): string {
+    return internship?.stagiaireNom || 'Stagiaire non affecté';
+  }
+
+  getEncadrantNom(internship: CompanyInternship): string {
+    return internship?.encadrantAcademiqueNom || '-';
+  }
+
+  getTitreOffre(offer: CompanyOffer): string {
+    return offer?.titre || 'Offre sans titre';
+  }
+
+  getProfilOffre(offer: CompanyOffer): string {
+    return offer?.profilRecherche || 'Profil non précisé';
+  }
+
+  getDescriptionOffre(offer: CompanyOffer): string {
+    return offer?.descriptionMissions || 'Aucune description renseignée pour cette offre.';
+  }
+
+  getDateDebutOffre(offer: CompanyOffer): string {
+    return offer?.dateDebutPrevue || '-';
+  }
+
+  formatDureeOffre(offer: CompanyOffer): string {
+    return offer?.duree ? `${offer.duree} mois` : '-';
+  }
+
+  getDatePublicationOffre(offer: CompanyOffer): string {
+    return offer?.datePublication || '-';
   }
 
   private compareDates(left: string, right: string): number {

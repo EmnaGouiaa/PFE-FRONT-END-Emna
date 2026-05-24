@@ -2,7 +2,7 @@
   <section class="page-hero">
     <div>
       <h1>Rapport de stage</h1>
-      <p>Suivez l’état du cahier de stage et les informations générées par le backend pour votre rapport.</p>
+      <p>Suivez l'état du cahier de stage et les informations générées par le backend pour votre rapport.</p>
     </div>
   </section>
 
@@ -17,7 +17,7 @@
       </div>
     </div>
 
-    <select class="select stage-selector" [ngModel]="selectedStageId" (ngModelChange)="onStageChange($event)">
+    <select *ngIf="internships.length > 1" class="select stage-selector" [ngModel]="selectedStageId" (ngModelChange)="onStageChange($event)">
       <option *ngFor="let internship of internships" [ngValue]="internship.id">
         {{ internship.titre || internship.sujet || ('Stage #' + internship.id) }}
       </option>
@@ -37,7 +37,7 @@
       </div>
 
       <div class="message-info">
-        Le backend actuel n’expose pas d’envoi de fichier de rapport. Cette page présente uniquement le cahier généré et son état de signature.
+        Le backend actuel n'expose pas d'envoi de fichier de rapport. Cette page présente uniquement le cahier généré et son état de signature.
       </div>
 
       <div class="empty-card" *ngIf="isLoadingData">Chargement du cahier...</div>
@@ -104,7 +104,7 @@
       </div>
 
       <div class="empty-card" *ngIf="!isLoadingData && !summaryEntries.length">
-        Aucune synthèse de rapport n’a été renvoyée pour ce stage.
+        Aucune synthèse de rapport n'a été renvoyée pour ce stage.
       </div>
     </section>
   </div>

@@ -68,8 +68,7 @@ export class ProfileCompletionService {
       case RoleUtilisateur.ENCADRANT_ACADEMIQUE:
       case RoleUtilisateur.ENCADRANT_PROFESSIONNEL:
       case RoleUtilisateur.RESPONSABLE_ENTREPRISE:
-      case RoleUtilisateur.RESPONSABLE_SERVICE_STAGES:
-      case RoleUtilisateur.RESPONSABLE_UNIVERSITAIRE_STAGES:
+      case RoleUtilisateur.RESPONSABLE_STAGE:
         return true;
       default:
         return false;
@@ -104,7 +103,7 @@ export class ProfileCompletionService {
           { label: 'Service', value: profile.service },
           { label: 'Entreprise associée', value: profile.entrepriseId ?? profile.entrepriseNom }
         ];
-      case RoleUtilisateur.RESPONSABLE_SERVICE_STAGES:
+      case RoleUtilisateur.RESPONSABLE_STAGE:
       case RoleUtilisateur.AGENT_STAGE:
         return [
           { label: 'Service', value: profile.service }

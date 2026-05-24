@@ -116,7 +116,6 @@ export interface StudentMeeting {
   encadrantCreateurId: number | null;
   participantIds: number[];
   note: number | null;
-  urlFormEvaluation: string;
   urlFormSatisfaction: string;
 }
 
@@ -125,6 +124,7 @@ export interface StudentAgreement {
   numConv: number | null;
   dateDebut: string;
   dateFin: string;
+  anneeUniversitaire: string;
   signeeEncAca: boolean;
   signeeEncPro: boolean;
   signeeEntreprise: boolean;
@@ -180,17 +180,31 @@ export interface StudentStageDocumentAction {
   generatedAt: string;
 }
 
+/**
+ * Cycle de vie du document, calculé automatiquement à partir des signatures.
+ * Aucune validation manuelle du responsable des stages n'est requise.
+ */
+export type StatutDocument =
+  | 'BROUILLON'
+  | 'EN_ATTENTE_SIGNATURES'
+  | 'SIGNATURES_COMPLETES'
+  | 'DISPONIBLE_IMPRESSION';
+
 export interface StudentStageDocumentStatus {
   code: string;
   libelle: string;
   documentId: number | null;
+  /** true uniquement si toutes les signatures obligatoires sont présentes — calcul automatique. */
   disponible: boolean;
   genere: boolean;
   generationAutorisee: boolean;
   statut: string;
+  /** Message explicatif affiché quand disponible = false. */
   raisonAbsence: string;
   signeeParResponsableUniversitaire: boolean;
   dateSignatureResponsableUniversitaire: string;
+  /** Cycle de vie typé du document, calculé automatiquement. */
+  statutDocument: StatutDocument | null;
 }
 
 export interface StudentStageDocumentsOverview {

@@ -11,10 +11,25 @@ export class CompanyInternshipsService {
 
   constructor(private http: HttpClient) {}
 
-  listByEntreprise(entrepriseId: number): Observable<CompanyInternship[]> {
+  listByEntreprise(_entrepriseId?: number): Observable<CompanyInternship[]> {
     return this.http
-      .get<any[]>(`${this.apiUrl}/entreprise/${entrepriseId}`)
-      .pipe(map((items) => (items ?? []).map((item) => this.normalizeInternship(item))));
+      .get<any>(`${this.apiUrl}/mon-entreprise`)
+      .pipe(map((response) => this.unwrapList<any>(response).map((item) => this.normalizeInternship(item))));
+  }
+
+  private unwrapAny(response: any): any {
+    return response && typeof response === 'object' && 'data' in response ? response.data : response;
+  }
+
+  private unwrapList<T>(response: any): T[] {
+    const raw = this.unwrapAny(response);
+    if (Array.isArray(raw)) return raw as T[];
+    if (raw && typeof raw === 'object') {
+      if (Array.isArray((raw as any).content)) return (raw as any).content as T[];
+      if (Array.isArray((raw as any).items)) return (raw as any).items as T[];
+      if (Array.isArray((raw as any).stages)) return (raw as any).stages as T[];
+    }
+    return [];
   }
 
   getById(id: number): Observable<CompanyInternship> {

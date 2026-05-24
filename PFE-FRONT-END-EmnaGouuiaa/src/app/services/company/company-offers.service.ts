@@ -82,8 +82,12 @@ export class CompanyOffersService {
       motifRefus: String(raw?.motifRefus ?? ''),
       publieeParNomComplet: String(raw?.publieeParNomComplet ?? ''),
       valideeParNomComplet: String(raw?.valideeParNomComplet ?? ''),
+      encadrantProId: raw?.encadrantProId ?? raw?.encadrantPro?.id ?? null,
+      encadrantProNomComplet: String(raw?.encadrantProNomComplet ?? ''),
       stageCree: Boolean(raw?.stageCree),
-      affectable: Boolean(raw?.affectable)
+      affectable: Boolean(raw?.affectable),
+      affectationActive: Boolean(raw?.affectationActive),
+      statutSujet: raw?.statutSujet == null ? null : String(raw.statutSujet)
     };
   }
 
@@ -96,7 +100,8 @@ export class CompanyOffersService {
       dateDebutPrevue: payload.dateDebutPrevue,
       entrepriseId: payload.entrepriseId,
       publieeParId: payload.publieeParId ?? null,
-      valideeParId: payload.valideeParId ?? null
+      valideeParId: payload.valideeParId ?? null,
+      encadrantProId: payload.encadrantProId ?? null
     };
   }
 

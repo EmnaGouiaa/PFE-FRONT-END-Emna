@@ -93,27 +93,21 @@ interface FacultyOfferDraft {
           <div class="offer-card-grid" *ngIf="filteredOffers.length > 0">
             <article class="offer-card" *ngFor="let offer of filteredOffers" (click)="selectOffer(offer)">
               <div class="offer-card-top">
-                <div>
+                <div style="min-width:0">
                   <h3>{{ offer.titre || ('Offre #' + offer.id) }}</h3>
                   <p>{{ offer.entrepriseNom || 'Entreprise non renseignee' }}</p>
                 </div>
                 <span class="status-pill" [ngClass]="'status-' + offer.statut">{{ getOfferStateLabel(offer) }}</span>
               </div>
 
-              <p class="offer-card-description">{{ offer.descriptionMissions || 'Description non renseignee' }}</p>
-
               <div class="offer-card-meta">
                 <div class="offer-meta-item">
-                  <span class="label">Date de debut</span>
-                  <span class="value">{{ offer.dateDebutPrevue || 'Non definie' }}</span>
+                  <span class="label">Debut</span>
+                  <span class="value">{{ offer.dateDebutPrevue || '-' }}</span>
                 </div>
                 <div class="offer-meta-item">
                   <span class="label">Duree</span>
-                  <span class="value">{{ offer.duree ? offer.duree + ' mois' : 'Non precisee' }}</span>
-                </div>
-                <div class="offer-meta-item">
-                  <span class="label">Profil</span>
-                  <span class="value">{{ offer.profilRecherche || 'Non precise' }}</span>
+                  <span class="value">{{ offer.duree ? offer.duree + ' mois' : '-' }}</span>
                 </div>
               </div>
 
@@ -145,8 +139,9 @@ interface FacultyOfferDraft {
                   *ngIf="offer.statut === 'EN_ATTENTE'"
                   (click)="selectOffer(offer); rejectSelectedOffer(); $event.stopPropagation()"
                   [disabled]="isActing"
+                  title="Refuser la demande d'offre de stage"
                 >
-                  Refuser
+                  Refuser la demande
                 </button>
               </div>
             </article>
@@ -229,7 +224,7 @@ interface FacultyOfferDraft {
                 (click)="rejectSelectedOffer()"
                 [disabled]="isActing || !selectedOffer"
               >
-                {{ isActing && pendingAction === 'reject' ? 'Refus...' : "Refuser l'offre" }}
+                {{ isActing && pendingAction === 'reject' ? 'Refus en cours...' : 'Refuser la demande' }}
               </button>
             </div>
           </div>

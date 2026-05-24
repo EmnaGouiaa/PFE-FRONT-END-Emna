@@ -72,7 +72,7 @@
             </div>
             <div class="detail-item full-width">
               <span class="label">Signature actuelle</span>
-              <span class="value">{{ profile.nomFichierSignature || 'Non renseignée' }}</span>
+              <span class="value">{{ hasSignature() ? 'Signature ajoutée' : 'Non renseignée' }}</span>
             </div>
           </div>
         </section>
@@ -105,9 +105,9 @@
 
               <label class="profile-field">
                 <span class="profile-field-label">Téléphone</span>
-                <input class="input" type="tel" formControlName="telephone" placeholder="+216..." [readonly]="!isEditing" [class.readonly-input]="!isEditing" />
+                <app-phone-input formControlName="telephone" [readonly]="!isEditing"></app-phone-input>
                 <span class="field-hint">Laissez vide si vous ne souhaitez pas le renseigner.</span>
-                <span class="field-error" *ngIf="isInvalid('telephone')">Le téléphone est trop long.</span>
+                <span class="field-error" *ngIf="isInvalid('telephone')">Numéro de téléphone invalide.</span>
               </label>
 
               <label class="profile-field profile-field-full">
@@ -130,15 +130,66 @@
               <label class="profile-field">
                 <span class="profile-field-label">Niveau</span>
                 <input class="input readonly-input" type="text" [value]="profile.niveau || 'Non renseigné'" readonly />
-                <span class="field-hint">Le niveau est affiché à titre informatif et n'est pas modifiable ici.</span>
+                <span class="field-hint">Le niveau est défini par l'administration et ne peut pas être modifié par le stagiaire.</span>
               </label>
 
-              <label class="profile-field profile-field-full">
-                <span class="profile-field-label">URL ou chemin de signature</span>
-                <input class="input" type="text" formControlName="nomFichierSignature" placeholder="https://.../signature.png" [readonly]="!isEditing" [class.readonly-input]="!isEditing" />
-                <span class="field-hint">Cette référence sera réutilisée pour les documents du stage.</span>
-                <span class="field-error" *ngIf="isInvalid('nomFichierSignature')">La référence de signature est trop longue.</span>
-              </label>
+              <!-- ── Signature : import d'image uniquement ── -->
+              <div class="profile-field profile-field-full">
+                <span class="profile-field-label">Signature</span>
+
+                <!-- Mode lecture -->
+                <ng-container *ngIf="!isEditing">
+                  <img
+                    *ngIf="hasSignature()"
+                    [src]="profile.nomFichierSignature"
+                    alt="Signature"
+                    class="sig-preview-readonly"
+                  />
+                  <span *ngIf="!hasSignature()" class="sig-empty">Aucune signature enregistrée.</span>
+                </ng-container>
+
+                <!-- Mode édition -->
+                <ng-container *ngIf="isEditing">
+                  <!-- Input fichier caché — déclenché par la zone ci-dessous -->
+                  <input
+                    #signatureFileInput
+                    type="file"
+                    accept="image/png,image/jpeg,image/jpg,image/webp"
+                    style="display:none"
+                    (change)="onSignatureSelectionnee($event)"
+                  />
+                  <!-- Input caché pour la valeur du formulaire réactif -->
+                  <input type="hidden" formControlName="nomFichierSignature" />
+
+                  <div class="sig-upload-zone" (click)="ouvrirSelecteurFichier()">
+                    <img
+                      *ngIf="signatureApercuLocal"
+                      [src]="signatureApercuLocal"
+                      alt="Aperçu signature"
+                      class="sig-preview-edit"
+                    />
+                    <div *ngIf="!signatureApercuLocal" class="sig-upload-placeholder">
+                      <span class="sig-upload-icon">🖋</span>
+                      <span>Cliquez pour importer une image de signature</span>
+                      <span class="sig-upload-hint">PNG · JPG · WEBP · max 1 Mo</span>
+                    </div>
+                  </div>
+
+                  <button
+                    *ngIf="signatureApercuLocal"
+                    type="button"
+                    class="btn btn-secondary sig-remove-btn"
+                    (click)="supprimerSignature(); $event.stopPropagation()"
+                  >
+                    Supprimer la signature
+                  </button>
+
+                  <span class="field-hint">
+                    Cette signature sera apposée sur les documents liés au stage.
+                    Formats acceptés : PNG, JPG, WEBP · Taille max : 1 Mo.
+                  </span>
+                </ng-container>
+              </div>
             </div>
 
             <div class="form-actions">

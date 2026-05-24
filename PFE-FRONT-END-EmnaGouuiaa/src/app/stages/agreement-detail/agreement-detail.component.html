@@ -4,11 +4,26 @@
       <div class="eyebrow">Document officiel</div>
       <h1>Convention de stage</h1>
       <p class="hero-subtitle">
-        Convention generee a partir des donnees reelles du stage, avec un rendu plus lisible et plus professionnel.
+        Convention générée à partir des données réelles du stage, signée électroniquement par les parties concernées.
       </p>
     </div>
     <div class="hero-actions" *ngIf="!chargement && convention">
-      <button type="button" class="btn btn-secondary" (click)="imprimer()">Imprimer / enregistrer en PDF</button>
+      <!-- PDF uniquement disponible après signature complète -->
+      <button
+        type="button"
+        class="btn btn-secondary"
+        *ngIf="conventionSignee"
+        (click)="imprimer()"
+      >
+        Imprimer / enregistrer en PDF
+      </button>
+      <span
+        class="btn-convention-locked"
+        *ngIf="!conventionSignee"
+        title="Le PDF sera disponible une fois toutes les signatures recueillies."
+      >
+        🔒 PDF indisponible — signatures en attente
+      </span>
       <button
         type="button"
         class="btn btn-primary"
@@ -31,55 +46,55 @@
         <div class="brand-badge">FSEGS</div>
         <div>
           <div class="document-title">Convention de stage</div>
-          <div class="document-subtitle">Reference #{{ convention.numConv || convention.id }}</div>
+          <div class="document-subtitle">Référence #{{ convention.numConv || convention.id }}</div>
         </div>
       </div>
 
       <div class="document-state">
-        <span class="status-pill" [ngClass]="convention.statutSignatures ? 'status-positive' : 'status-warning'">
-          {{ convention.statutSignatures ? 'Completement signee' : 'Signatures en attente' }}
+        <span class="status-pill" [ngClass]="conventionSignee ? 'status-positive' : 'status-warning'">
+          {{ conventionSignee ? 'Complètement signée' : 'Signatures en attente' }}
         </span>
-        <div class="document-meta-line">Periode: {{ convention.dateDebut || '-' }} -> {{ convention.dateFin || '-' }}</div>
-        <div class="document-meta-line">Stage: {{ convention.stageTitre || ('Stage #' + convention.stageId) }}</div>
+        <div class="document-meta-line">Période : {{ convention.dateDebut || '-' }} → {{ convention.dateFin || '-' }}</div>
+        <div class="document-meta-line">Stage : {{ titreConvention }}</div>
       </div>
     </div>
 
     <div class="summary-strip">
       <div class="summary-chip">
         <span class="chip-label">Entreprise</span>
-        <strong>{{ stage?.entreprise?.nom || 'Non renseignee' }}</strong>
+        <strong>{{ nomEntreprise }}</strong>
       </div>
       <div class="summary-chip">
         <span class="chip-label">Stagiaire</span>
-        <strong>{{ stage?.stagiaire?.prenom || '' }} {{ stage?.stagiaire?.nom || '' }}</strong>
+        <strong>{{ nomStagiaire }}</strong>
       </div>
       <div class="summary-chip">
-        <span class="chip-label">Duree</span>
+        <span class="chip-label">Durée</span>
         <strong>{{ stage?.duree ?? '-' }} mois</strong>
       </div>
     </div>
 
     <div class="document-section">
-      <h2>1. Parties concernees</h2>
+      <h2>1. Parties concernées</h2>
       <div class="grid-2">
         <div class="card highlight-card">
-          <div class="card-title">Etablissement universitaire</div>
-          <div class="kv"><span>Organisme</span><span>FSEGS - Gestion des stages</span></div>
-          <div class="kv"><span>Responsable</span><span>{{ convention.nomResponsableUniversitaireSignataire || 'Responsable universitaire des stages' }}</span></div>
-          <div class="kv"><span>Etat signature</span><span>{{ convention.signeeResp ? 'Signee' : 'En attente' }}</span></div>
+          <div class="card-title">Établissement universitaire</div>
+          <div class="kv"><span>Organisme</span><span>FSEGS — Gestion des stages</span></div>
+          <div class="kv"><span>Responsable</span><span>{{ nomResponsableUniversitaire }}</span></div>
+          <div class="kv"><span>État signature</span><span>{{ convention.signeeResp ? 'Signée' : 'En attente' }}</span></div>
         </div>
 
         <div class="card" *ngIf="stage?.entreprise; else missingCompany">
           <div class="card-title">Entreprise d'accueil</div>
           <div class="kv"><span>Nom</span><span>{{ stage?.entreprise?.nom || '-' }}</span></div>
           <div class="kv"><span>Adresse</span><span>{{ stage?.entreprise?.adresse || '-' }}</span></div>
-          <div class="kv"><span>Email</span><span>{{ stage?.entreprise?.email || '-' }}</span></div>
-          <div class="kv"><span>Telephone</span><span>{{ stage?.entreprise?.telephone || '-' }}</span></div>
+          <div class="kv"><span>E-mail</span><span>{{ stage?.entreprise?.email || '-' }}</span></div>
+          <div class="kv"><span>Téléphone</span><span>{{ stage?.entreprise?.telephone || '-' }}</span></div>
         </div>
         <ng-template #missingCompany>
           <div class="card">
             <div class="card-title">Entreprise d'accueil</div>
-            <div class="muted">Donnees entreprise indisponibles.</div>
+            <div class="muted">Données entreprise indisponibles.</div>
           </div>
         </ng-template>
       </div>
@@ -87,23 +102,23 @@
       <div class="grid-2">
         <div class="card" *ngIf="stage?.stagiaire; else missingStudent">
           <div class="card-title">Stagiaire</div>
-          <div class="kv"><span>Nom complet</span><span>{{ stage?.stagiaire?.prenom || '' }} {{ stage?.stagiaire?.nom || '' }}</span></div>
-          <div class="kv"><span>Email</span><span>{{ stage?.stagiaire?.email || '-' }}</span></div>
-          <div class="kv"><span>Telephone</span><span>{{ stage?.stagiaire?.telephone || '-' }}</span></div>
+          <div class="kv"><span>Nom complet</span><span>{{ nomStagiaire }}</span></div>
+          <div class="kv"><span>E-mail</span><span>{{ stage?.stagiaire?.email || '-' }}</span></div>
+          <div class="kv"><span>Téléphone</span><span>{{ stage?.stagiaire?.telephone || '-' }}</span></div>
           <div class="kv"><span>Matricule</span><span>{{ stage?.stagiaire?.matricule || '-' }}</span></div>
         </div>
         <ng-template #missingStudent>
           <div class="card">
             <div class="card-title">Stagiaire</div>
-            <div class="muted">Donnees stagiaire indisponibles.</div>
+            <div class="muted">Données stagiaire indisponibles.</div>
           </div>
         </ng-template>
 
         <div class="card">
           <div class="card-title">Encadrement</div>
-          <div class="kv"><span>Encadrant academique</span><span>{{ stage?.encadrantAcademique?.prenom || '' }} {{ stage?.encadrantAcademique?.nom || '-' }}</span></div>
-          <div class="kv"><span>Encadrant professionnel</span><span>{{ stage?.encadrantProfessionnel?.prenom || '' }} {{ stage?.encadrantProfessionnel?.nom || '-' }}</span></div>
-          <div class="kv"><span>Representant entreprise</span><span>{{ stage?.tuteurEntreprise?.prenom || '' }} {{ stage?.tuteurEntreprise?.nom || '-' }}</span></div>
+          <div class="kv"><span>Encadrant académique</span><span>{{ nomEncadrantAcademique }}</span></div>
+          <div class="kv"><span>Encadrant professionnel</span><span>{{ nomEncadrantProfessionnel }}</span></div>
+          <div class="kv"><span>Représentant entreprise</span><span>{{ nomTuteurEntreprise }}</span></div>
         </div>
       </div>
     </div>
@@ -111,11 +126,11 @@
     <div class="document-section">
       <h2>2. Informations du stage</h2>
       <div class="card stage-card">
-        <div class="kv"><span>Titre</span><span>{{ stage?.titre || convention.stageTitre || ('Stage #' + convention.stageId) }}</span></div>
+        <div class="kv"><span>Titre</span><span>{{ titreConvention }}</span></div>
         <div class="kv"><span>Sujet / mission</span><span>{{ stage?.sujet || '-' }}</span></div>
-        <div class="kv"><span>Date de debut</span><span>{{ stage?.dateDebut || convention.dateDebut || '-' }}</span></div>
+        <div class="kv"><span>Date de début</span><span>{{ stage?.dateDebut || convention.dateDebut || '-' }}</span></div>
         <div class="kv"><span>Date de fin</span><span>{{ stage?.dateFin || convention.dateFin || '-' }}</span></div>
-        <div class="kv"><span>Duree</span><span>{{ stage?.duree ?? '-' }} mois</span></div>
+        <div class="kv"><span>Durée</span><span>{{ stage?.duree ?? '-' }} mois</span></div>
         <div class="kv"><span>Nombre de semaines</span><span>{{ stage?.nbSemaine ?? '-' }}</span></div>
       </div>
     </div>
@@ -125,41 +140,44 @@
       <div class="signature-grid">
         <article class="signature-card" [ngClass]="convention.signeeStagiaire ? 'signed' : 'pending'">
           <div class="signature-role">Stagiaire</div>
-          <div class="signature-name">{{ stage?.stagiaire?.prenom || '' }} {{ stage?.stagiaire?.nom || 'Non renseigne' }}</div>
-          <div class="signature-state">{{ convention.signeeStagiaire ? 'Signee' : 'En attente' }}</div>
+          <div class="signature-name">{{ nomStagiaire }}</div>
+          <div class="signature-state">{{ convention.signeeStagiaire ? 'Signée' : 'En attente' }}</div>
         </article>
         <article class="signature-card" [ngClass]="convention.signeeEncAca ? 'signed' : 'pending'">
-          <div class="signature-role">Encadrant academique</div>
-          <div class="signature-name">{{ stage?.encadrantAcademique?.prenom || '' }} {{ stage?.encadrantAcademique?.nom || 'Non renseigne' }}</div>
-          <div class="signature-state">{{ convention.signeeEncAca ? 'Signee' : 'En attente' }}</div>
+          <div class="signature-role">Encadrant académique</div>
+          <div class="signature-name">{{ nomEncadrantAcademique }}</div>
+          <div class="signature-state">{{ convention.signeeEncAca ? 'Signée' : 'En attente' }}</div>
         </article>
         <article class="signature-card" [ngClass]="convention.signeeEncPro ? 'signed' : 'pending'">
           <div class="signature-role">Encadrant professionnel</div>
-          <div class="signature-name">{{ stage?.encadrantProfessionnel?.prenom || '' }} {{ stage?.encadrantProfessionnel?.nom || 'Non renseigne' }}</div>
-          <div class="signature-state">{{ convention.signeeEncPro ? 'Signee' : 'En attente' }}</div>
+          <div class="signature-name">{{ nomEncadrantProfessionnel }}</div>
+          <div class="signature-state">{{ convention.signeeEncPro ? 'Signée' : 'En attente' }}</div>
         </article>
         <article class="signature-card" [ngClass]="convention.signeeEntreprise ? 'signed' : 'pending'">
-          <div class="signature-role">Representant de l'entreprise</div>
-          <div class="signature-name">{{ stage?.tuteurEntreprise?.prenom || '' }} {{ stage?.tuteurEntreprise?.nom || stage?.entreprise?.nom || 'Non renseigne' }}</div>
-          <div class="signature-state">{{ convention.signeeEntreprise ? 'Signee' : 'En attente' }}</div>
+          <div class="signature-role">Représentant de l'entreprise</div>
+          <div class="signature-name">{{ nomTuteurEntreprise }}</div>
+          <div class="signature-state">{{ convention.signeeEntreprise ? 'Signée' : 'En attente' }}</div>
         </article>
         <article class="signature-card" [ngClass]="convention.signeeResp ? 'signed' : 'pending'">
           <div class="signature-role">Responsable universitaire</div>
-          <div class="signature-name">{{ convention.nomResponsableUniversitaireSignataire || 'Responsable universitaire des stages' }}</div>
-          <div class="signature-state">{{ convention.signeeResp ? 'Signee' : 'En attente' }}</div>
+          <div class="signature-name">{{ nomResponsableUniversitaire }}</div>
+          <div class="signature-state">{{ convention.signeeResp ? 'Signée' : 'En attente' }}</div>
           <div class="signature-date" *ngIf="convention.dateSignatureResponsableUniversitaire">
             Le {{ convention.dateSignatureResponsableUniversitaire }}
           </div>
         </article>
       </div>
 
-      <div class="muted note">
-        Astuce : utilisez "Imprimer / enregistrer en PDF" pour obtenir une version propre de cette convention.
+      <div class="muted note" *ngIf="conventionSignee">
+        Utilisez « Imprimer / enregistrer en PDF » pour obtenir une version officielle de cette convention.
+      </div>
+      <div class="support-banner" *ngIf="!conventionSignee">
+        <strong>Signatures manquantes.</strong> Le document PDF ne sera généré qu'une fois toutes les parties signataires ayant apposé leur signature électronique.
       </div>
     </div>
   </section>
 
   <div *ngIf="!chargement && !convention && !messageErreur" class="empty-card">
-    Aucune convention a afficher.
+    Aucune convention à afficher.
   </div>
 </div>

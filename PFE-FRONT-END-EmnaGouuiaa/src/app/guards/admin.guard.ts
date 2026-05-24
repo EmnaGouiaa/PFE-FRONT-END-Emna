@@ -1,38 +1,41 @@
 import { Injectable } from '@angular/core';
-import { CanActivate, Router } from '@angular/router';
-import { AuthService } from '../services/auth.service';
+import { CanActivate, Router, UrlTree } from '@angular/router';
+import { Observable, map, take } from 'rxjs';
+import { AuthentificationService, RoleUtilisateur } from '../services/authentification.service';
 
-@Injectable({
-  providedIn: 'root'
-})
+/**
+ * Garde d'accès réservé aux administrateurs.
+ * Utilise AuthentificationService (source de vérité) et les routes françaises.
+ *
+ * Note : les routes actuelles utilisent RoleGuard avec data: { roles: [...] }.
+ * Ce garde est conservé pour compatibilité ascendante mais délègue à la même logique.
+ */
+@Injectable({ providedIn: 'root' })
 export class AdminGuard implements CanActivate {
-  constructor(private authService: AuthService, private router: Router) {}
+  constructor(
+    private serviceAuthentification: AuthentificationService,
+    private router: Router
+  ) {}
 
-  canActivate(): boolean {
-    // Check if user is logged in
-    if (!this.authService.isLoggedIn()) {
-      console.log('🔒 AdminGuard: No token found, redirecting to login');
-      this.router.navigate(['/login']);
-      return false;
-    }
+  canActivate(): Observable<boolean | UrlTree> {
+    return this.serviceAuthentification.estAuthentifie$.pipe(
+      take(1),
+      map((estAuthentifie) => {
+        if (!estAuthentifie) {
+          return this.router.createUrlTree(['/connexion']);
+        }
 
-    // Check if token is expired
-    if (this.authService.isTokenExpired()) {
-      console.log('🔒 AdminGuard: Token expired, redirecting to login');
-      this.authService.logout();
-      this.router.navigate(['/login']);
-      return false;
-    }
+        if (this.serviceAuthentification.doitChangerMotDePasse()) {
+          return this.router.createUrlTree(['/premiere-connexion']);
+        }
 
-    // Check if user has ADMIN role
-    const userRole = this.authService.getUserRole();
-    if (userRole !== 'ADMIN' || userRole === null) {
-      console.log('🔒 AdminGuard: User is not ADMIN or role is null, redirecting to unauthorized');
-      this.router.navigate(['/unauthorized']);
-      return false;
-    }
+        const role = this.serviceAuthentification.getRoleUtilisateur();
+        if (role !== RoleUtilisateur.ADMINISTRATEUR) {
+          return this.router.createUrlTree(['/non-autorise']);
+        }
 
-    console.log('✅ AdminGuard: User is authenticated as ADMIN');
-    return true;
+        return true;
+      })
+    );
   }
 }

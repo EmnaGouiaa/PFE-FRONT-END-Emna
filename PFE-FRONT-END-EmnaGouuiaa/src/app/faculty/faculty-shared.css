@@ -118,8 +118,9 @@
 
 .company-page .modal {
   width: min(100%, 720px);
-  max-height: calc(100vh - 48px);
-  overflow: auto;
+  max-height: calc(100dvh - 48px);
+  overflow-y: auto;
+  overflow-x: hidden;
   background: rgba(255, 255, 255, 0.97);
   border: 1px solid rgba(255, 255, 255, 0.65);
   border-radius: 28px;
@@ -222,11 +223,32 @@
   }
 
   .company-page .modal-overlay {
-    padding: 16px;
+    padding: 12px;
+    align-items: flex-end;
   }
 
   .company-page .modal {
-    max-height: calc(100vh - 32px);
-    border-radius: 22px;
+    max-height: calc(100dvh - 24px);
+    border-radius: 22px 22px 10px 10px;
+  }
+
+  .company-page .modal-header {
+    padding: 16px 18px;
+  }
+
+  .company-page .form {
+    padding: 16px 18px;
+  }
+}
+
+@media (max-width: 480px) {
+  .company-page .modal-overlay {
+    padding: 0;
+  }
+
+  .company-page .modal {
+    max-height: calc(100dvh - 8px);
+    border-radius: 18px 18px 0 0;
+    width: 100%;
   }
 }

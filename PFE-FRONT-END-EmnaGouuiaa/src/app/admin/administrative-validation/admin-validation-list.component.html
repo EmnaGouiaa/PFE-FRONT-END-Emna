@@ -1,7 +1,7 @@
 <div class="admin-validation-container">
   <div class="header">
     <h1>Validation administrative</h1>
-    <p>Confirmez l’affectation finale de l’étudiant et de l’encadrant pour les demandes validées académiquement.</p>
+    <p>Confirmez l'affectation finale de l'étudiant et de l'encadrant pour les demandes validées académiquement.</p>
   </div>
 
   <div *ngIf="isLoading" class="loading-spinner">
@@ -11,7 +11,7 @@
 
   <div *ngIf="!isLoading && dataSource.length === 0" class="no-data">
     <mat-icon inline>info</mat-icon>
-    <span>Aucune demande de stage n’est en attente de validation administrative.</span>
+    <span>Aucune demande de stage n'est en attente de validation administrative.</span>
   </div>
 
   <div class="table-container mat-elevation-z2" *ngIf="!isLoading && dataSource.length > 0">

@@ -24,8 +24,14 @@ export interface CompanyOffer {
   motifRefus: string;
   publieeParNomComplet: string;
   valideeParNomComplet: string;
+  encadrantProId: number | null;
+  encadrantProNomComplet: string;
   stageCree: boolean;
   affectable: boolean;
+  /** Affectation active = un etudiant est rattache et le stage n'est pas annule. */
+  affectationActive: boolean;
+  /** Statut de validation du sujet du stage lie (EN_ATTENTE | VALIDEE | REFUSEE) ou null. */
+  statutSujet: string | null;
 }
 
 export interface CompanyOfferPayload {
@@ -37,6 +43,7 @@ export interface CompanyOfferPayload {
   entrepriseId: number;
   publieeParId?: number | null;
   valideeParId?: number | null;
+  encadrantProId?: number | null;
 }
 
 export interface CompanyOfferAssignmentPayload {
@@ -123,8 +130,19 @@ export interface CompanyMeeting {
   entrepriseNom: string;
   participantIds: number[];
   note: number | null;
-  urlFormEvaluation: string;
   urlFormSatisfaction: string;
+}
+
+export interface EvaluationNoteDto {
+  ficheEvaluationId?: number | null;
+  critereEvaluationId?: number | null;
+  poids: number;
+  bareme: number;
+  note: number;
+  commentaire?: string;
+  critereLibelle?: string;
+  scorePondere?: number | null;
+  evaluee?: boolean;
 }
 
 export interface CompanyEvaluation {
@@ -145,6 +163,7 @@ export interface CompanyEvaluation {
   signaturesCompletes: boolean;
   complete: boolean;
   verrouillee: boolean;
+  notesAttribuees: EvaluationNoteDto[];
 }
 
 export interface CompanyEvaluationPayload {
@@ -172,6 +191,7 @@ export interface CompanyAgreement {
   numConv: number | null;
   dateDebut: string;
   dateFin: string;
+  anneeUniversitaire: string;
   signeeEncAca: boolean;
   signeeEncPro: boolean;
   signeeEntreprise: boolean;

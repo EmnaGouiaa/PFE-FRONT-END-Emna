@@ -5,13 +5,14 @@ import { phoneValidator, strictEmailValidator } from '../../admin/admin-form-val
 import { AuthentificationService } from '../../services/authentification.service';
 import { StudentCompanyRequest } from '../../services/student/student.models';
 import { StudentPortalService } from '../../services/student/student-portal.service';
+import { PhoneInputComponent } from '../../components/phone-input/phone-input.component';
 
 type FieldErrors = Record<string, string>;
 
 @Component({
   selector: 'app-student-company-request-page',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule],
+  imports: [CommonModule, ReactiveFormsModule, PhoneInputComponent],
   template: `
     <div class="company-page student-page">
       <section class="page-hero">
@@ -36,7 +37,7 @@ type FieldErrors = Record<string, string>;
           <form [formGroup]="form" (ngSubmit)="submit()">
             <div class="form-grid">
               <div>
-                <label>Nom de l’entreprise</label>
+                <label>Nom de l'entreprise</label>
                 <input class="input" formControlName="nomEntreprise" />
                 <div class="field-error" *ngIf="getFieldError('nomEntreprise')">{{ getFieldError('nomEntreprise') }}</div>
               </div>
@@ -47,11 +48,11 @@ type FieldErrors = Record<string, string>;
               </div>
               <div>
                 <label>Téléphone entreprise</label>
-                <input class="input" formControlName="telephoneEntreprise" />
+                <app-phone-input formControlName="telephoneEntreprise"></app-phone-input>
                 <div class="field-error" *ngIf="getFieldError('telephoneEntreprise')">{{ getFieldError('telephoneEntreprise') }}</div>
               </div>
               <div>
-                <label>Secteur d’activité</label>
+                <label>Secteur d'activité</label>
                 <input class="input" formControlName="secteurActivite" />
                 <div class="field-error" *ngIf="getFieldError('secteurActivite')">{{ getFieldError('secteurActivite') }}</div>
               </div>
@@ -77,7 +78,7 @@ type FieldErrors = Record<string, string>;
               </div>
               <div>
                 <label>Téléphone du responsable</label>
-                <input class="input" formControlName="telephoneResponsable" />
+                <app-phone-input formControlName="telephoneResponsable"></app-phone-input>
                 <div class="field-error" *ngIf="getFieldError('telephoneResponsable')">{{ getFieldError('telephoneResponsable') }}</div>
               </div>
             </div>
@@ -221,7 +222,7 @@ export class StudentCompanyRequestPageComponent implements OnInit {
       },
       error: (error) => {
         this.applyBackendFieldError(error);
-        this.errorMessage = this.studentPortalService.describeError(error, 'Impossible d’envoyer la demande.');
+        this.errorMessage = this.studentPortalService.describeError(error, "Impossible d'envoyer la demande.");
         this.isSubmitting = false;
       }
     });

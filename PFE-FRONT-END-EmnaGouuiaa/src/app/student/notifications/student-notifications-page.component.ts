@@ -11,7 +11,7 @@ import { NotificationService, UserNotification } from '../../services/notificati
   templateUrl: './student-notifications-page.component.html',
   styleUrls: ['../../company/company-shared.css', '../student-shared.css']
 })
-export class StudentNotificationsPageComponent implements OnInit {
+export class StudentNotificationsPageComponent implements OnInit, OnDestroy {
   notifications: UserNotification[] = [];
   isLoading = true;
   errorMessage = '';
@@ -68,7 +68,7 @@ export class StudentNotificationsPageComponent implements OnInit {
     this.successMessage = '';
     this.errorMessage = '';
 
-    this.notificationService.markAsRead(notification.id, this.currentUserId).subscribe({
+    this.notificationService.markAsRead(notification.id).subscribe({
       next: (updated) => {
         this.notifications = this.notifications.map((item) => item.id === updated.id ? updated : item);
         this.successMessage = 'Notification marquée comme lue.';

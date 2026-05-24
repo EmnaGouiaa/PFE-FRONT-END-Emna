@@ -30,7 +30,7 @@ export class StudentMeetingsPageComponent implements OnInit, OnDestroy {
     this.studentPortalService.listMyInternships().subscribe({
       next: (internships) => {
         this.internships = internships;
-        this.selectedInternship = this.studentPortalService.pickCurrentInternship(internships) ?? internships[0] ?? null;
+        this.selectedInternship = this.studentPortalService.resolveSelectedInternship(internships);
         this.selectedStageId = this.selectedInternship?.id ?? null;
         this.isLoadingInternships = false;
         this.startMeetingsRefresh();
@@ -49,6 +49,7 @@ export class StudentMeetingsPageComponent implements OnInit, OnDestroy {
   onStageChange(stageId: number): void {
     this.selectedStageId = Number(stageId);
     this.selectedInternship = this.internships.find((item) => item.id === this.selectedStageId) ?? null;
+    this.studentPortalService.setSelectedStageId(this.selectedStageId);
     this.selectedMeeting = null;
     this.loadMeetingsForSelectedStage();
   }

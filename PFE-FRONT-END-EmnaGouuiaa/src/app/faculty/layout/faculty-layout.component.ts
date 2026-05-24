@@ -67,7 +67,7 @@ import { AuthentificationService } from '../../services/authentification.service
                 <path d="M12 9v6" />
               </svg>
             </span>
-            <span>Demandes d’entreprise</span>
+            <span>Demandes d'entreprise</span>
           </a>
 
           <a routerLink="/responsable/stages" routerLinkActive="active" class="nav-item">
@@ -164,7 +164,7 @@ import { AuthentificationService } from '../../services/authentification.service
 export class FacultyLayoutComponent {
   readonly fullName: string;
   readonly email: string;
-  readonly roleLabel = 'RESPONSABLE_UNIVERSITAIRE_STAGES';
+  readonly roleLabel = 'Responsable universitaire des stages';
 
   constructor(
     private authService: AuthentificationService,

@@ -1,98 +1,98 @@
 <div class="page">
   <header class="page-header dashboard-header dashboard-top-header">
     <div>
-      <span class="dashboard-kicker">Pilotage demandes</span>
+      <span class="dashboard-kicker">Consultation</span>
       <h1>Demandes de creation d'entreprise</h1>
-      <p>Le meme style que le dashboard admin pour suivre la double validation, prioriser les actions et eviter les ecrans vides.</p>
+      <p>
+        Vue en lecture seule. La validation est effectuée exclusivement par le responsable des stages.
+        L'entreprise est créée automatiquement après approbation.
+      </p>
     </div>
     <div class="header-actions">
-      <button class="btn btn-secondary" (click)="chargerDemandes()" [disabled]="isLoading">Rafraichir</button>
+      <button class="btn btn-secondary" (click)="chargerDemandes()" [disabled]="isLoading">
+        Rafraichir
+      </button>
     </div>
   </header>
 
+  <!-- Statistiques -->
   <section class="stats">
     <div class="stat dashboard-stat">
       <div class="stat-head">
         <span class="stat-icon" aria-hidden="true">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M4 7h16" />
-            <path d="M7 3v4" />
-            <path d="M17 3v4" />
-            <rect x="3" y="5" width="18" height="16" rx="2" />
+            <path d="M4 7h16"/><path d="M7 3v4"/><path d="M17 3v4"/>
+            <rect x="3" y="5" width="18" height="16" rx="2"/>
           </svg>
         </span>
         <div class="stat-label">Total</div>
       </div>
       <div class="stat-value">{{ getTotal() }}</div>
     </div>
+
     <div class="stat dashboard-stat">
       <div class="stat-head">
         <span class="stat-icon" aria-hidden="true">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <circle cx="12" cy="12" r="10" />
-            <path d="M12 8v4l3 3" />
+            <circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/>
           </svg>
         </span>
-        <div class="stat-label">Admin en attente</div>
+        <div class="stat-label">En attente</div>
       </div>
-      <div class="stat-value">{{ countAdmin(StatutValidation.EN_ATTENTE) }}</div>
+      <div class="stat-value">{{ countResponsable(StatutValidation.EN_ATTENTE) }}</div>
     </div>
+
     <div class="stat dashboard-stat">
       <div class="stat-head">
         <span class="stat-icon" aria-hidden="true">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M12 3l8 4v6c0 5-3.5 7.5-8 8-4.5-.5-8-3-8-8V7l8-4z" />
-            <path d="M9 12l2 2 4-4" />
+            <path d="M12 3l8 4v6c0 5-3.5 7.5-8 8-4.5-.5-8-3-8-8V7l8-4z"/>
+            <path d="M9 12l2 2 4-4"/>
           </svg>
         </span>
-        <div class="stat-label">Admin approuvees</div>
+        <div class="stat-label">Approuvees</div>
       </div>
-      <div class="stat-value">{{ countAdmin(StatutValidation.APPROUVEE) }}</div>
+      <div class="stat-value">{{ countResponsable(StatutValidation.APPROUVEE) }}</div>
     </div>
+
     <div class="stat dashboard-stat">
       <div class="stat-head">
         <span class="stat-icon" aria-hidden="true">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M9 11l3 3L22 4" />
-            <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" />
+            <path d="M9 11l3 3L22 4"/>
+            <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
           </svg>
         </span>
-        <div class="stat-label">Double validation</div>
+        <div class="stat-label">Refusees</div>
       </div>
-      <div class="stat-value">{{ countDemandesCompletes() }}</div>
+      <div class="stat-value">{{ countResponsable(StatutValidation.REJETEE) }}</div>
     </div>
   </section>
 
+  <!-- Filtres -->
   <section class="filters">
     <input
       class="input"
       type="text"
-      placeholder="Rechercher (entreprise, etudiant, encadrant, sujet...)"
+      placeholder="Rechercher (entreprise, etudiant, responsable entreprise...)"
       [(ngModel)]="searchQuery"
       (input)="appliquerFiltres()"
     />
 
-    <select class="select" [(ngModel)]="filtreAdmin" (change)="appliquerFiltres()">
-      <option value="ALL">Admin: Tous</option>
-      <option value="EN_ATTENTE">Admin: En attente</option>
-      <option value="APPROUVEE">Admin: Approuvee</option>
-      <option value="REJETEE">Admin: Rejetee</option>
-    </select>
-
-    <select class="select" [(ngModel)]="filtreResponsable" (change)="appliquerFiltres()">
-      <option value="ALL">Responsable: Tous</option>
-      <option value="EN_ATTENTE">Responsable: En attente</option>
-      <option value="APPROUVEE">Responsable: Approuvee</option>
-      <option value="REJETEE">Responsable: Rejetee</option>
+    <select class="select" [(ngModel)]="filtreValidationResponsable" (change)="appliquerFiltres()">
+      <option value="ALL">Responsable : Tous</option>
+      <option value="EN_ATTENTE">Responsable : En attente</option>
+      <option value="APPROUVEE">Responsable : Approuvee</option>
+      <option value="REJETEE">Responsable : Rejetee</option>
     </select>
   </section>
 
   <div class="support-banner">
-    Une entreprise est creee automatiquement des que l'administrateur et le responsable universitaire ont tous les deux valide la demande.
+    <strong>Lecture seule.</strong>
+    Seul le responsable des stages peut approuver ou refuser ces demandes depuis son espace dédié.
   </div>
 
   <div *ngIf="errorMessage" class="alert alert-error">{{ errorMessage }}</div>
-  <div *ngIf="successMessage" class="alert alert-success">{{ successMessage }}</div>
   <div *ngIf="isLoading" class="loading">Chargement...</div>
 
   <div *ngIf="!isLoading && demandesFiltrees.length === 0" class="empty">
@@ -105,89 +105,45 @@
         <tr>
           <th>#</th>
           <th>Entreprise</th>
-          <th>Etudiant</th>
-          <th>Encadrant</th>
-          <th>Validation Admin</th>
-          <th>Validation Responsable</th>
-          <th>Statut global</th>
-          <th>Actions</th>
+          <th>Demandeur</th>
+          <th>Responsable entreprise</th>
+          <th>Statut</th>
+          <th>Date</th>
         </tr>
       </thead>
       <tbody>
         <tr *ngFor="let d of demandesFiltrees">
           <td>{{ d.id }}</td>
+
           <td>
             <div class="cell-title">{{ d.nomEntreprise }}</div>
             <div class="cell-sub">{{ d.emailEntreprise || '-' }}</div>
+            <div class="cell-sub">{{ d.telephoneEntreprise || '' }}</div>
           </td>
+
           <td>
-            <div class="cell-title">{{ d.etudiant?.prenom || '-' }} {{ d.etudiant?.nom || '' }}</div>
+            <div class="cell-title">
+              {{ d.etudiant?.prenom || '-' }} {{ d.etudiant?.nom || '' }}
+            </div>
             <div class="cell-sub">{{ d.etudiant?.email || '-' }}</div>
           </td>
+
           <td>
-            <div class="cell-title">{{ d.nomEncadrant }}</div>
-            <div class="cell-sub">{{ d.emailEncadrant }}</div>
+            <div class="cell-title">{{ d.nomEncadrant || '-' }}</div>
+            <div class="cell-sub">{{ d.emailEncadrant || '' }}</div>
           </td>
-          <td><span [class]="badgeClass(getEffectiveAdminStatus(d))">{{ getEffectiveAdminStatus(d) }}</span></td>
+
           <td>
             <span [class]="badgeClass(d.statutValidationResponsableStages || StatutValidation.EN_ATTENTE)">
               {{ d.statutValidationResponsableStages || StatutValidation.EN_ATTENTE }}
             </span>
           </td>
+
           <td>
-            <span [class]="badgeClassForDemande(d)">{{ getGlobalStatusLabel(d) }}</span>
-          </td>
-          <td class="actions">
-            <button class="btn btn-success" (click)="approuverAdmin(d)" [disabled]="!canAdminAct(d) || isLoading">
-              Valider
-            </button>
-            <button class="btn btn-danger" (click)="refuserAdmin(d)" [disabled]="!canAdminAct(d) || isLoading">
-              Refuser
-            </button>
+            <div class="cell-sub">{{ d.creeLe | date:'dd/MM/yyyy' }}</div>
           </td>
         </tr>
       </tbody>
     </table>
-  </div>
-
-  <div class="refusal-modal-backdrop" *ngIf="rejectModalOpen" (click)="fermerFenetreRefus()">
-    <section class="refusal-modal" (click)="$event.stopPropagation()">
-      <div class="refusal-hero">
-        <div class="refusal-icon" aria-hidden="true">!</div>
-        <div>
-          <div class="refusal-kicker">Refus de la demande</div>
-          <h2>Motif du refus</h2>
-          <p>Expliquez clairement au stagiaire pourquoi la demande d’ajout d’entreprise est refusée.</p>
-        </div>
-      </div>
-
-      <div class="refusal-context" *ngIf="demandeEnCoursDeRefus">
-        <div><strong>Entreprise :</strong> {{ demandeEnCoursDeRefus.nomEntreprise }}</div>
-        <div><strong>Étudiant :</strong> {{ demandeEnCoursDeRefus.etudiant?.prenom || '-' }} {{ demandeEnCoursDeRefus.etudiant?.nom || '' }}</div>
-      </div>
-
-      <label class="refusal-label" for="admin-refusal-comment">Motif du refus</label>
-      <textarea
-        id="admin-refusal-comment"
-        class="refusal-textarea"
-        [(ngModel)]="rejectComment"
-        [ngModelOptions]="{ standalone: true }"
-        rows="7"
-        maxlength="1000"
-        placeholder="Saisissez ici la raison du refus..."
-      ></textarea>
-
-      <div class="refusal-help">
-        <span>{{ rejectComment.trim().length }}/1000</span>
-        <span *ngIf="rejectValidationMessage" class="refusal-error">{{ rejectValidationMessage }}</span>
-      </div>
-
-      <div class="refusal-actions">
-        <button type="button" class="btn btn-secondary" (click)="fermerFenetreRefus()">Annuler</button>
-        <button type="button" class="btn btn-danger" (click)="confirmerRefusAdmin()" [disabled]="isLoading">
-          Confirmer le refus
-        </button>
-      </div>
-    </section>
   </div>
 </div>

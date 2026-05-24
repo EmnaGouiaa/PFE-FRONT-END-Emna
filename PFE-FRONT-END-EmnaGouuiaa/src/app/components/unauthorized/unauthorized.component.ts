@@ -22,7 +22,7 @@ import { AuthentificationService, RoleUtilisateur, UtilisateurActuel } from '../
 
         <div class="content-section">
           <h1>Accès refusé</h1>
-          <p>Vous n’avez pas la permission d’accéder à cette page.</p>
+          <p>Vous n'avez pas la permission d'accéder à cette page.</p>
 
           <div class="user-info" *ngIf="(currentUser$ | async) as u">
             <p><strong>Votre rôle :</strong> {{ getRoleDisplayName(u.role || '') }}</p>
@@ -182,9 +182,8 @@ export class Unauthorized implements OnInit {
       [RoleUtilisateur.STAGIAIRE]: 'Stagiaire',
       [RoleUtilisateur.ENCADRANT_PROFESSIONNEL]: 'Encadrant professionnel',
       [RoleUtilisateur.ENCADRANT_ACADEMIQUE]: 'Encadrant académique',
-      [RoleUtilisateur.RESPONSABLE_SERVICE_STAGES]: 'Responsable du service des stages',
-      [RoleUtilisateur.RESPONSABLE_UNIVERSITAIRE_STAGES]: 'Responsable universitaire des stages',
-      [RoleUtilisateur.RESPONSABLE_ENTREPRISE]: 'Responsable d’entreprise'
+      [RoleUtilisateur.RESPONSABLE_STAGE]: 'Responsable des stages',
+      [RoleUtilisateur.RESPONSABLE_ENTREPRISE]: "Responsable d'entreprise"
     };
     return roleNames[role] || role || '—';
   }
@@ -208,10 +207,7 @@ export class Unauthorized implements OnInit {
       case RoleUtilisateur.ENCADRANT_ACADEMIQUE:
         this.router.navigate(['/enseignant/tableau-de-bord']);
         return;
-      case RoleUtilisateur.RESPONSABLE_SERVICE_STAGES:
-        this.router.navigate(['/admin/demandes-stage']);
-        return;
-      case RoleUtilisateur.RESPONSABLE_UNIVERSITAIRE_STAGES:
+      case RoleUtilisateur.RESPONSABLE_STAGE:
         this.router.navigate(['/responsable/tableau-de-bord']);
         return;
       case RoleUtilisateur.RESPONSABLE_ENTREPRISE:

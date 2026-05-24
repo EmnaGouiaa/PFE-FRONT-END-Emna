@@ -47,7 +47,8 @@ export class StudentFollowUpPageComponent implements OnInit {
     this.studentPortalService.listMyInternships().subscribe({
       next: (internships) => {
         this.internships = internships;
-        this.selectedInternship = this.studentPortalService.pickCurrentInternship(internships);
+        // Sélection automatique : stage persisté, sinon stage courant, sinon le seul/premier.
+        this.selectedInternship = this.studentPortalService.resolveSelectedInternship(internships);
         this.selectedStageId = this.selectedInternship?.id ?? null;
         this.isLoadingInternships = false;
         if (this.selectedInternship) {
@@ -64,6 +65,8 @@ export class StudentFollowUpPageComponent implements OnInit {
   onStageChange(stageId: number): void {
     this.selectedStageId = Number(stageId);
     this.selectedInternship = this.internships.find((item) => item.id === this.selectedStageId) ?? null;
+    // Mémorise le choix pour que les autres pages chargent le même stage.
+    this.studentPortalService.setSelectedStageId(this.selectedStageId);
     if (this.selectedInternship) {
       this.loadDataForStage(this.selectedInternship.id);
     }
@@ -178,6 +181,14 @@ export class StudentFollowUpPageComponent implements OnInit {
       },
       error: (error) => {
         this.isOpeningTrello = false;
+        if (error?.status === 409 && this.selectedInternship?.trelloBoardUrl) {
+          if (trelloWindow) {
+            trelloWindow.location.href = this.selectedInternship.trelloBoardUrl;
+          } else {
+            window.open(this.selectedInternship.trelloBoardUrl, '_blank', 'noopener');
+          }
+          return;
+        }
         trelloWindow?.close();
         this.errorMessage = this.studentPortalService.describeError(error, 'Erreur lors de la création du board Trello');
       }

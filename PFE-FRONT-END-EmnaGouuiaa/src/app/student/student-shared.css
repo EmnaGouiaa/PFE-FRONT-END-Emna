@@ -136,6 +136,15 @@
   box-shadow: var(--shadow-sm);
 }
 
+.student-page .notification-card .notification-actions,
+.student-page .notification-card > :last-child:not(.notification-icon):not(.notification-copy) {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+  flex-shrink: 0;
+}
+
 .student-page .notification-unread {
   border-color: rgba(203, 216, 18, 0.38);
   background:
@@ -220,8 +229,9 @@
 
 .student-page .split-grid {
   display: grid;
-  grid-template-columns: minmax(0, 1.1fr) minmax(320px, 0.9fr);
+  grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr);
   gap: 18px;
+  align-items: start;
 }
 
 .student-page .table-shell {
@@ -695,10 +705,84 @@
   }
 
   .student-page .notification-card {
-    grid-template-columns: 1fr;
+    grid-template-columns: 54px minmax(0, 1fr);
+  }
+
+  .student-page .notification-card .notification-actions,
+  .student-page .notification-card > :last-child:not(.notification-icon):not(.notification-copy) {
+    grid-column: 1 / -1;
+    justify-content: flex-start;
   }
 
   .student-page table {
     min-width: 560px;
+  }
+}
+
+@media (max-width: 640px) {
+  .student-page .notification-card {
+    grid-template-columns: 1fr;
+    padding: 14px;
+    gap: 12px;
+    border-radius: 18px;
+  }
+
+  .student-page .notification-icon {
+    width: 42px;
+    height: 42px;
+    border-radius: 14px;
+  }
+
+  .student-page .notification-icon svg {
+    width: 20px;
+    height: 20px;
+  }
+
+  .student-page .signature-reminder-card {
+    padding: 16px;
+    border-radius: 20px;
+    gap: 14px;
+  }
+
+  .student-page .actions-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .student-page .detail-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .student-page .status-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .student-page .info-columns {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 480px) {
+  .student-page .student-stat-card {
+    min-height: auto;
+    padding: 16px;
+    border-radius: 18px;
+  }
+
+  .student-page .signature-reminder-card {
+    padding: 14px;
+    border-radius: 18px;
+  }
+
+  .student-page .mini-offer-head {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .student-page .filters-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .student-page .mini-offer-grid {
+    grid-template-columns: 1fr;
   }
 }

@@ -89,8 +89,7 @@ export const routes: Routes = [
         data: {
           roles: [
             RoleUtilisateur.ADMINISTRATEUR,
-            RoleUtilisateur.RESPONSABLE_SERVICE_STAGES,
-            RoleUtilisateur.RESPONSABLE_UNIVERSITAIRE_STAGES
+            RoleUtilisateur.RESPONSABLE_STAGE
           ]
         }
       },
@@ -103,7 +102,7 @@ export const routes: Routes = [
         path: 'profil',
         loadComponent: () => import('./components/profile-management.component').then(m => m.ProfileManagementComponent),
         canActivate: [RoleGuard],
-        data: { roles: [RoleUtilisateur.ADMINISTRATEUR, RoleUtilisateur.RESPONSABLE_SERVICE_STAGES, RoleUtilisateur.AGENT_STAGE] }
+        data: { roles: [RoleUtilisateur.ADMINISTRATEUR, RoleUtilisateur.RESPONSABLE_STAGE, RoleUtilisateur.AGENT_STAGE] }
       }
     ]
   },
@@ -154,16 +153,19 @@ export const routes: Routes = [
         loadComponent: () => import('./student/meetings/student-meetings-page.component').then(m => m.StudentMeetingsPageComponent)
       },
       {
-        path: 'enquete-satisfaction',
-        loadComponent: () => import('./components/satisfaction-survey-page.component').then(m => m.SatisfactionSurveyPageComponent)
-      },
-      {
         path: 'documents-stage',
         loadComponent: () => import('./student/documents/student-documents-page.component').then(m => m.StudentDocumentsPageComponent)
       },
       { path: 'rapport', redirectTo: 'documents-stage', pathMatch: 'full' },
       { path: 'convention', redirectTo: 'documents-stage', pathMatch: 'full' },
-      { path: 'evaluation', redirectTo: 'documents-stage', pathMatch: 'full' }
+      { path: 'evaluation', redirectTo: 'documents-stage', pathMatch: 'full' },
+      {
+        path: 'enquete-satisfaction',
+        loadComponent: () =>
+          import('./components/enquete/enquete-user-page.component').then(
+            (m) => m.EnqueteUserPageComponent
+          )
+      }
     ]
   },
 
@@ -190,12 +192,18 @@ export const routes: Routes = [
       { path: 'tableau-de-bord', loadComponent: () => import('./supervisor/workspace/supervisor-workspace.component').then(m => m.SupervisorWorkspaceComponent), data: { section: 'dashboard' } },
       { path: 'stagiaires', loadComponent: () => import('./supervisor/workspace/supervisor-workspace.component').then(m => m.SupervisorWorkspaceComponent), data: { section: 'stagiaires' } },
       { path: 'reunions', loadComponent: () => import('./supervisor/workspace/supervisor-workspace.component').then(m => m.SupervisorWorkspaceComponent), data: { section: 'reunions' } },
-      { path: 'enquete-satisfaction', loadComponent: () => import('./components/satisfaction-survey-page.component').then(m => m.SatisfactionSurveyPageComponent) },
       { path: 'documents-stage', loadComponent: () => import('./supervisor/workspace/supervisor-workspace.component').then(m => m.SupervisorWorkspaceComponent), data: { section: 'documents' } },
       { path: 'cahier-stage', redirectTo: 'documents-stage', pathMatch: 'full' },
-      { path: 'evaluations', redirectTo: 'documents-stage', pathMatch: 'full' },
+      { path: 'evaluations', loadComponent: () => import('./supervisor/workspace/supervisor-workspace.component').then(m => m.SupervisorWorkspaceComponent), data: { section: 'evaluations' } },
       { path: 'conventions', redirectTo: 'documents-stage', pathMatch: 'full' },
       { path: 'notifications', loadComponent: () => import('./supervisor/workspace/supervisor-workspace.component').then(m => m.SupervisorWorkspaceComponent), data: { section: 'notifications' } },
+      {
+        path: 'enquete-satisfaction',
+        loadComponent: () =>
+          import('./components/enquete/enquete-user-page.component').then(
+            (m) => m.EnqueteUserPageComponent
+          )
+      },
       { path: 'profil', loadComponent: () => import('./components/profile-management.component').then(m => m.ProfileManagementComponent) }
     ]
   },
@@ -209,11 +217,17 @@ export const routes: Routes = [
       { path: 'tableau-de-bord', loadComponent: () => import('./supervisor/workspace/supervisor-workspace.component').then(m => m.SupervisorWorkspaceComponent), data: { section: 'dashboard' } },
       { path: 'stagiaires', loadComponent: () => import('./supervisor/workspace/supervisor-workspace.component').then(m => m.SupervisorWorkspaceComponent), data: { section: 'stagiaires' } },
       { path: 'reunions', loadComponent: () => import('./supervisor/workspace/supervisor-workspace.component').then(m => m.SupervisorWorkspaceComponent), data: { section: 'reunions' } },
-      { path: 'enquete-satisfaction', loadComponent: () => import('./components/satisfaction-survey-page.component').then(m => m.SatisfactionSurveyPageComponent) },
       { path: 'documents-stage', loadComponent: () => import('./supervisor/workspace/supervisor-workspace.component').then(m => m.SupervisorWorkspaceComponent), data: { section: 'documents' } },
       { path: 'cahier-stage', redirectTo: 'documents-stage', pathMatch: 'full' },
       { path: 'conventions', redirectTo: 'documents-stage', pathMatch: 'full' },
       { path: 'notifications', loadComponent: () => import('./supervisor/workspace/supervisor-workspace.component').then(m => m.SupervisorWorkspaceComponent), data: { section: 'notifications' } },
+      {
+        path: 'enquete-satisfaction',
+        loadComponent: () =>
+          import('./components/enquete/enquete-user-page.component').then(
+            (m) => m.EnqueteUserPageComponent
+          )
+      },
       { path: 'profil', loadComponent: () => import('./components/profile-management.component').then(m => m.ProfileManagementComponent) }
     ]
   },
@@ -222,7 +236,8 @@ export const routes: Routes = [
   {
     path: 'entreprise',
     loadComponent: () => import('./company/layout/company-layout.component').then(m => m.CompanyLayoutComponent),
-    canActivate: [AuthGuard],
+    canActivate: [AuthGuard, RoleGuard],
+    data: { roles: [RoleUtilisateur.RESPONSABLE_ENTREPRISE] },
     children: [
       { path: '', redirectTo: 'tableau-de-bord', pathMatch: 'full' },
       {
@@ -273,16 +288,28 @@ export const routes: Routes = [
         data: { roles: [RoleUtilisateur.RESPONSABLE_ENTREPRISE] }
       },
       {
-        path: 'enquete-satisfaction',
-        loadComponent: () => import('./components/satisfaction-survey-page.component').then(m => m.SatisfactionSurveyPageComponent),
+        path: 'evaluation',
+        loadComponent: () => import('./company/evaluations/company-evaluations.component').then(m => m.CompanyEvaluationsPageComponent),
         canActivate: [RoleGuard],
         data: { roles: [RoleUtilisateur.RESPONSABLE_ENTREPRISE] }
       },
-      { path: 'evaluations', redirectTo: 'documents-stage', pathMatch: 'full' },
+      { path: 'evaluations', redirectTo: 'evaluation', pathMatch: 'full' },
       { path: 'conventions', redirectTo: 'documents-stage', pathMatch: 'full' },
       {
-        path: 'candidatures',
-        loadComponent: () => import('./company/applications/company-applications.component').then(m => m.CompanyApplicationsPageComponent),
+        path: 'enquete-satisfaction',
+        loadComponent: () =>
+          import('./company/enquete/company-enquete.component').then(
+            (m) => m.CompanyEnquetePageComponent
+          ),
+        canActivate: [RoleGuard],
+        data: { roles: [RoleUtilisateur.RESPONSABLE_ENTREPRISE] }
+      },
+      {
+        path: 'absences',
+        loadComponent: () =>
+          import('./company/absences/company-absences.component').then(
+            (m) => m.CompanyAbsencesPageComponent
+          ),
         canActivate: [RoleGuard],
         data: { roles: [RoleUtilisateur.RESPONSABLE_ENTREPRISE] }
       }
@@ -305,8 +332,7 @@ export const routes: Routes = [
         RoleUtilisateur.STAGIAIRE,
         RoleUtilisateur.ENCADRANT_PROFESSIONNEL,
         RoleUtilisateur.ENCADRANT_ACADEMIQUE,
-        RoleUtilisateur.RESPONSABLE_SERVICE_STAGES,
-        RoleUtilisateur.RESPONSABLE_UNIVERSITAIRE_STAGES
+        RoleUtilisateur.RESPONSABLE_STAGE
       ]
     }
   },
@@ -350,7 +376,7 @@ export const routes: Routes = [
     path: 'responsable',
     loadComponent: () => import('./faculty/layout/faculty-layout.component').then(m => m.FacultyLayoutComponent),
     canActivate: [AuthGuard, RoleGuard],
-    data: { roles: [RoleUtilisateur.RESPONSABLE_UNIVERSITAIRE_STAGES] },
+    data: { roles: [RoleUtilisateur.RESPONSABLE_STAGE] },
     children: [
       { path: '', redirectTo: 'tableau-de-bord', pathMatch: 'full' },
       {
@@ -383,7 +409,7 @@ export const routes: Routes = [
       },
       {
         path: 'enquete-satisfaction',
-        loadComponent: () => import('./faculty/forms/faculty-final-meeting-forms.component').then(m => m.FacultyFinalMeetingFormsPageComponent)
+        loadComponent: () => import('./faculty/enquete/enquete-admin-page.component').then(m => m.EnqueteAdminPageComponent)
       },
       {
         path: 'evaluations-rapports',
@@ -397,16 +423,6 @@ export const routes: Routes = [
       {
         path: 'conventions',
         redirectTo: 'documents-stage',
-        pathMatch: 'full'
-      },
-      {
-        path: 'formulaires',
-        redirectTo: 'enquete-satisfaction',
-        pathMatch: 'full'
-      },
-      {
-        path: 'statistiques',
-        redirectTo: 'enquete-satisfaction',
         pathMatch: 'full'
       },
       {

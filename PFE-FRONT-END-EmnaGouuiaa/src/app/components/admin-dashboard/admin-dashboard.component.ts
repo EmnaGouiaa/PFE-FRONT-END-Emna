@@ -94,7 +94,7 @@ export class AdminDashboard implements OnInit {
       'ENCADRANT_PROFESSIONNEL': 'badge-supervisor',
       'ENCADRANT_ACADEMIQUE': 'badge-supervisor',
       'RESPONSABLE_ENTREPRISE': 'badge-company',
-      'RESPONSABLE_SERVICE_STAGES': 'badge-responsable'
+      'RESPONSABLE_STAGE': 'badge-responsable'
     };
     return roleClasses[role] || 'badge-default';
   }
@@ -106,7 +106,7 @@ export class AdminDashboard implements OnInit {
       'ENCADRANT_PROFESSIONNEL': 'Professional Supervisor',
       'ENCADRANT_ACADEMIQUE': 'Academic Supervisor',
       'RESPONSABLE_ENTREPRISE': 'Company Manager',
-      'RESPONSABLE_SERVICE_STAGES': 'Internship Service Manager'
+      'RESPONSABLE_STAGE': 'Internship Service Manager'
     };
     return roleNames[role] || role;
   }

@@ -1,27 +1,43 @@
 import { Injectable } from '@angular/core';
-import { CanActivate, Router } from '@angular/router';
-import { AuthService } from '../services/auth.service';
+import { CanActivate, Router, UrlTree } from '@angular/router';
+import { Observable, map, take } from 'rxjs';
+import { AuthentificationService, RoleUtilisateur } from '../services/authentification.service';
 
-@Injectable({
-  providedIn: 'root'
-})
+/**
+ * Garde d'accès réservé aux encadrants (académique ou professionnel).
+ * Utilise AuthentificationService (source de vérité) et les routes françaises.
+ */
+@Injectable({ providedIn: 'root' })
 export class TeacherGuard implements CanActivate {
-  constructor(private authService: AuthService, private router: Router) {}
+  private static readonly ROLES_AUTORISES = [
+    RoleUtilisateur.ENCADRANT_ACADEMIQUE,
+    RoleUtilisateur.ENCADRANT_PROFESSIONNEL
+  ];
 
-  canActivate(): boolean {
-    if (!this.authService.isLoggedIn() || this.authService.isTokenExpired()) {
-      this.router.navigate(['/login']);
-      return false;
-    }
+  constructor(
+    private serviceAuthentification: AuthentificationService,
+    private router: Router
+  ) {}
 
-    const userRole = this.authService.getUserRole();
-    const allowedRoles = ['ENCADRANT_PROFESSIONNEL', 'ENCADRANT_ACADEMIQUE'];
-    
-    if (!userRole || !allowedRoles.includes(userRole)) {
-      this.router.navigate(['/unauthorized']);
-      return false;
-    }
+  canActivate(): Observable<boolean | UrlTree> {
+    return this.serviceAuthentification.estAuthentifie$.pipe(
+      take(1),
+      map((estAuthentifie) => {
+        if (!estAuthentifie) {
+          return this.router.createUrlTree(['/connexion']);
+        }
 
-    return true;
+        if (this.serviceAuthentification.doitChangerMotDePasse()) {
+          return this.router.createUrlTree(['/premiere-connexion']);
+        }
+
+        const role = this.serviceAuthentification.getRoleUtilisateur();
+        if (!role || !TeacherGuard.ROLES_AUTORISES.includes(role)) {
+          return this.router.createUrlTree(['/non-autorise']);
+        }
+
+        return true;
+      })
+    );
   }
 }

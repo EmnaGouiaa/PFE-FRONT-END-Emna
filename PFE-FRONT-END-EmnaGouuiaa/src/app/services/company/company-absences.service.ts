@@ -23,6 +23,16 @@ export class CompanyAbsencesService {
       .pipe(map((item) => this.normalizeAbsence(item)));
   }
 
+  update(id: number, payload: CompanyAbsencePayload): Observable<CompanyAbsence> {
+    return this.http
+      .put<any>(`${this.apiUrl}/${id}`, this.toPayload(payload))
+      .pipe(map((item) => this.normalizeAbsence(item)));
+  }
+
+  delete(id: number): Observable<void> {
+    return this.http.delete<void>(`${this.apiUrl}/${id}`);
+  }
+
   private normalizeAbsence(raw: any): CompanyAbsence {
     return {
       id: Number(raw?.id ?? 0),

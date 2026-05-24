@@ -303,6 +303,95 @@
   cursor: not-allowed;
 }
 
+.btn-delete {
+  min-height: 38px;
+  padding: 0 12px;
+  border: 1px solid transparent;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: var(--transition);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(220, 38, 38, 0.10);
+  color: #b91c1c;
+  font-weight: 800;
+}
+
+.btn-delete:hover:not([disabled]) {
+  background: rgba(220, 38, 38, 0.18);
+}
+
+.btn-delete[disabled] {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn-role-change {
+  width: 38px;
+  min-height: 38px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(203, 216, 18, 0.15);
+  color: #7f8600;
+  border: 1px solid transparent;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.btn-role-change:hover:not([disabled]) {
+  background: rgba(203, 216, 18, 0.28);
+}
+
+.btn-role-change[disabled] {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.role-change-modal-body {
+  display: grid;
+  gap: 18px;
+  padding: 24px;
+  overflow-y: auto;
+}
+
+.user-summary {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 16px;
+  background: rgba(37, 150, 190, 0.06);
+  border: 1px solid rgba(37, 150, 190, 0.12);
+  border-radius: 16px;
+  flex-wrap: wrap;
+}
+
+.user-summary .avatar {
+  flex-shrink: 0;
+}
+
+.user-summary-info {
+  display: grid;
+  gap: 3px;
+  flex: 1;
+  min-width: 0;
+}
+
+.user-summary-name {
+  font-weight: 700;
+  font-size: 1rem;
+}
+
+.user-summary-email {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .empty-state {
   padding: 56px 24px;
   text-align: center;
@@ -370,7 +459,7 @@
 .modal-content {
   width: 100%;
   max-width: 680px;
-  max-height: min(90vh, 860px);
+  max-height: calc(100dvh - 48px);
   background: rgba(255, 255, 255, 0.96);
   border: 1px solid rgba(255, 255, 255, 0.65);
   border-radius: 28px;
@@ -543,6 +632,7 @@
   .search-box,
   .role-filter {
     width: 100%;
+    min-width: 0;
   }
 
   .form-row {
@@ -551,9 +641,37 @@
 
   .modal-overlay {
     padding: 16px;
+    align-items: flex-end;
   }
 
   .modal-content {
-    border-radius: 22px;
+    max-height: calc(100dvh - 24px);
+    border-radius: 22px 22px 10px 10px;
+  }
+}
+
+@media (max-width: 480px) {
+  .users-container {
+    padding: 12px;
+  }
+
+  .page-header h1 {
+    font-size: 1.55rem;
+  }
+
+  .modal-overlay {
+    padding: 0;
+  }
+
+  .modal-content {
+    max-height: calc(100dvh - 8px);
+    border-radius: 18px 18px 0 0;
+    width: 100%;
+    max-width: 100%;
+  }
+
+  .action-buttons {
+    flex-wrap: wrap;
+    gap: 6px;
   }
 }

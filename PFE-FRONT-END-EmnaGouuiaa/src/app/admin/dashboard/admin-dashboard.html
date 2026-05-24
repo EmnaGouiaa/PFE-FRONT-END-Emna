@@ -36,7 +36,7 @@
               [class.error]="!!errorMessage"
               [class.loading]="isLoading"></span>
             <span>
-              {{ isLoading && !lastUpdatedAt ? 'Synchronisation…' : (lastUpdatedAt ? (lastUpdatedAt | date: 'short') : 'En attente') }}
+              {{ syncStatusLabel }}
             </span>
           </div>
         </div>
@@ -147,7 +147,7 @@
           <div class="stat-top">
             <p>Entreprises</p>
             <span class="stat-chip" [class.chip-error]="apiStatus.entreprises === 'error'">
-              {{ apiStatus.entreprises === 'ok' ? (entreprises.active + ' actives') : (apiStatus.entreprises === 'loading' ? 'Chargement…' : 'API indisponible') }}
+              {{ entreprisesStatusChip }}
             </span>
           </div>
           <h3>{{ stats.companies }}</h3>
@@ -190,7 +190,7 @@
 
       <div class="health-card">
         <div class="card-header">
-          <h2>Vue d’ensemble du système</h2>
+          <h2>Vue d'ensemble du système</h2>
           <span class="pill soft">Plateforme</span>
         </div>
 
@@ -210,7 +210,7 @@
               <div>
                 <div class="health-title">API Utilisateurs</div>
                 <div class="health-sub">
-                  {{ apiStatus.users === 'ok' ? 'Connectée' : (apiStatus.users === 'error' ? 'Erreur / indisponible' : 'Connexion…') }}
+                  {{ usersApiStatusLabel }}
                 </div>
               </div>
             </div>
@@ -222,7 +222,7 @@
               <div>
                 <div class="health-title">API Entreprises</div>
                 <div class="health-sub">
-                  {{ apiStatus.entreprises === 'ok' ? (entreprises.total + ' entreprise(s)') : (apiStatus.entreprises === 'error' ? 'Erreur / indisponible' : 'Connexion…') }}
+                  {{ entreprisesApiStatusLabel }}
                 </div>
               </div>
             </div>
@@ -231,7 +231,7 @@
               <span class="status-dot ok"></span>
               <div>
                 <div class="health-title">Derniere mise a jour</div>
-                <div class="health-sub">{{ lastUpdatedAt ? (lastUpdatedAt | date:'short') : '-' }}</div>
+                <div class="health-sub">{{ lastUpdatedAt ? formatShortDate(lastUpdatedAt) : '-' }}</div>
               </div>
             </div>
 

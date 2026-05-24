@@ -9,12 +9,26 @@
     </div>
     <div class="hero-actions">
       <button type="button" class="btn btn-secondary" (click)="loadOffers()" [disabled]="isLoading">Rafraichir</button>
-      <button type="button" class="btn btn-primary" (click)="openCreate()">Nouvelle offre</button>
+      <button
+        type="button"
+        class="btn btn-primary"
+        (click)="openCreate()"
+        [disabled]="!isCreationPeriodOpen"
+        [title]="!isCreationPeriodOpen ? 'Création fermée — prochaine ouverture : ' + nextOpeningLabel : 'Créer une nouvelle offre de stage'"
+      >Nouvelle offre</button>
     </div>
   </header>
 
   <div *ngIf="errorMessage" class="alert alert-error">{{ errorMessage }}</div>
   <div *ngIf="successMessage" class="alert alert-success">{{ successMessage }}</div>
+
+  <!-- Bandeau période de création -->
+  <div class="support-banner" [class.warning-banner]="!isCreationPeriodOpen" [class.success-banner]="isCreationPeriodOpen">
+    <strong>{{ isCreationPeriodOpen ? '✓ Période ouverte' : '⚠ Création fermée' }}</strong>
+    — {{ periodBannerText }}
+    <span style="margin-left:8px;opacity:0.7;font-size:0.85em">Durée autorisée : 1 à 4 mois.</span>
+  </div>
+
   <div class="support-banner">
     Workflow : <strong>EN_ATTENTE</strong> apres creation, <strong>VALIDEE</strong> apres accord academique,
     <strong>AFFECTEE</strong> des qu'un etudiant est rattache et que le stage est cree.
@@ -36,20 +50,14 @@
       <div class="offer-card-grid" *ngIf="activeOffers.length > 0">
         <article class="offer-card" *ngFor="let offer of activeOffers" (click)="openOfferDetails(offer)">
           <div class="offer-card-top">
-            <div>
+            <div style="min-width:0">
               <h3>{{ offer.titre }}</h3>
               <p>{{ offer.entrepriseNom || 'Entreprise non renseignee' }}</p>
             </div>
             <span class="status-pill" [ngClass]="'status-' + offer.statut">{{ getOfferStatusLabel(offer) }}</span>
           </div>
 
-          <p class="offer-card-description">{{ offer.descriptionMissions || 'Aucune description disponible.' }}</p>
-
           <div class="offer-card-meta">
-            <div class="offer-meta-item">
-              <span class="label">Profil</span>
-              <span class="value">{{ offer.profilRecherche || 'Non precise' }}</span>
-            </div>
             <div class="offer-meta-item">
               <span class="label">Debut</span>
               <span class="value">{{ offer.dateDebutPrevue || '-' }}</span>
@@ -57,6 +65,10 @@
             <div class="offer-meta-item">
               <span class="label">Duree</span>
               <span class="value">{{ offer.duree || '-' }} mois</span>
+            </div>
+            <div class="offer-meta-item">
+              <span class="label">Encadrant</span>
+              <span class="value">{{ offer.encadrantProNomComplet || 'Non renseigné' }}</span>
             </div>
           </div>
 
@@ -73,6 +85,7 @@
               class="btn btn-secondary"
               (click)="openEdit(offer); $event.stopPropagation()"
               [disabled]="!canEdit(offer)"
+              [title]="getEditDisabledReason(offer) || 'Modifier l\'offre'"
             >
               Modifier
             </button>
@@ -119,7 +132,7 @@
       <div class="offer-card-grid compact-grid" *ngIf="archivedOffers.length > 0">
         <article class="offer-card archived-card" *ngFor="let offer of archivedOffers" (click)="openOfferDetails(offer)">
           <div class="offer-card-top">
-            <div>
+            <div style="min-width:0">
               <h3>{{ offer.titre }}</h3>
               <p>{{ offer.entrepriseNom || 'Entreprise non renseignee' }}</p>
             </div>
@@ -128,16 +141,16 @@
 
           <div class="offer-card-meta">
             <div class="offer-meta-item">
-              <span class="label">Profil</span>
-              <span class="value">{{ offer.profilRecherche || 'Non precise' }}</span>
-            </div>
-            <div class="offer-meta-item">
               <span class="label">Debut</span>
               <span class="value">{{ offer.dateDebutPrevue || '-' }}</span>
             </div>
             <div class="offer-meta-item">
               <span class="label">Duree</span>
               <span class="value">{{ offer.duree || '-' }} mois</span>
+            </div>
+            <div class="offer-meta-item">
+              <span class="label">Encadrant</span>
+              <span class="value">{{ offer.encadrantProNomComplet || 'Non renseigné' }}</span>
             </div>
           </div>
 
@@ -198,9 +211,13 @@
               <span class="label">Validee par</span>
               <span class="value">{{ selectedOffer.valideeParNomComplet || 'En attente de validation' }}</span>
             </div>
+            <div class="detail-item">
+              <span class="label">Encadrant professionnel</span>
+              <span class="value">{{ selectedOffer.encadrantProNomComplet || 'Non renseigné' }}</span>
+            </div>
             <div class="detail-item full-width">
               <span class="label">Description des missions</span>
-              <span class="value">{{ selectedOffer.descriptionMissions || '-' }}</span>
+              <span class="value" style="white-space:pre-wrap;line-height:1.6">{{ selectedOffer.descriptionMissions || '-' }}</span>
             </div>
             <div class="detail-item full-width" *ngIf="selectedOffer.motifRefus">
               <span class="label">Motif de refus</span>
@@ -230,6 +247,7 @@
             class="btn btn-secondary"
             (click)="closeOfferDetails(); openEdit(selectedOffer)"
             [disabled]="!canEdit(selectedOffer)"
+            [title]="getEditDisabledReason(selectedOffer) || 'Modifier l\'offre'"
           >
             Modifier
           </button>
@@ -266,29 +284,108 @@
   <div class="modal-overlay" *ngIf="showForm" (click)="closeForm()">
     <div class="modal" (click)="$event.stopPropagation()">
       <div class="modal-header">
-        <h2>{{ isEditMode ? 'Modifier une offre' : 'Creer une offre' }}</h2>
+        <h2>{{ isEditMode ? 'Modifier une offre' : 'Créer une offre' }}</h2>
         <button type="button" class="btn-close" (click)="closeForm()">x</button>
       </div>
 
+      <!-- Rappel des règles dans le formulaire -->
+      <div class="support-banner" style="margin:0 0 12px;border-radius:10px;font-size:0.87rem" *ngIf="!isEditMode">
+        <strong>Règles :</strong> Durée entre 1 et 4 mois.
+        Périodes autorisées : <strong>1er fév → 1er juin</strong> et <strong>1er juin → 30 août</strong>.
+      </div>
+
+      <!-- Banniere d'information sur les restrictions d'edition (regle metier validation sujet) -->
+      <div *ngIf="isEditMode && currentEditMode === 'LOCKED'"
+           class="alert alert-warning"
+           style="margin:0 0 12px;font-size:0.9rem;line-height:1.5">
+        <strong>🔒 Modification restreinte — </strong>
+        {{ editModeBanner }}
+      </div>
+
       <form [formGroup]="offerForm" class="form">
-        <label>Titre</label>
+        <label>Titre <span style="color:#e53e3e">*</span></label>
         <input class="input" formControlName="titre" autofocus />
+        <div *ngIf="offerForm.get('titre')?.invalid && offerForm.get('titre')?.touched"
+             style="color:#e53e3e;font-size:0.85rem;margin-top:2px;">
+          <span *ngIf="offerForm.get('titre')?.errors?.['required']">Le titre est obligatoire.</span>
+          <span *ngIf="offerForm.get('titre')?.errors?.['minlength']">Minimum 3 caractères.</span>
+        </div>
 
-        <label>Description des missions</label>
+        <label>Description des missions <span style="color:#e53e3e">*</span></label>
         <textarea class="textarea" formControlName="descriptionMissions"></textarea>
+        <div *ngIf="offerForm.get('descriptionMissions')?.invalid && offerForm.get('descriptionMissions')?.touched"
+             style="color:#e53e3e;font-size:0.85rem;margin-top:2px;">
+          <span *ngIf="offerForm.get('descriptionMissions')?.errors?.['required']">La description des missions est obligatoire.</span>
+          <span *ngIf="offerForm.get('descriptionMissions')?.errors?.['minlength']">Minimum 10 caractères.</span>
+        </div>
 
-        <label>Profil recherche</label>
+        <label>Profil recherche <span style="color:#e53e3e">*</span></label>
         <input class="input" formControlName="profilRecherche" />
+        <div *ngIf="offerForm.get('profilRecherche')?.invalid && offerForm.get('profilRecherche')?.touched"
+             style="color:#e53e3e;font-size:0.85rem;margin-top:2px;">
+          <span *ngIf="offerForm.get('profilRecherche')?.errors?.['required']">Le profil recherché est obligatoire.</span>
+          <span *ngIf="offerForm.get('profilRecherche')?.errors?.['minlength']">Minimum 2 caractères.</span>
+        </div>
 
-        <label>Duree (mois)</label>
-        <input class="input" type="number" formControlName="duree" />
+        <label>Duree (mois) <span style="color:#e53e3e">*</span></label>
+        <input class="input" type="number" formControlName="duree" min="1" max="4"
+               placeholder="Entre 1 et 4 mois" />
+        <div *ngIf="offerForm.get('duree')?.invalid && offerForm.get('duree')?.touched"
+             style="color:#e53e3e;font-size:0.85rem;margin-top:2px;">
+          <span *ngIf="offerForm.get('duree')?.errors?.['required']
+                       || offerForm.get('duree')?.errors?.['min']
+                       || offerForm.get('duree')?.errors?.['max']">
+            La durée du stage doit être comprise entre 1 et 4 mois maximum.
+          </span>
+        </div>
+        <div style="margin-top:4px;font-size:0.82rem;color:#64748b">
+          Durée minimale : 1 mois — Durée maximale : 4 mois (Période 1) / 2 mois (Période 2).
+        </div>
 
-        <label>Date de debut prevue</label>
-        <input class="input" type="date" formControlName="dateDebutPrevue" />
+        <!-- Erreur de validation période (combinaison date de début + durée incompatible). -->
+        <div *ngIf="stagePeriodErrorMessage && (offerForm.get('duree')?.touched || offerForm.get('dateDebutPrevue')?.touched)"
+             style="color:#e53e3e;font-size:0.85rem;margin-top:4px;line-height:1.4">
+          {{ stagePeriodErrorMessage }}
+        </div>
+
+        <label>Date de debut prevue <span style="color:#e53e3e">*</span></label>
+        <input class="input" type="date" formControlName="dateDebutPrevue" [min]="todayIso" />
+        <div *ngIf="offerForm.get('dateDebutPrevue')?.invalid && offerForm.get('dateDebutPrevue')?.touched"
+             style="color:#e53e3e;font-size:0.85rem;margin-top:2px;line-height:1.4">
+          <ng-container *ngIf="offerForm.get('dateDebutPrevue')?.errors?.['required']">
+            La date de début du stage est obligatoire.
+          </ng-container>
+          <ng-container *ngIf="offerForm.get('dateDebutPrevue')?.errors?.['pastDate']">
+            La date de début du stage ne peut pas être dans le passé.<br>
+            Veuillez choisir une date actuelle ou future.
+          </ng-container>
+        </div>
+
+        <label>Encadrant professionnel <span style="color:#e53e3e">*</span></label>
+        <select class="input" formControlName="encadrantProId">
+          <option [ngValue]="null" disabled>
+            {{ isLoadingEncadrants ? 'Chargement des encadrants...' : (hasEncadrants ? 'Sélectionner un encadrant professionnel' : 'Aucun encadrant disponible') }}
+          </option>
+          <option *ngFor="let enc of encadrants" [ngValue]="enc.id">{{ encadrantLabel(enc) }}</option>
+        </select>
+        <div *ngIf="offerForm.get('encadrantProId')?.invalid && offerForm.get('encadrantProId')?.touched"
+             style="color:#e53e3e;font-size:0.85rem;margin-top:2px;">
+          <span *ngIf="offerForm.get('encadrantProId')?.errors?.['required']">L'encadrant professionnel est obligatoire.</span>
+        </div>
+        <div *ngIf="!isLoadingEncadrants && !hasEncadrants"
+             style="margin-top:4px;font-size:0.82rem;color:#b45309">
+          Aucun encadrant professionnel n'est rattaché à votre entreprise. Ajoutez-en un depuis la section
+          <strong>Encadrants</strong> avant de créer l'offre.
+        </div>
+        <div *ngIf="hasEncadrants" style="margin-top:4px;font-size:0.82rem;color:#64748b">
+          L'encadrant professionnel sera associé à l'offre dès sa création.
+        </div>
 
         <div class="form-actions">
           <button type="button" class="btn btn-secondary" (click)="closeForm()">Annuler</button>
-          <button type="button" class="btn btn-primary" (click)="saveOffer()" [disabled]="isSaving">
+          <button type="button" class="btn btn-primary" (click)="saveOffer()"
+                  [disabled]="isSaving"
+                  [title]="currentEditMode === 'LOCKED' ? 'Enregistrer (seuls les champs non verrouillés seront mis à jour)' : 'Enregistrer'">
             {{ isSaving ? 'Enregistrement...' : 'Enregistrer' }}
           </button>
         </div>

@@ -5,7 +5,7 @@
       <h1>Tableau de bord</h1>
       <p>
         Meme palette, memes cartes et meme logique visuelle que l espace admin pour piloter
-        {{ context?.entreprise?.nomEntreprise || context?.responsable?.entrepriseNom || 'votre entreprise' }}.
+        {{ nomEntrepriseDashboard }}.
       </p>
       <div class="hero-badges" *ngIf="context">
         <span class="hero-badge">{{ context.responsable.prenom }} {{ context.responsable.nom }}</span>
@@ -37,8 +37,6 @@
       </div>
       <a routerLink="/entreprise/profil" class="btn btn-primary">Compléter mon profil</a>
     </section>
-
-    <app-satisfaction-survey-section></app-satisfaction-survey-section>
 
     <section class="stats-grid">
       <article class="stat-card dashboard-stat-card">
@@ -114,10 +112,10 @@
           <div class="info-item" *ngFor="let internship of recentInternships">
             <div class="panel-header">
               <div>
-                <div class="info-title">{{ internship.titre || internship.sujet || 'Stage sans titre' }}</div>
+                <div class="info-title">{{ getTitreStage(internship) }}</div>
                 <div class="info-meta">
                   Stagiaire :
-                  <span class="student-highlight">{{ internship.stagiaireNom || 'Stagiaire non affecte' }}</span>
+                  <span class="student-highlight">{{ getStagiaireNom(internship) }}</span>
                 </div>
               </div>
               <span class="status-pill" [ngClass]="'status-' + internship.statut">{{ internship.statut }}</span>
@@ -134,7 +132,7 @@
               </div>
               <div class="offer-meta-item">
                 <span class="label">Encadrant academique</span>
-                <span class="value">{{ internship.encadrantAcademiqueNom || '-' }}</span>
+                <span class="value">{{ getEncadrantNom(internship) }}</span>
               </div>
             </div>
           </div>
@@ -156,33 +154,34 @@
           <article class="offer-card" *ngFor="let offer of recentOffers">
             <div class="offer-card-top">
               <div>
-                <h3>{{ offer.titre || 'Offre sans titre' }}</h3>
-                <p>{{ offer.profilRecherche || 'Profil non precise' }}</p>
+                <h3>{{ getTitreOffre(offer) }}</h3>
+                <p>{{ getProfilOffre(offer) }}</p>
               </div>
               <span class="status-pill" [ngClass]="'status-' + offer.statut">{{ offer.statut }}</span>
             </div>
 
             <p class="offer-card-description">
-              {{ offer.descriptionMissions || 'Aucune description renseignee pour cette offre.' }}
+              {{ getDescriptionOffre(offer) }}
             </p>
 
             <div class="offer-card-meta">
               <div class="offer-meta-item">
                 <span class="label">Debut prevu</span>
-                <span class="value">{{ offer.dateDebutPrevue || '-' }}</span>
+                <span class="value">{{ getDateDebutOffre(offer) }}</span>
               </div>
               <div class="offer-meta-item">
                 <span class="label">Duree</span>
-                <span class="value">{{ offer.duree || '-' }} mois</span>
+                <span class="value">{{ formatDureeOffre(offer) }}</span>
               </div>
               <div class="offer-meta-item">
                 <span class="label">Publication</span>
-                <span class="value">{{ offer.datePublication || '-' }}</span>
+                <span class="value">{{ getDatePublicationOffre(offer) }}</span>
               </div>
             </div>
           </article>
         </div>
       </article>
     </section>
+
   </ng-container>
 </div>

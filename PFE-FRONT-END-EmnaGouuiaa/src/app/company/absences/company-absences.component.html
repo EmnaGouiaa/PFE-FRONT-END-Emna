@@ -1,0 +1,255 @@
+<div class="company-page">
+
+  <!-- ── En-tête ─────────────────────────────────────────────────────────── -->
+  <header class="page-hero">
+    <div>
+      <h1>Gestion des absences</h1>
+      <p>
+        Déclarez, consultez et modifiez les absences de vos stagiaires.
+        Chaque absence est rattachée à un stage en cours de votre entreprise.
+      </p>
+    </div>
+    <div class="hero-actions">
+      <button type="button" class="btn btn-secondary" (click)="loadData()" [disabled]="isLoading">
+        Actualiser
+      </button>
+    </div>
+  </header>
+
+  <!-- ── Alertes globales ─────────────────────────────────────────────────── -->
+  <div *ngIf="errorMessage" class="alert alert-error">{{ errorMessage }}</div>
+  <div *ngIf="successMessage" class="alert alert-success">{{ successMessage }}</div>
+  <div *ngIf="isLoading" class="loading">Chargement des données...</div>
+
+  <!-- ── État vide ────────────────────────────────────────────────────────── -->
+  <div *ngIf="!isLoading && internships.length === 0" class="empty-card">
+    Aucun stage n'est actuellement disponible pour votre entreprise.
+  </div>
+
+  <!-- ── Grille de cartes par stage ──────────────────────────────────────── -->
+  <div class="stages-grid" *ngIf="!isLoading && internships.length > 0">
+    <article
+      class="stage-card panel"
+      *ngFor="let internship of internships; trackBy: trackById"
+    >
+      <!-- En-tête de la carte -->
+      <div class="stage-card__header">
+        <div class="stage-card__info">
+          <div class="stage-card__title">
+            {{ internship.titre || internship.sujet || ('Stage #' + internship.id) }}
+          </div>
+          <div class="stage-card__meta">
+            <span class="meta-chip">
+              <svg class="meta-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                <circle cx="12" cy="7" r="4"/>
+              </svg>
+              {{ internship.stagiaireNom || 'Stagiaire non défini' }}
+            </span>
+            <span class="meta-chip" *ngIf="internship.dateDebut || internship.dateFin">
+              <svg class="meta-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="3" y="4" width="18" height="18" rx="2"/>
+                <path d="M3 10h18M8 2v4M16 2v4"/>
+              </svg>
+              {{ formatDate(internship.dateDebut) }} — {{ formatDate(internship.dateFin) }}
+            </span>
+            <span class="meta-chip meta-chip--stat" *ngIf="getTotalHeures(internship.id) > 0">
+              {{ getTotalHeures(internship.id) }}h d'absence
+            </span>
+          </div>
+        </div>
+
+        <button
+          type="button"
+          class="btn btn-primary btn-declarer"
+          (click)="openModal(internship.id)"
+        >
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="16" height="16">
+            <path d="M12 5v14M5 12h14"/>
+          </svg>
+          Déclarer une absence
+        </button>
+      </div>
+
+      <!-- Tableau des absences -->
+      <div class="absence-table-wrap" *ngIf="getAbsences(internship.id).length > 0">
+        <table class="absence-table">
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Heures</th>
+              <th>Justification</th>
+              <th>Commentaire</th>
+              <th class="col-actions"></th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let absence of getPagedAbsences(internship.id)">
+              <td class="cell-date">{{ formatDate(absence.dateAbsence) }}</td>
+              <td class="cell-nb">
+                <span class="heures-badge">{{ absence.nbAbsence }}h</span>
+              </td>
+              <td>
+                <span
+                  class="status-pill"
+                  [ngClass]="getJustificationClass(absence.justification)"
+                >
+                  {{ getJustificationLabel(absence.justification) }}
+                </span>
+              </td>
+              <td class="cell-comment">{{ absence.commentaire || '—' }}</td>
+              <td class="cell-actions">
+                <button
+                  type="button"
+                  class="btn-icon btn-icon--edit"
+                  (click)="openModal(internship.id, absence)"
+                  title="Modifier cette absence"
+                >
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15">
+                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4z"/>
+                  </svg>
+                </button>
+                <button
+                  type="button"
+                  class="btn-icon btn-icon--delete"
+                  (click)="deleteAbsence(internship.id, absence)"
+                  title="Supprimer cette absence"
+                >
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15">
+                    <polyline points="3 6 5 6 21 6"/>
+                    <path d="M19 6l-1 14H6L5 6"/>
+                    <path d="M10 11v6M14 11v6"/>
+                    <path d="M9 6V4h6v2"/>
+                  </svg>
+                </button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+
+        <!-- Pagination -->
+        <div class="pagination" *ngIf="getTotalPages(internship.id) > 1">
+          <button
+            type="button"
+            class="page-btn"
+            [disabled]="getCurrentPage(internship.id) === 0"
+            (click)="setPage(internship.id, getCurrentPage(internship.id) - 1)"
+          >
+            &#8592;
+          </button>
+          <button
+            type="button"
+            class="page-btn"
+            *ngFor="let p of getPageNumbers(internship.id)"
+            [class.page-btn--active]="getCurrentPage(internship.id) === p"
+            (click)="setPage(internship.id, p)"
+          >
+            {{ p + 1 }}
+          </button>
+          <button
+            type="button"
+            class="page-btn"
+            [disabled]="getCurrentPage(internship.id) >= getTotalPages(internship.id) - 1"
+            (click)="setPage(internship.id, getCurrentPage(internship.id) + 1)"
+          >
+            &#8594;
+          </button>
+        </div>
+      </div>
+
+      <!-- État vide pour un stage -->
+      <div class="empty-stage-absences" *ngIf="getAbsences(internship.id).length === 0">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="32" height="32">
+          <circle cx="12" cy="12" r="10"/>
+          <path d="M8 12h8M12 8v8"/>
+        </svg>
+        <span>Aucune absence déclarée — cliquez sur « Déclarer une absence » pour commencer.</span>
+      </div>
+    </article>
+  </div>
+
+  <!-- ── Modal déclarer / modifier ──────────────────────────────────────── -->
+  <div class="modal-overlay" *ngIf="showModal" (click)="closeModal()">
+    <div class="modal" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <div>
+          <h3>{{ editingAbsence ? 'Modifier une absence' : 'Déclarer une absence' }}</h3>
+          <p class="modal-subtitle" *ngIf="modalStageId">
+            Stage : <strong>{{ getModalStageLabel() }}</strong>
+          </p>
+        </div>
+        <button type="button" class="btn-close" (click)="closeModal()">&#x2715;</button>
+      </div>
+
+      <form class="form" (ngSubmit)="saveAbsence()">
+
+        <!-- Erreurs de validation -->
+        <div class="validation-errors" *ngIf="formErrors.length > 0">
+          <ul>
+            <li *ngFor="let err of formErrors">{{ err }}</li>
+          </ul>
+        </div>
+
+        <!-- Date -->
+        <div>
+          <label for="abs-date">Date d'absence *</label>
+          <input
+            id="abs-date"
+            type="date"
+            class="input"
+            [(ngModel)]="formDate"
+            name="formDate"
+            required
+          />
+        </div>
+
+        <!-- Nombre d'heures -->
+        <div>
+          <label for="abs-nb">Nombre d'heures *</label>
+          <input
+            id="abs-nb"
+            type="number"
+            class="input"
+            [(ngModel)]="formNb"
+            name="formNb"
+            min="1"
+            required
+            placeholder="ex : 4"
+          />
+        </div>
+
+        <!-- Justification -->
+        <div>
+          <label for="abs-just">Justification</label>
+          <select id="abs-just" class="select" [(ngModel)]="formJustification" name="formJustification">
+            <option value="EN_ATTENTE">En attente</option>
+            <option value="JUSTIFIEE">Justifiée</option>
+            <option value="NON_JUSTIFIEE">Non justifiée</option>
+          </select>
+        </div>
+
+        <!-- Commentaire -->
+        <div>
+          <label for="abs-comment">Commentaire (optionnel)</label>
+          <textarea
+            id="abs-comment"
+            class="textarea"
+            [(ngModel)]="formCommentaire"
+            name="formCommentaire"
+            placeholder="Précisions sur l'absence..."
+            rows="3"
+          ></textarea>
+        </div>
+
+        <div class="form-actions">
+          <button type="button" class="btn btn-secondary" (click)="closeModal()">Annuler</button>
+          <button type="submit" class="btn btn-primary" [disabled]="isSaving">
+            {{ isSaving ? 'Enregistrement...' : (editingAbsence ? 'Mettre à jour' : 'Déclarer') }}
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+</div>

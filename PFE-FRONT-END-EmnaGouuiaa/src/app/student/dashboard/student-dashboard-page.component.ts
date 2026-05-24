@@ -8,12 +8,10 @@ import { NotificationService } from '../../services/notification.service';
 import { ProfileCompletionService } from '../../services/profile-completion.service';
 import { StudentInternship, StudentMeeting, StudentOffer, StudentProfile, StudentTrelloSummary } from '../../services/student/student.models';
 import { StudentPortalService } from '../../services/student/student-portal.service';
-import { SatisfactionSurveySectionComponent } from '../../components/satisfaction-survey-section.component';
-
 @Component({
   selector: 'app-student-dashboard-page',
   standalone: true,
-  imports: [CommonModule, RouterModule, SatisfactionSurveySectionComponent],
+  imports: [CommonModule, RouterModule],
   templateUrl: './student-dashboard-page.component.html',
   styleUrls: ['../../company/company-shared.css', '../student-shared.css']
 })
@@ -60,7 +58,7 @@ export class StudentDashboardPageComponent implements OnInit {
         this.profile = profile;
         this.stats.demandes = requests.length;
         this.stats.stages = internships.length;
-        this.currentInternship = this.studentPortalService.pickCurrentInternship(internships);
+        this.currentInternship = this.studentPortalService.resolveSelectedInternship(internships);
         this.availableOffers = offers.slice(0, 3);
         this.unreadNotifications = unreadNotifications;
 
@@ -139,6 +137,64 @@ export class StudentDashboardPageComponent implements OnInit {
 
   get showProfileCompletionReminder(): boolean {
     return !this.isLoading && this.profileCompletionMissingFields.length > 0;
+  }
+
+  // ── Display helpers (logic extracted from template) ──────────────────────
+
+  get statStageLabel(): string {
+    return this.currentInternship
+      ? 'Un stage est actuellement rattaché à votre compte'
+      : 'Aucun stage affecté pour le moment';
+  }
+
+  getTitreStage(internship: StudentInternship): string {
+    return internship?.titre || 'Non renseigné';
+  }
+
+  getSujetStage(internship: StudentInternship): string {
+    return internship?.sujet || internship?.titre || 'Non renseigné';
+  }
+
+  getEntrepriseNom(internship: StudentInternship): string {
+    return internship?.company?.nom || 'Non renseignée';
+  }
+
+  getDureeStage(internship: StudentInternship): string {
+    return internship?.duree ? `${internship.duree} mois` : 'Non renseignée';
+  }
+
+  getEncadrantAcademique(internship: StudentInternship): string {
+    return internship?.academicSupervisor?.fullName || 'Non affecté';
+  }
+
+  getEncadrantProfessionnel(internship: StudentInternship): string {
+    return internship?.professionalSupervisor?.fullName || 'Non affecté';
+  }
+
+  getProchaineMeetingLabel(): string {
+    if (!this.nextMeeting) return 'Aucune réunion à venir';
+    return this.nextMeeting.numReunion || 'Réunion planifiée';
+  }
+
+  getTypeMeeting(): string {
+    if (!this.nextMeeting) return 'Non planifié';
+    return this.nextMeeting.source === 'FINALE' ? 'Réunion finale' : 'Réunion de suivi';
+  }
+
+  getTitreOffre(offer: StudentOffer): string {
+    return offer?.titre || 'Sans titre';
+  }
+
+  getEntrepriseNomOffre(offer: StudentOffer): string {
+    return offer?.entrepriseNom || 'Entreprise non renseignée';
+  }
+
+  getDescriptionOffre(offer: StudentOffer): string {
+    return offer?.descriptionMissions || 'Aucune description fournie.';
+  }
+
+  getProfilOffre(offer: StudentOffer): string {
+    return offer?.profilRecherche || 'Profil non précisé';
   }
 
   private pickNextMeeting(meetings: StudentMeeting[]): StudentMeeting | null {

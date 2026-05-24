@@ -12,7 +12,7 @@ import { SupervisorRole } from '../../services/supervisor/supervisor.models';
     <div class="admin-shell supervisor-shell">
       <aside class="admin-sidebar supervisor-sidebar">
         <div class="sidebar-header supervisor-header">
-          <div class="title">{{ role === 'ENCADRANT_ACADEMIQUE' ? 'Encadrant académique' : 'Encadrant professionnel' }}</div>
+          <div class="title">{{ roleLabel }}</div>
           <div class="subtitle">Gestion et suivi des stages</div>
         </div>
 
@@ -57,15 +57,14 @@ import { SupervisorRole } from '../../services/supervisor/supervisor.models';
             <span>Réunions</span>
           </a>
 
-          <a [routerLink]="[basePath, 'enquete-satisfaction']" routerLinkActive="active" class="nav-item">
+          <a *ngIf="role === 'ENCADRANT_PROFESSIONNEL'" [routerLink]="[basePath, 'evaluations']" routerLinkActive="active" class="nav-item">
             <span class="nav-icon" aria-hidden="true">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2" />
-                <path d="M9 5a3 3 0 0 1 6 0" />
-                <path d="M9 13l2 2 4-4" />
+                <path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10z" />
+                <path d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12" />
               </svg>
             </span>
-            <span>Enquête de satisfaction</span>
+            <span>Évaluation</span>
           </a>
 
           <a [routerLink]="[basePath, 'documents-stage']" routerLinkActive="active" class="nav-item">
@@ -88,6 +87,17 @@ import { SupervisorRole } from '../../services/supervisor/supervisor.models';
               </svg>
             </span>
             <span>Notifications</span>
+          </a>
+
+          <a [routerLink]="[basePath, 'enquete-satisfaction']" routerLinkActive="active" class="nav-item">
+            <span class="nav-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2" />
+                <path d="M9 5a3 3 0 0 1 6 0" />
+                <path d="M9 12l2 2 4-4" />
+              </svg>
+            </span>
+            <span>Enquête de satisfaction</span>
           </a>
         </nav>
 

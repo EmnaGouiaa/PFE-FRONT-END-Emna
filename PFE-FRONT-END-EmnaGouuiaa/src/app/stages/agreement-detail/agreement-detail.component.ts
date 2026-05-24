@@ -53,9 +53,58 @@ export class AgreementDetailComponent implements OnInit {
     this.chargerConvention(id);
   }
 
+  // ── Getters ───────────────────────────────────────────────────────────────
+
+  get conventionSignee(): boolean {
+    return this.convention?.statutSignatures ?? false;
+  }
+
+  get titreConvention(): string {
+    if (!this.convention) return '';
+    return this.convention.stageTitre || `Stage #${this.convention.stageId}`;
+  }
+
+  get nomStagiaire(): string {
+    const s = this.stage?.stagiaire;
+    if (!s) return 'Non renseigné';
+    return `${s.prenom ?? ''} ${s.nom ?? ''}`.trim() || 'Non renseigné';
+  }
+
+  get nomEncadrantAcademique(): string {
+    const e = this.stage?.encadrantAcademique;
+    if (!e) return 'Non renseigné';
+    return `${e.prenom ?? ''} ${e.nom ?? ''}`.trim() || 'Non renseigné';
+  }
+
+  get nomEncadrantProfessionnel(): string {
+    const e = this.stage?.encadrantProfessionnel;
+    if (!e) return 'Non renseigné';
+    return `${e.prenom ?? ''} ${e.nom ?? ''}`.trim() || 'Non renseigné';
+  }
+
+  get nomTuteurEntreprise(): string {
+    const t = this.stage?.tuteurEntreprise;
+    if (!t) return this.stage?.entreprise?.nom || 'Non renseigné';
+    return `${t.prenom ?? ''} ${t.nom ?? ''}`.trim() || 'Non renseigné';
+  }
+
+  get nomEntreprise(): string {
+    return this.stage?.entreprise?.nom || 'Non renseignée';
+  }
+
+  get nomResponsableUniversitaire(): string {
+    return this.convention?.nomResponsableUniversitaireSignataire || 'Responsable universitaire des stages';
+  }
+
+  // ── Actions ───────────────────────────────────────────────────────────────
+
   imprimer(): void {
     if (!this.convention?.id) {
       this.messageErreur = "Impossible d'imprimer cette convention.";
+      return;
+    }
+    if (!this.conventionSignee) {
+      this.messageErreur = "Le PDF n'est disponible qu'une fois toutes les signatures recueillies.";
       return;
     }
 
@@ -97,8 +146,7 @@ export class AgreementDetailComponent implements OnInit {
         return !this.convention.signeeEncPro;
       case RoleUtilisateur.RESPONSABLE_ENTREPRISE:
         return !this.convention.signeeEntreprise;
-      case RoleUtilisateur.RESPONSABLE_SERVICE_STAGES:
-      case RoleUtilisateur.RESPONSABLE_UNIVERSITAIRE_STAGES:
+      case RoleUtilisateur.RESPONSABLE_STAGE:
         return !this.convention.signeeResp;
       default:
         return false;
@@ -130,8 +178,7 @@ export class AgreementDetailComponent implements OnInit {
       case RoleUtilisateur.RESPONSABLE_ENTREPRISE:
         request$ = this.conventions.signerParEntreprise(id);
         break;
-      case RoleUtilisateur.RESPONSABLE_SERVICE_STAGES:
-      case RoleUtilisateur.RESPONSABLE_UNIVERSITAIRE_STAGES:
+      case RoleUtilisateur.RESPONSABLE_STAGE:
         request$ = this.conventions.signerParResponsable(id);
         break;
       default:

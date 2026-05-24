@@ -263,6 +263,21 @@
   font-size: 0.92rem;
 }
 
+.btn-convention-locked {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0.45rem 1rem;
+  border-radius: 6px;
+  font-size: 0.82rem;
+  font-weight: 500;
+  background: rgba(255, 255, 255, 0.12);
+  color: rgba(255, 255, 255, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  cursor: not-allowed;
+  user-select: none;
+}
+
 @media (max-width: 1000px) {
   .document {
     margin: 14px 0 0;

@@ -84,17 +84,6 @@ import { NotificationService } from '../../services/notification.service';
             <span>Réunions</span>
           </a>
 
-          <a routerLink="/etudiant/enquete-satisfaction" routerLinkActive="active" class="nav-item">
-            <span class="nav-icon" aria-hidden="true">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2" />
-                <path d="M9 5a3 3 0 0 1 6 0" />
-                <path d="M9 13l2 2 4-4" />
-              </svg>
-            </span>
-            <span>Enquête de satisfaction</span>
-          </a>
-
           <a routerLink="/etudiant/documents-stage" routerLinkActive="active" class="nav-item">
             <span class="nav-icon" aria-hidden="true">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -103,6 +92,17 @@ import { NotificationService } from '../../services/notification.service';
               </svg>
             </span>
             <span>Documents de stage</span>
+          </a>
+
+          <a routerLink="/etudiant/enquete-satisfaction" routerLinkActive="active" class="nav-item">
+            <span class="nav-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2" />
+                <path d="M9 5a3 3 0 0 1 6 0" />
+                <path d="M9 12l2 2 4-4" />
+              </svg>
+            </span>
+            <span>Enquête de satisfaction</span>
           </a>
 
           <a routerLink="/etudiant/notifications" routerLinkActive="active" class="nav-item nav-item-notifications">

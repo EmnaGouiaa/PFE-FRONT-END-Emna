@@ -7,24 +7,27 @@ import { timeout } from 'rxjs/operators';
 import {
   UserManagementService,
   User,
+  Filiere,
   CreateUserRequest,
   UpdateUserRequest
 } from '../../services/user-management.service';
 import { RoleUtilisateur } from '../../services/authentification.service';
 import { phoneValidator, strictEmailValidator } from '../admin-form-validators';
+import { PhoneInputComponent } from '../../components/phone-input/phone-input.component';
 
 type FieldErrors = Record<string, string>;
 
 @Component({
   selector: 'app-users',
   standalone: true,
-  imports: [CommonModule, FormsModule, ReactiveFormsModule, RouterModule, MatSnackBarModule],
+  imports: [CommonModule, FormsModule, ReactiveFormsModule, RouterModule, MatSnackBarModule, PhoneInputComponent],
   templateUrl: './users.html',
   styleUrls: ['./users.css']
 })
 export class Users implements OnInit {
   users: User[] = [];
   filteredUsers: User[] = [];
+  filieres: Filiere[] = [];
   availableFilieres: string[] = [];
   availableGrades: string[] = [];
   isLoading = false;
@@ -44,15 +47,37 @@ export class Users implements OnInit {
   formSubmitAttempted = false;
   fieldErrors: FieldErrors = {};
 
+  // Role change modal state
+  showRoleChangeModal = false;
+  roleChangeUser: User | null = null;
+  roleChangeOriginalRole = '';
+  selectedNewRole = '';
+  isChangingRole = false;
+
+  // Delete in progress (id of the user being deleted, null if idle)
+  deletingUserId: number | null = null;
+
   roles = [
     { value: 'ALL', label: 'Tous les roles' },
     { value: RoleUtilisateur.ADMINISTRATEUR, label: 'Administrateur' },
     { value: RoleUtilisateur.STAGIAIRE, label: 'Stagiaire' },
     { value: RoleUtilisateur.ENCADRANT_ACADEMIQUE, label: 'Encadrant academique' },
     { value: RoleUtilisateur.ENCADRANT_PROFESSIONNEL, label: 'Encadrant professionnel' },
-    { value: RoleUtilisateur.RESPONSABLE_SERVICE_STAGES, label: 'Responsable service stages' },
-    { value: RoleUtilisateur.RESPONSABLE_UNIVERSITAIRE_STAGES, label: 'Responsable universitaire stages' },
+    { value: RoleUtilisateur.RESPONSABLE_STAGE, label: 'Responsable des stages' },
     { value: RoleUtilisateur.RESPONSABLE_ENTREPRISE, label: 'Responsable entreprise' }
+  ];
+
+  /**
+   * Roles available in the create/edit form and role-change modal.
+   * RESPONSABLE_ENTREPRISE and ENCADRANT_PROFESSIONNEL are intentionally
+   * excluded — they must be created exclusively via the "Entreprises &
+   * responsables" section, always linked to an existing company.
+   */
+  assignableRoles = [
+    { value: RoleUtilisateur.ADMINISTRATEUR, label: 'Administrateur' },
+    { value: RoleUtilisateur.STAGIAIRE, label: 'Stagiaire' },
+    { value: RoleUtilisateur.ENCADRANT_ACADEMIQUE, label: 'Encadrant academique' },
+    { value: RoleUtilisateur.RESPONSABLE_STAGE, label: 'Responsable des stages' }
   ];
 
   constructor(
@@ -64,6 +89,7 @@ export class Users implements OnInit {
   ngOnInit(): void {
     this.initForm();
     this.loadUsers();
+    this.loadFilieres();
   }
 
   initForm(): void {
@@ -72,7 +98,59 @@ export class Users implements OnInit {
       nom: ['', [Validators.required, Validators.minLength(2)]],
       email: ['', [Validators.required, strictEmailValidator()]],
       telephone: ['', [phoneValidator()]],
-      role: [RoleUtilisateur.STAGIAIRE, Validators.required]
+      role: [RoleUtilisateur.STAGIAIRE, Validators.required],
+      // Le matricule est genere automatiquement par le backend pour les stagiaires —
+      // aucun controle de formulaire dedié.
+      filiereId: [null],
+      niveau: [null]
+    });
+
+    // Les champs stagiaire ne sont requis que pour un nouveau stagiaire.
+    this.userForm.get('role')?.valueChanges.subscribe((role) => this.updateStagiaireValidators(role));
+    this.updateStagiaireValidators(RoleUtilisateur.STAGIAIRE);
+  }
+
+  /**
+   * Active/désactive les validateurs filiere + niveau selon le rôle du formulaire.
+   * Ces deux champs sont obligatoires pour un STAGIAIRE — aussi bien à la création
+   * qu'à la modification (l'administrateur peut donc reaffecter filiere/niveau).
+   */
+  private updateStagiaireValidators(role: unknown): void {
+    const isStagiaire = this.normalizeRole(role) === RoleUtilisateur.STAGIAIRE;
+
+    const niveauControl   = this.userForm.get('niveau');
+    const filiereControl  = this.userForm.get('filiereId');
+
+    if (isStagiaire) {
+      niveauControl?.setValidators([Validators.required, Validators.min(1)]);
+      filiereControl?.setValidators([Validators.required]);
+    } else {
+      niveauControl?.clearValidators();
+      filiereControl?.clearValidators();
+    }
+
+    niveauControl?.updateValueAndValidity({ emitEvent: false });
+    filiereControl?.updateValueAndValidity({ emitEvent: false });
+  }
+
+  /** Vrai quand on crée un stagiaire (utilise notamment pour afficher l'info "matricule auto-genere"). */
+  isStagiaireCreation(): boolean {
+    return !this.isEditMode
+      && this.normalizeRole(this.userForm?.get('role')?.value) === RoleUtilisateur.STAGIAIRE;
+  }
+
+  /**
+   * Vrai quand le formulaire concerne un STAGIAIRE (création OU édition).
+   * Sert à afficher les champs filière / niveau dans les deux cas.
+   */
+  isStagiaireForm(): boolean {
+    return this.normalizeRole(this.userForm?.get('role')?.value) === RoleUtilisateur.STAGIAIRE;
+  }
+
+  loadFilieres(): void {
+    this.userManagementService.getFilieres().subscribe({
+      next: (data) => { this.filieres = data; },
+      error: () => { this.filieres = []; }
     });
   }
 
@@ -145,7 +223,7 @@ export class Users implements OnInit {
     });
   }
 
-  private normalizeRole(value: unknown): string {
+  normalizeRole(value: unknown): string {
     if (typeof value === 'string') {
       const normalized = value.trim();
       return normalized.startsWith('ROLE_') ? normalized.slice('ROLE_'.length) : normalized;
@@ -305,8 +383,11 @@ export class Users implements OnInit {
       nom: '',
       email: '',
       telephone: '',
-      role: RoleUtilisateur.STAGIAIRE
+      role: RoleUtilisateur.STAGIAIRE,
+      filiereId: null,
+      niveau: null
     });
+    this.updateStagiaireValidators(RoleUtilisateur.STAGIAIRE);
   }
 
   openEditForm(user: User): void {
@@ -318,15 +399,26 @@ export class Users implements OnInit {
     this.clearFeedback();
     const normalizedRole = this.normalizeRole((user as any).role);
 
+    // Pre-remplissage des champs stagiaire (filiere + niveau) pour permettre leur edition.
+    const isStagiaire = normalizedRole === RoleUtilisateur.STAGIAIRE;
+    const initialFiliereId = isStagiaire && user.filiereId != null ? Number(user.filiereId) : null;
+    const initialNiveau = isStagiaire && user.niveau != null && user.niveau !== ''
+      ? Number(user.niveau)
+      : null;
+
     this.userForm.reset({
       prenom: user.prenom ?? '',
       nom: user.nom ?? '',
       email: user.email ?? '',
       telephone: user.telephone ?? '',
-      role: normalizedRole || RoleUtilisateur.STAGIAIRE
+      role: normalizedRole || RoleUtilisateur.STAGIAIRE,
+      filiereId: initialFiliereId,
+      niveau: initialNiveau
     });
     this.userForm.get('email')?.disable({ emitEvent: false });
     this.userForm.get('role')?.disable({ emitEvent: false });
+    // L'admin peut modifier filiere/niveau pour un stagiaire existant.
+    this.updateStagiaireValidators(normalizedRole);
   }
 
   closeForm(): void {
@@ -343,27 +435,59 @@ export class Users implements OnInit {
 
   private buildCreatePayload(): CreateUserRequest {
     const formData = this.userForm.getRawValue();
-    return {
+    const role = this.normalizeRole(formData.role);
+    const payload: CreateUserRequest = {
       prenom: String(formData.prenom ?? '').trim(),
       nom: String(formData.nom ?? '').trim(),
       email: String(formData.email ?? '').trim(),
       telephone: String(formData.telephone ?? '').trim(),
-      role: this.normalizeRole(formData.role)
+      role
     };
+
+    // Les champs suivants ne sont transmis que pour un stagiaire.
+    // Note : le matricule n'est PAS transmis — il est genere automatiquement cote backend.
+    if (role === RoleUtilisateur.STAGIAIRE) {
+      const filiereId = Number(formData.filiereId);
+      if (Number.isFinite(filiereId) && filiereId > 0) {
+        payload.filiereId = filiereId;
+      }
+
+      const niveau = Number(formData.niveau);
+      if (Number.isFinite(niveau) && niveau > 0) {
+        payload.niveau = niveau;
+      }
+    }
+
+    return payload;
   }
 
   private buildUpdatePayload(): UpdateUserRequest {
     const formData = this.userForm.getRawValue();
     const current = this.selectedUser;
-    return {
+    const role = this.normalizeRole(current?.role ?? formData.role);
+    const payload: UpdateUserRequest = {
       prenom: String(formData.prenom ?? current?.prenom ?? '').trim(),
       nom: String(formData.nom ?? current?.nom ?? '').trim(),
       email: String(current?.email ?? formData.email ?? '').trim(),
       telephone: String(formData.telephone ?? current?.telephone ?? '').trim(),
       actif: typeof current?.actif === 'boolean' ? current.actif : true,
       nomFichierSignature: undefined,
-      role: this.normalizeRole(current?.role ?? formData.role)
+      role
     };
+
+    // Champs propres au stagiaire — uniquement transmis si la modification concerne un STAGIAIRE.
+    if (role === RoleUtilisateur.STAGIAIRE) {
+      const filiereId = Number(formData.filiereId);
+      if (Number.isFinite(filiereId) && filiereId > 0) {
+        payload.filiereId = filiereId;
+      }
+      const niveau = Number(formData.niveau);
+      if (Number.isFinite(niveau) && niveau > 0) {
+        payload.niveau = niveau;
+      }
+    }
+
+    return payload;
   }
 
   onSubmit(): void {
@@ -473,6 +597,59 @@ export class Users implements OnInit {
     });
   }
 
+  /**
+   * Supprime un utilisateur apres confirmation. Le backend renvoie un message d'erreur
+   * explicite en cas de contrainte metier (auto-suppression interdite, etc.), qui est
+   * remonte tel quel a l'utilisateur via la snackbar.
+   */
+  deleteUser(user: User): void {
+    if (!user || !user.id || this.deletingUserId !== null) {
+      return;
+    }
+
+    const fullName = `${user.prenom ?? ''} ${user.nom ?? ''}`.trim() || user.email || `Utilisateur #${user.id}`;
+    const confirmation = window.confirm(
+      `Êtes-vous sûr de vouloir supprimer cet utilisateur ?\n\n${fullName}\n\nCette action est irreversible.`
+    );
+    if (!confirmation) {
+      return;
+    }
+
+    this.deletingUserId = user.id;
+    this.clearFeedback();
+
+    this.userManagementService.deleteUser(user.id).pipe(
+      timeout(15000)
+    ).subscribe({
+      next: () => {
+        try {
+          // Retrait optimiste de la liste locale (le backend a soft-delete : la ligne ne
+          // sera plus retournee par getAllUsers).
+          this.users = this.users.filter((item) => item.id !== user.id);
+          this.filteredUsers = [...this.users];
+          this.filterUsers();
+          this.successMessage = `Utilisateur "${fullName}" supprime avec succes.`;
+          this.snackBar.open(this.successMessage, 'Fermer', { duration: 3500 });
+        } finally {
+          this.deletingUserId = null;
+        }
+        // Rafraichissement complet pour s'assurer de la coherence avec le backend.
+        this.loadUsers();
+      },
+      error: (error) => {
+        try {
+          this.errorMessage = this.extractErrorMessage(
+            error,
+            "Echec de la suppression de l'utilisateur."
+          );
+          this.snackBar.open(this.errorMessage, 'Fermer', { duration: 5000 });
+        } finally {
+          this.deletingUserId = null;
+        }
+      }
+    });
+  }
+
   getFieldError(fieldName: string): string {
     if (this.fieldErrors[fieldName]) {
       return this.fieldErrors[fieldName];
@@ -483,7 +660,11 @@ export class Users implements OnInit {
       return '';
     }
 
-    if (control.errors?.['required']) return 'Ce champ est obligatoire.';
+    if (control.errors?.['required']) {
+      if (fieldName === 'filiereId') return 'La filiere est obligatoire.';
+      return 'Ce champ est obligatoire.';
+    }
+    if (control.errors?.['min']) return 'Le niveau doit etre un nombre positif.';
     if (control.errors?.['minlength']) return 'Minimum 2 caracteres.';
     if (control.errors?.['missingAt']) return "L'email doit contenir @.";
     if (control.errors?.['email']) return 'Format email invalide.';
@@ -508,13 +689,62 @@ export class Users implements OnInit {
         return 'badge-teacher';
       case RoleUtilisateur.RESPONSABLE_ENTREPRISE:
         return 'badge-company';
-      case RoleUtilisateur.RESPONSABLE_SERVICE_STAGES:
+      case RoleUtilisateur.RESPONSABLE_STAGE:
         return 'badge-manager';
-      case RoleUtilisateur.RESPONSABLE_UNIVERSITAIRE_STAGES:
-        return 'badge-university';
       default:
         return 'badge-default';
     }
+  }
+
+  openRoleChangeModal(user: User): void {
+    const normalized = this.normalizeRole((user as any).role);
+    this.roleChangeUser = { ...user };
+    this.selectedNewRole = normalized;
+    this.roleChangeOriginalRole = normalized;
+    this.showRoleChangeModal = true;
+    this.clearFeedback();
+  }
+
+  cancelRoleChange(): void {
+    this.roleChangeUser = null;
+    this.selectedNewRole = '';
+    this.roleChangeOriginalRole = '';
+    this.showRoleChangeModal = false;
+    this.isChangingRole = false;
+  }
+
+  confirmRoleChange(): void {
+    if (!this.roleChangeUser || !this.selectedNewRole || this.isChangingRole) return;
+
+    this.isChangingRole = true;
+    this.clearFeedback();
+
+    const userId = this.roleChangeUser.id;
+    const fullName = `${this.roleChangeUser.prenom ?? ''} ${this.roleChangeUser.nom ?? ''}`.trim();
+
+    this.userManagementService.changeUserRole(userId, this.selectedNewRole).pipe(
+      timeout(15000)
+    ).subscribe({
+      next: (updatedUser) => {
+        try {
+          this.successMessage = (updatedUser as any).message?.trim()
+            || `Role mis a jour avec succes pour ${fullName}.`;
+          this.upsertUserInState(updatedUser);
+          this.snackBar.open(this.successMessage, 'Fermer', { duration: 3500 });
+          this.cancelRoleChange();
+        } finally {
+          this.isChangingRole = false;
+        }
+      },
+      error: (error) => {
+        try {
+          this.errorMessage = this.extractErrorMessage(error, 'Echec du changement de role.');
+          this.snackBar.open(this.errorMessage, 'Fermer', { duration: 4500 });
+        } finally {
+          this.isChangingRole = false;
+        }
+      }
+    });
   }
 
   getRoleLabel(role: string): string {
@@ -525,8 +755,7 @@ export class Users implements OnInit {
       [RoleUtilisateur.ENCADRANT_ACADEMIQUE]: 'Encadrant academique',
       [RoleUtilisateur.ENCADRANT_PROFESSIONNEL]: 'Encadrant professionnel',
       [RoleUtilisateur.RESPONSABLE_ENTREPRISE]: 'Responsable entreprise',
-      [RoleUtilisateur.RESPONSABLE_SERVICE_STAGES]: 'Responsable service stages',
-      [RoleUtilisateur.RESPONSABLE_UNIVERSITAIRE_STAGES]: 'Responsable universitaire stages'
+      [RoleUtilisateur.RESPONSABLE_STAGE]: 'Responsable des stages'
     };
     return labels[normalized] || normalized || String(role);
   }

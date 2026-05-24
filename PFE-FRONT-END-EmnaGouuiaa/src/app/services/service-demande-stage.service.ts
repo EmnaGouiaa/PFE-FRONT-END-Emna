@@ -174,20 +174,9 @@ export class ServiceDemandeStageService {
     );
   }
 
-  validerAdmin(demandeId: number, adminId: number): Observable<DemandeStage> {
-    return this.http.put<any>(`${this.API_URL}/${demandeId}/valider-admin/${adminId}`, {}).pipe(
-      map((r) => this.normalizeDemande(this.unwrapObject<any>(r))),
-      catchError(error => throwError(() => error))
-    );
-  }
-
-  refuserAdmin(demandeId: number, adminId: number, commentaire?: string): Observable<DemandeStage> {
-    const body = { commentaire: String(commentaire ?? '').trim() };
-    return this.http.put<any>(`${this.API_URL}/${demandeId}/refuser-admin/${adminId}`, body).pipe(
-      map((r) => this.normalizeDemande(this.unwrapObject<any>(r))),
-      catchError(error => throwError(() => error))
-    );
-  }
+  // validerAdmin / refuserAdmin retirés :
+  // l'admin n'a aucun droit de validation sur les demandes d'entreprise (lecture seule).
+  // Seul RESPONSABLE_STAGE peut valider/refuser via validerResponsableStages / refuserResponsableStages.
 
   validerResponsableStages(demandeId: number): Observable<DemandeStage> {
     return this.http.put<any>(`${this.API_URL}/${demandeId}/valider-responsable-stages`, {}).pipe(
@@ -212,7 +201,7 @@ export class ServiceDemandeStageService {
   private getDemandesParStagiaireDepuisSession(): Observable<DemandeStage[]> {
     const stagiaireId = Number(localStorage.getItem('userId') ?? '');
     if (!Number.isFinite(stagiaireId) || stagiaireId <= 0) {
-      return throwError(() => new Error('Impossible de déterminer l’identifiant stagiaire.'));
+      return throwError(() => new Error("Impossible de déterminer l'identifiant stagiaire."));
     }
 
     return this.getDemandesParStagiaire(stagiaireId);

@@ -1,0 +1,109 @@
+/* ── Convention non signée ──────────────────────────────────────────────── */
+.btn-disabled {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0.45rem 1rem;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  background: #f1f5f9;
+  color: #94a3b8;
+  border: 1px solid #e2e8f0;
+  cursor: not-allowed;
+  user-select: none;
+}
+
+.btn-disabled::before {
+  content: '🔒';
+  font-size: 0.75rem;
+}
+
+/* ── Closure checklist ──────────────────────────────────────────────────── */
+.closure-checklist {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 1rem 1.25rem;
+  margin-bottom: 1rem;
+}
+
+.closure-checklist__title {
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #64748b;
+  margin-bottom: 0.65rem;
+}
+
+.closure-loading {
+  font-size: 0.85rem;
+  color: #94a3b8;
+  font-style: italic;
+}
+
+.closure-steps {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.closure-steps li {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  font-size: 0.875rem;
+}
+
+.step-icon {
+  font-size: 0.9rem;
+  min-width: 1.1rem;
+  text-align: center;
+  line-height: 1.4;
+}
+
+.step-ok .step-icon {
+  color: #16a34a;
+  font-weight: 700;
+}
+
+.step-pending .step-icon {
+  color: #94a3b8;
+}
+
+.step-ok span {
+  color: #1e293b;
+}
+
+.step-pending span {
+  color: #64748b;
+}
+
+.step-date {
+  font-style: normal;
+  color: #16a34a;
+  font-size: 0.8rem;
+  margin-left: 4px;
+}
+
+.closure-notice {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  background: #fffbeb;
+  border: 1px solid #fcd34d;
+  border-radius: 6px;
+  padding: 0.6rem 0.8rem;
+  font-size: 0.82rem;
+  color: #92400e;
+  margin-top: 0.75rem;
+  line-height: 1.5;
+}
+
+.closure-notice svg {
+  color: #d97706;
+}

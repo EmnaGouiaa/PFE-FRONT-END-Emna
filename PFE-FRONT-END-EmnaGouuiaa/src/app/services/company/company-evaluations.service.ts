@@ -3,7 +3,7 @@ import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 import { API_BASE_URL } from '../api.config';
-import { CompanyEvaluation, CompanyEvaluationPayload } from './company.models';
+import { CompanyEvaluation, CompanyEvaluationPayload, EvaluationNoteDto } from './company.models';
 
 @Injectable({ providedIn: 'root' })
 export class CompanyEvaluationsService {
@@ -45,6 +45,12 @@ export class CompanyEvaluationsService {
       .pipe(map((item) => this.normalizeEvaluation(item)));
   }
 
+  enregistrerNotePonctualite(id: number, userId: number, notes: EvaluationNoteDto[]): Observable<CompanyEvaluation> {
+    return this.http
+      .put<any>(`${this.apiUrl}/${id}/notes-re/${userId}`, notes)
+      .pipe(map((item) => this.normalizeEvaluation(item)));
+  }
+
   private normalizeEvaluation(raw: any): CompanyEvaluation {
     return {
       id: Number(raw?.id ?? 0),
@@ -63,7 +69,20 @@ export class CompanyEvaluationsService {
       donneesCompletes: Boolean(raw?.donneesCompletes),
       signaturesCompletes: Boolean(raw?.signaturesCompletes),
       complete: Boolean(raw?.complete),
-      verrouillee: Boolean(raw?.verrouillee)
+      verrouillee: Boolean(raw?.verrouillee),
+      notesAttribuees: Array.isArray(raw?.notesAttribuees)
+        ? raw.notesAttribuees.map((n: any) => ({
+            ficheEvaluationId: n?.ficheEvaluationId ?? null,
+            critereEvaluationId: n?.critereEvaluationId ?? null,
+            poids: Number(n?.poids ?? 0),
+            bareme: Number(n?.bareme ?? 5),
+            note: Number(n?.note ?? 0),
+            commentaire: String(n?.commentaire ?? ''),
+            critereLibelle: String(n?.critereLibelle ?? ''),
+            scorePondere: n?.scorePondere != null ? Number(n.scorePondere) : null,
+            evaluee: Boolean(n?.evaluee)
+          }))
+        : []
     };
   }
 

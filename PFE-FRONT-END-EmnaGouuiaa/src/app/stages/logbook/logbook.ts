@@ -54,6 +54,11 @@ export class Logbook implements OnInit {
     const id = Number(this.cahier.id);
     if (!Number.isFinite(id) || id <= 0) return;
 
+    if (!this.peutSigner()) {
+      // Garde-fou : si l'utilisateur a deja signe, on n'envoie pas d'appel inutile.
+      return;
+    }
+
     const endpoint = this.getEndpointSignature(id);
     if (!endpoint) return;
 
@@ -61,18 +66,40 @@ export class Logbook implements OnInit {
     this.messageErreur = '';
     this.messageSucces = '';
 
+    // Corps vide : le backend va recuperer la signature stockee dans le profil de
+    // l'utilisateur authentifie et l'appliquer au cahier. Si aucune signature n'est
+    // disponible cote profil, le backend renvoie 400 avec un message explicite.
     this.http.put<any>(endpoint, {}).pipe(
       catchError((error) => {
-        this.messageErreur = error?.error?.message ?? 'La signature a échoué.';
+        this.messageErreur = this.extractErrorMessage(error, 'La signature a échoué.');
         return of(null);
       })
     ).subscribe((updated) => {
       if (updated) {
+        // Rafraichissement immediat de l'etat du document avec la reponse du backend.
         this.cahier = updated;
-        this.messageSucces = 'Journal de bord signé.';
+        this.messageSucces = 'Journal de bord signé avec succès.';
+      } else {
+        // Echec : on recharge depuis le serveur pour eviter d'afficher un etat divergent.
+        this.chargerCahier();
       }
       this.signatureEnCours = false;
     });
+  }
+
+  /**
+   * Extraction robuste du message d'erreur depuis une HttpErrorResponse Angular.
+   * Gere le cas du body { message: ... } renvoye par le GlobalExceptionHandler
+   * ainsi que le cas d'un body texte brut.
+   */
+  private extractErrorMessage(error: any, fallback: string): string {
+    const msg = error?.error?.message;
+    if (typeof msg === 'string' && msg.trim()) return msg.trim();
+    if (typeof error?.error === 'string' && error.error.trim()) return error.error.trim();
+    if (typeof error?.message === 'string' && error.message.trim() && error.status !== 0) {
+      return error.message.trim();
+    }
+    return fallback;
   }
 
   peutSigner(): boolean {

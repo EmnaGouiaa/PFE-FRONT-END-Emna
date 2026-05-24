@@ -4,13 +4,15 @@ import { ServiceDemandeStageService, DemandeStageDTO } from '../services/service
 import { Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule } from '@angular/forms';
+import { PhoneInputComponent } from './phone-input/phone-input.component';
 
 @Component({
   selector: 'app-internship-request-form',
   standalone: true,
   imports: [
     CommonModule,
-    ReactiveFormsModule
+    ReactiveFormsModule,
+    PhoneInputComponent
   ],
   templateUrl: './internship-request-form.component.html',
   styleUrls: ['./internship-request-form.component.css']

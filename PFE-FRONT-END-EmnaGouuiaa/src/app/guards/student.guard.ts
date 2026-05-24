@@ -1,25 +1,38 @@
 import { Injectable } from '@angular/core';
-import { CanActivate, Router } from '@angular/router';
-import { AuthService } from '../services/auth.service';
+import { CanActivate, Router, UrlTree } from '@angular/router';
+import { Observable, map, take } from 'rxjs';
+import { AuthentificationService, RoleUtilisateur } from '../services/authentification.service';
 
-@Injectable({
-  providedIn: 'root'
-})
+/**
+ * Garde d'accès réservé aux stagiaires.
+ * Utilise AuthentificationService (source de vérité) et les routes françaises.
+ */
+@Injectable({ providedIn: 'root' })
 export class StudentGuard implements CanActivate {
-  constructor(private authService: AuthService, private router: Router) {}
+  constructor(
+    private serviceAuthentification: AuthentificationService,
+    private router: Router
+  ) {}
 
-  canActivate(): boolean {
-    if (!this.authService.isLoggedIn() || this.authService.isTokenExpired()) {
-      this.router.navigate(['/login']);
-      return false;
-    }
+  canActivate(): Observable<boolean | UrlTree> {
+    return this.serviceAuthentification.estAuthentifie$.pipe(
+      take(1),
+      map((estAuthentifie) => {
+        if (!estAuthentifie) {
+          return this.router.createUrlTree(['/connexion']);
+        }
 
-    const userRole = this.authService.getUserRole();
-    if (userRole !== 'STAGIAIRE' || userRole === null) {
-      this.router.navigate(['/unauthorized']);
-      return false;
-    }
+        if (this.serviceAuthentification.doitChangerMotDePasse()) {
+          return this.router.createUrlTree(['/premiere-connexion']);
+        }
 
-    return true;
+        const role = this.serviceAuthentification.getRoleUtilisateur();
+        if (role !== RoleUtilisateur.STAGIAIRE) {
+          return this.router.createUrlTree(['/non-autorise']);
+        }
+
+        return true;
+      })
+    );
   }
 }

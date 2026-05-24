@@ -69,7 +69,7 @@ export class CompanyInternshipsPageComponent implements OnInit {
 
         const entrepriseId = context.responsable.entrepriseId;
         if (!entrepriseId) {
-          this.errorMessage = 'Aucune entreprise n’est rattachée à ce compte.';
+          this.errorMessage = "Aucune entreprise n'est rattachée à ce compte.";
           this.isLoading = false;
           return;
         }
@@ -218,7 +218,7 @@ export class CompanyInternshipsPageComponent implements OnInit {
         this.loadInternships();
       },
       error: (error) => {
-        this.errorMessage = error?.error?.message ?? 'Impossible d’affecter cet encadrant professionnel.';
+        this.errorMessage = error?.error?.message ?? "Impossible d'affecter cet encadrant professionnel.";
         this.isAssigningSupervisor = false;
       }
     });

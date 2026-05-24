@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { Observable, of, throwError } from 'rxjs';
-import { catchError, map, shareReplay, switchMap } from 'rxjs/operators';
-import { AuthentificationService } from '../authentification.service';
+import { catchError, distinctUntilChanged, map, shareReplay, switchMap } from 'rxjs/operators';
+import { AuthentificationService, RoleUtilisateur } from '../authentification.service';
 import { EntreprisesService } from '../entreprises.service';
 import { ResponsablesEntrepriseService, ResponsableEntreprise } from '../responsables-entreprise.service';
 import { CompanyContext } from './company.models';
@@ -14,14 +14,30 @@ export class CompanyContextService {
     private authService: AuthentificationService,
     private responsablesEntrepriseService: ResponsablesEntrepriseService,
     private entreprisesService: EntreprisesService
-  ) {}
+  ) {
+    // Clear the cached context whenever the logged-in user changes (login / logout / role switch).
+    // Without this, a singleton cache built for user A would be reused for user B after re-login
+    // without a full page reload, causing wrong entrepriseId values in every API call.
+    this.authService.utilisateurActuel$
+      .pipe(distinctUntilChanged((a, b) => a?.userId === b?.userId))
+      .subscribe(() => {
+        this.context$ = undefined;
+      });
+  }
 
   getContext(forceRefresh = false): Observable<CompanyContext> {
     if (!this.context$ || forceRefresh) {
       this.context$ = this.loadContext().pipe(shareReplay(1));
     }
 
-    return this.context$;
+    // Wrap in catchError so that a failed (cached) observable clears itself,
+    // allowing the next call to retry instead of replaying the same error.
+    return this.context$.pipe(
+      catchError((err) => {
+        this.context$ = undefined;
+        return throwError(() => err);
+      })
+    );
   }
 
   refresh(): Observable<CompanyContext> {
@@ -30,6 +46,15 @@ export class CompanyContextService {
   }
 
   private loadContext(): Observable<CompanyContext> {
+    const role = this.authService.getRoleUtilisateur();
+    if (role && role !== RoleUtilisateur.RESPONSABLE_ENTREPRISE) {
+      return throwError(
+        () => new Error(
+          `Accès refusé : cette section est réservée aux représentants d'entreprise (rôle actuel : ${role}).`
+        )
+      );
+    }
+
     const userId = this.authService.getUserId();
     const email = (this.authService.getEmail() ?? '').trim().toLowerCase();
 
@@ -73,7 +98,7 @@ export class CompanyContextService {
         );
 
         if (!responsable) {
-          throw new Error(`Aucun responsable d’entreprise ne correspond à ${email}.`);
+          throw new Error(`Aucun responsable d'entreprise ne correspond à ${email}.`);
         }
 
         return responsable;

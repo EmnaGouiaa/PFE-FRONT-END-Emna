@@ -138,7 +138,7 @@ export class CurrentUserProfileService {
     return fallback;
   }
 
-  private toPatchBody(payload: CurrentUserProfileUpdateRequest): CurrentUserProfileUpdateRequest {
+  private toPatchBody(payload: CurrentUserProfileUpdateRequest): Record<string, unknown> {
     return {
       prenom: this.normalizeOptionalString(payload.prenom),
       nom: this.normalizeOptionalString(payload.nom),
@@ -147,7 +147,11 @@ export class CurrentUserProfileService {
       poste: this.normalizeOptionalString(payload.poste),
       service: this.normalizeOptionalString(payload.service),
       specialite: this.normalizeOptionalString(payload.specialite),
-      nomFichierSignature: this.normalizeOptionalString(payload.nomFichierSignature)
+      // Le backend (UpdateProfileRequest) attend le champ "urlSignature".
+      // On envoie la valeur brute (y compris '') pour qu'une chaîne vide efface la signature.
+      urlSignature: typeof payload.nomFichierSignature === 'string'
+        ? payload.nomFichierSignature.trim()
+        : undefined
     };
   }
 
@@ -174,7 +178,8 @@ export class CurrentUserProfileService {
       filiereNom: String(profile?.filiereNom ?? ''),
       niveau: this.normalizeNumber(profile?.niveau),
       actif: Boolean(profile?.actif ?? true),
-      nomFichierSignature: String(profile?.nomFichierSignature ?? this.getCachedSignature() ?? '')
+      // Le backend renvoie "urlSignature" ; "nomFichierSignature" est gardé comme repli legacy.
+      nomFichierSignature: String(profile?.urlSignature ?? profile?.nomFichierSignature ?? this.getCachedSignature() ?? '')
     };
   }
 

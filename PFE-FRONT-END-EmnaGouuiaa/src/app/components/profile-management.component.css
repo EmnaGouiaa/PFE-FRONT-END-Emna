@@ -109,6 +109,78 @@
   font-weight: 700;
 }
 
+/* ── Signature upload zone ───────────────────────────────────────────── */
+
+.sig-upload-zone {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 110px;
+  border: 2px dashed var(--border-color, #cbd5e1);
+  border-radius: 10px;
+  background: #f8fafc;
+  cursor: pointer;
+  transition: border-color 0.2s, background 0.2s;
+  overflow: hidden;
+}
+
+.sig-upload-zone:hover {
+  border-color: var(--primary-color, #1e3a5f);
+  background: #f1f5f9;
+}
+
+.sig-upload-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 1rem;
+  color: var(--text-muted, #64748b);
+  font-size: 0.9rem;
+  text-align: center;
+}
+
+.sig-upload-icon {
+  font-size: 1.8rem;
+  line-height: 1;
+}
+
+.sig-upload-hint {
+  font-size: 0.78rem;
+  opacity: 0.7;
+}
+
+.sig-preview-edit {
+  max-width: 100%;
+  max-height: 120px;
+  object-fit: contain;
+  padding: 0.5rem;
+}
+
+.sig-preview-readonly {
+  max-width: 260px;
+  max-height: 100px;
+  object-fit: contain;
+  border: 1px solid var(--border-color, #e2e8f0);
+  border-radius: 8px;
+  padding: 0.4rem;
+  background: #fafafa;
+}
+
+.sig-empty {
+  color: var(--text-muted, #64748b);
+  font-size: 0.9rem;
+  font-style: italic;
+}
+
+.sig-remove-btn {
+  margin-top: 0.5rem;
+  font-size: 0.85rem;
+  padding: 0.35rem 0.85rem;
+}
+
+/* ── Responsive ─────────────────────────────────────────────────────── */
+
 @media (max-width: 1024px) {
   .profile-grid {
     grid-template-columns: 1fr;

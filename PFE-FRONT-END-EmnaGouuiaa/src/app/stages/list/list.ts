@@ -24,6 +24,9 @@ export class List implements OnInit {
   conventionSelectionnee: ConventionStage | null = null;
   chargementConvention = false;
 
+  ficheEvaluation: any | null = null;
+  chargementFiche = false;
+
   chargement = false;
   messageErreur = '';
   recherche = '';
@@ -48,7 +51,7 @@ export class List implements OnInit {
     if (!url) {
       this.stages = [];
       this.stagesFiltres = [];
-      this.messageErreur = 'Impossible de déterminer le rôle ou l’identifiant utilisateur.';
+      this.messageErreur = "Impossible de déterminer le rôle ou l'identifiant utilisateur.";
       this.chargement = false;
       return;
     }
@@ -65,6 +68,7 @@ export class List implements OnInit {
 
       if (this.stageSelectionne) {
         this.chargerConvention(this.stageSelectionne.id);
+        this.chargerFicheEvaluation(this.stageSelectionne.id);
       }
 
       this.appliquerFiltre();
@@ -99,6 +103,60 @@ export class List implements OnInit {
   selectionner(stage: any): void {
     this.stageSelectionne = stage;
     this.chargerConvention(stage?.id);
+    this.chargerFicheEvaluation(stage?.id);
+  }
+
+  private chargerFicheEvaluation(stageId: number): void {
+    const id = Number(stageId);
+    if (!Number.isFinite(id) || id <= 0) {
+      this.ficheEvaluation = null;
+      return;
+    }
+
+    this.chargementFiche = true;
+    this.ficheEvaluation = null;
+
+    this.http.get<any>(`${API_BASE_URL}/fiches-evaluation/stage/${id}`).pipe(
+      catchError(() => of(null))
+    ).subscribe((fiche) => {
+      this.ficheEvaluation = fiche ?? null;
+      this.chargementFiche = false;
+    });
+  }
+
+  get ficheGeneree(): boolean {
+    return this.ficheEvaluation != null;
+  }
+
+  get epSigne(): boolean {
+    return !!this.ficheEvaluation?.dateSignatureEncadrantProfessionnel;
+  }
+
+  get reSigne(): boolean {
+    return !!this.ficheEvaluation?.dateSignatureRepresentantEntreprise;
+  }
+
+  /** Convention button is hidden for RESPONSABLE_STAGE — they manage the process but do not need to view the PDF from this page. */
+  get peutVoirConvention(): boolean {
+    return this.auth.getRoleUtilisateur() !== RoleUtilisateur.RESPONSABLE_STAGE;
+  }
+
+  nomStagiaire(stage: any): string {
+    const s = stage?.stagiaire;
+    if (!s) return '-';
+    return `${s.prenom ?? ''} ${s.nom ?? ''}`.trim() || '-';
+  }
+
+  get nomStagiaireSelectionne(): string {
+    return this.nomStagiaire(this.stageSelectionne);
+  }
+
+  get stageEnCoursDateDepassee(): boolean {
+    if (!this.stageSelectionne) return false;
+    if (this.stageSelectionne.statut !== 'EN_COURS') return false;
+    const dateFin: string | null = this.stageSelectionne.dateFin;
+    if (!dateFin) return false;
+    return new Date(dateFin) <= new Date();
   }
 
   private chargerConvention(stageId: number): void {
@@ -137,8 +195,7 @@ export class List implements OnInit {
       case RoleUtilisateur.ENCADRANT_PROFESSIONNEL:
         return userId ? `${API_BASE_URL}/stages/encadrant-professionnel/${userId}` : null;
       case RoleUtilisateur.ADMINISTRATEUR:
-      case RoleUtilisateur.RESPONSABLE_SERVICE_STAGES:
-      case RoleUtilisateur.RESPONSABLE_UNIVERSITAIRE_STAGES:
+      case RoleUtilisateur.RESPONSABLE_STAGE:
         return `${API_BASE_URL}/stages`;
       default:
         return `${API_BASE_URL}/stages`;

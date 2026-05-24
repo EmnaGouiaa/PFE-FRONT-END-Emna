@@ -10,10 +10,8 @@ export enum RoleUtilisateur {
   ENCADRANT_ACADEMIQUE = 'ENCADRANT_ACADEMIQUE',
   ENCADRANT_PROFESSIONNEL = 'ENCADRANT_PROFESSIONNEL',
   RESPONSABLE_ENTREPRISE = 'RESPONSABLE_ENTREPRISE',
-  RESPONSABLE_SERVICE_STAGES = 'RESPONSABLE_SERVICE_STAGES',
-  // Present in routes/admin UI; keep for backward compatibility.
-  AGENT_STAGE = 'AGENT_STAGE',
-  RESPONSABLE_UNIVERSITAIRE_STAGES = 'RESPONSABLE_UNIVERSITAIRE_STAGES'
+  RESPONSABLE_STAGE = 'RESPONSABLE_STAGE',
+  AGENT_STAGE = 'AGENT_STAGE'
 }
 
 export interface RequeteAuthentification {
@@ -196,8 +194,7 @@ export class AuthentificationService {
 
   estResponsableStages(role: RoleUtilisateur | null = this.getRoleUtilisateur()): boolean {
     return (
-      role === RoleUtilisateur.RESPONSABLE_SERVICE_STAGES ||
-      role === RoleUtilisateur.RESPONSABLE_UNIVERSITAIRE_STAGES
+      role === RoleUtilisateur.RESPONSABLE_STAGE
     );
   }
 
@@ -211,9 +208,7 @@ export class AuthentificationService {
         return '/encadrant-professionnel/tableau-de-bord';
       case RoleUtilisateur.ENCADRANT_ACADEMIQUE:
         return '/encadrant-academique/tableau-de-bord';
-      case RoleUtilisateur.RESPONSABLE_SERVICE_STAGES:
-        return '/admin/demandes-stage';
-      case RoleUtilisateur.RESPONSABLE_UNIVERSITAIRE_STAGES:
+      case RoleUtilisateur.RESPONSABLE_STAGE:
         return '/responsable/tableau-de-bord';
       case RoleUtilisateur.RESPONSABLE_ENTREPRISE:
         return '/entreprise/tableau-de-bord';
@@ -244,7 +239,7 @@ export class AuthentificationService {
     }
 
     if (!roleDepuisToken) {
-      console.warn('⚠️ Impossible d’extraire un rôle depuis le token JWT. Vérifiez les claims (role/roles/authorities).');
+      console.warn("⚠️ Impossible d'extraire un rôle depuis le token JWT. Vérifiez les claims (role/roles/authorities).");
     }
 
     localStorage.setItem(this.cleToken, reponse.token);

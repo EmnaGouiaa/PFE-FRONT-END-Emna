@@ -199,6 +199,22 @@ export class TeacherDashboard implements OnInit {
     return full || '-';
   }
 
+  getStageTitre(stage: StageBackend): string {
+    return stage?.titre || `Stage #${stage?.id}`;
+  }
+
+  getStageSujet(stage: StageBackend): string {
+    return stage?.sujet || 'Sujet non renseigné';
+  }
+
+  getStagiaireEmail(stage: StageBackend): string {
+    return stage?.stagiaire?.email || '-';
+  }
+
+  getEntrepriseNom(stage: StageBackend): string {
+    return stage?.entreprise?.nom || '-';
+  }
+
   statutSujetLabel(statutSujet: StageSujetStatus | null | undefined): string {
     switch (String(statutSujet ?? '')) {
       case 'EN_ATTENTE':

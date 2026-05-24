@@ -1,10 +1,20 @@
 <div class="company-page">
   <header class="page-hero">
     <div>
-      <h1>Fiche d’évaluation</h1>
+      <h1>Fiche d'évaluation</h1>
       <p *ngIf="stageId">Stage #{{ stageId }}</p>
     </div>
     <div class="hero-actions">
+      <button
+        *ngIf="evaluation"
+        type="button"
+        class="btn btn-primary pdf-btn"
+        (click)="telechargerPdf()"
+        [disabled]="telechargementEnCours"
+      >
+        <span *ngIf="telechargementEnCours">Génération en cours…</span>
+        <span *ngIf="!telechargementEnCours">Télécharger PDF</span>
+      </button>
       <button type="button" class="btn btn-secondary" (click)="recharger()" [disabled]="chargement">
         Actualiser
       </button>
@@ -13,55 +23,179 @@
   </header>
 
   <div *ngIf="messageErreur" class="alert alert-error">{{ messageErreur }}</div>
-  <div *ngIf="chargement" class="loading">Chargement de l’évaluation…</div>
+  <div *ngIf="chargement" class="loading">Chargement de l'évaluation…</div>
 
   <section class="content-grid" *ngIf="!chargement">
+
+    <!-- Aucune fiche -->
     <article class="panel" *ngIf="!evaluation">
-      <div class="empty-card">Aucune fiche d’évaluation disponible pour ce stage.</div>
+      <div class="empty-card">Aucune fiche d'évaluation disponible pour ce stage.</div>
     </article>
 
-    <article class="panel" *ngIf="evaluation">
-      <div class="panel-header">
-        <div>
-          <h2>Détails</h2>
-          <div class="panel-subtitle">{{ evaluation.stageTitre || ('Stage #' + evaluation.stageId) }}</div>
+    <ng-container *ngIf="evaluation">
+
+      <!-- Statut global -->
+      <article class="panel status-panel">
+        <div class="panel-header">
+          <div>
+            <h2>{{ evaluation.stageTitre || ('Stage #' + evaluation.stageId) }}</h2>
+            <div class="panel-subtitle">{{ evaluation.entrepriseNom || '' }}</div>
+          </div>
+          <span class="badge" [class.badge-success]="evaluation.verrouillee" [class.badge-warning]="!evaluation.verrouillee">
+            {{ evaluation.verrouillee ? 'Verrouillée' : 'En cours' }}
+          </span>
         </div>
+
+        <div class="detail-grid">
+          <div class="detail-item">
+            <span class="label">Stagiaire</span>
+            <span class="value">{{ evaluation.stagiaireNomComplet || '—' }}</span>
+          </div>
+          <div class="detail-item">
+            <span class="label">Section</span>
+            <span class="value">{{ evaluation.sectionStagiaire || '—' }}</span>
+          </div>
+          <div class="detail-item">
+            <span class="label">Note finale</span>
+            <span class="value note-finale">{{ evaluation.noteFinale != null ? (evaluation.noteFinale | number:'1.2-2') + ' / 20' : '—' }}</span>
+          </div>
+          <div class="detail-item">
+            <span class="label">Signatures complètes</span>
+            <span class="value">{{ evaluation.signaturesCompletes ? 'Oui' : 'Non' }}</span>
+          </div>
+          <div class="detail-item">
+            <span class="label">Données complètes</span>
+            <span class="value">{{ evaluation.donneesCompletes ? 'Oui' : 'Non' }}</span>
+          </div>
+          <div class="detail-item">
+            <span class="label">Réunion finale</span>
+            <span class="value">{{ evaluation.reunionFinaleNumero || '—' }}
+              {{ evaluation.reunionFinaleDate ? ' — ' + formatDate(evaluation.reunionFinaleDate) : '' }}
+            </span>
+          </div>
+        </div>
+      </article>
+
+      <!-- Blocs évaluateurs -->
+      <div class="two-col-grid">
+
+        <!-- Encadrant Professionnel -->
+        <article class="panel evaluateur-panel ep-panel">
+          <div class="evaluateur-header ep-header">
+            <h3>Encadrant Professionnel</h3>
+          </div>
+          <div class="evaluateur-body">
+            <div class="eval-section">
+              <div class="eval-label">Points forts</div>
+              <div class="eval-text">{{ evaluation.pointFortEncadrantPro || '—' }}</div>
+            </div>
+            <div class="eval-section">
+              <div class="eval-label">Axes d'amélioration</div>
+              <div class="eval-text">{{ evaluation.axeAmeliorationEncadrantPro || '—' }}</div>
+            </div>
+            <div class="sig-zone" [class.signed]="evaluation.signatureEncadrantProfessionnel">
+              <div *ngIf="evaluation.signatureEncadrantProfessionnel; else epUnsigned">
+                <div class="sig-name">{{ evaluation.nomSignataireEncadrantProfessionnel || '—' }}</div>
+                <div class="sig-role">Encadrant Professionnel</div>
+                <div class="sig-date">Signé le {{ formatDateTime(evaluation.dateSignatureEncadrantProfessionnel) }}</div>
+              </div>
+              <ng-template #epUnsigned>
+                <div class="sig-pending">En attente de signature</div>
+              </ng-template>
+            </div>
+          </div>
+        </article>
+
+        <!-- Responsable Entreprise -->
+        <article class="panel evaluateur-panel re-panel">
+          <div class="evaluateur-header re-header">
+            <h3>Responsable Entreprise</h3>
+          </div>
+          <div class="evaluateur-body">
+            <div class="eval-section">
+              <div class="eval-label">Points forts</div>
+              <div class="eval-text">{{ evaluation.pointFortResponsableEntreprise || '—' }}</div>
+            </div>
+            <div class="eval-section">
+              <div class="eval-label">Axes d'amélioration</div>
+              <div class="eval-text">{{ evaluation.axeAmeliorationResponsableEntreprise || '—' }}</div>
+            </div>
+            <div class="sig-zone" [class.signed]="evaluation.signatureRepresentantEntreprise">
+              <div *ngIf="evaluation.signatureRepresentantEntreprise; else reUnsigned">
+                <div class="sig-name">{{ evaluation.nomSignataireRepresentantEntreprise || '—' }}</div>
+                <div class="sig-role">Responsable Entreprise</div>
+                <div class="sig-date">Signé le {{ formatDateTime(evaluation.dateSignatureRepresentantEntreprise) }}</div>
+              </div>
+              <ng-template #reUnsigned>
+                <div class="sig-pending">En attente de signature</div>
+              </ng-template>
+            </div>
+          </div>
+        </article>
+
       </div>
 
-      <div class="detail-grid">
-        <div class="detail-item">
-          <span class="label">Note finale</span>
-          <span class="value">{{ evaluation.noteFinale ?? '—' }}</span>
+      <!-- Tableau des notes -->
+      <article class="panel" *ngIf="evaluation.notesAttribuees?.length">
+        <div class="panel-header">
+          <h2>Notes attribuées</h2>
         </div>
-        <div class="detail-item">
-          <span class="label">Complète</span>
-          <span class="value">{{ evaluation.complete ? 'Oui' : 'Non' }}</span>
+        <div class="table-wrapper">
+          <table class="notes-table">
+            <thead>
+              <tr>
+                <th class="col-critere">Critère évalué</th>
+                <th class="col-center">Note obtenue</th>
+                <th class="col-center">Barème</th>
+                <th class="col-center">Coefficient</th>
+                <th class="col-center">Score pondéré</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let note of evaluation.notesAttribuees; let i = index" [class.row-alt]="i % 2 === 1">
+                <td>{{ note.critereLibelle || '—' }}</td>
+                <td class="col-center note-val">{{ note.note ?? '—' }}</td>
+                <td class="col-center">{{ note.bareme ?? 5 }}</td>
+                <td class="col-center">{{ note.poids ?? '—' }}</td>
+                <td class="col-center score-val">
+                  {{ note.scorePondere != null ? (note.scorePondere | number:'1.2-2') : '—' }}
+                </td>
+              </tr>
+            </tbody>
+            <tfoot>
+              <tr class="note-finale-row">
+                <td colspan="4" class="note-finale-label">NOTE FINALE (Somme des scores pondérés)</td>
+                <td class="col-center note-finale-val">
+                  {{ evaluation.noteFinale != null ? (evaluation.noteFinale | number:'1.2-2') + ' / 20' : '—' }}
+                </td>
+              </tr>
+            </tfoot>
+          </table>
         </div>
-        <div class="detail-item">
-          <span class="label">Verrouillée</span>
-          <span class="value">{{ evaluation.verrouillee ? 'Oui' : 'Non' }}</span>
-        </div>
-        <div class="detail-item">
-          <span class="label">Signatures complètes</span>
-          <span class="value">{{ evaluation.signaturesCompletes ? 'Oui' : 'Non' }}</span>
-        </div>
-      </div>
+      </article>
 
-      <div class="detail-card">
-        <div class="info-title">Encadrant professionnel</div>
-        <div class="info-meta"><strong>Points forts :</strong> {{ evaluation.pointFortEncadrantPro || '—' }}</div>
-        <div class="info-meta"><strong>Axes d’amélioration :</strong> {{ evaluation.axeAmeliorationEncadrantPro || '—' }}</div>
-        <div class="info-meta"><strong>Signature :</strong> {{ evaluation.signatureEncadrantProfessionnel ? 'Présente' : 'Absente' }}</div>
-        <div class="info-meta"><strong>Date :</strong> {{ formatDateTime(evaluation.dateSignatureEncadrantProfessionnel) }}</div>
-      </div>
+      <!-- Echelle de notation -->
+      <article class="panel echelle-panel">
+        <div class="panel-header"><h2>Échelle de notation</h2></div>
+        <div class="echelle-grid">
+          <div class="echelle-item"><span class="echelle-note">1</span><span class="echelle-label">Très insuffisant</span></div>
+          <div class="echelle-item"><span class="echelle-note">2</span><span class="echelle-label">Insuffisant</span></div>
+          <div class="echelle-item"><span class="echelle-note">3</span><span class="echelle-label">Satisfaisant</span></div>
+          <div class="echelle-item"><span class="echelle-note">4</span><span class="echelle-label">Bien</span></div>
+          <div class="echelle-item"><span class="echelle-note">5</span><span class="echelle-label">Excellent</span></div>
+        </div>
+      </article>
 
-      <div class="detail-card">
-        <div class="info-title">Responsable entreprise</div>
-        <div class="info-meta"><strong>Points forts :</strong> {{ evaluation.pointFortResponsableEntreprise || '—' }}</div>
-        <div class="info-meta"><strong>Axes d’amélioration :</strong> {{ evaluation.axeAmeliorationResponsableEntreprise || '—' }}</div>
-        <div class="info-meta"><strong>Signature :</strong> {{ evaluation.signatureRepresentantEntreprise ? 'Présente' : 'Absente' }}</div>
-        <div class="info-meta"><strong>Date :</strong> {{ formatDateTime(evaluation.dateSignatureRepresentantEntreprise) }}</div>
-      </div>
-    </article>
+      <!-- Notice verrouillage -->
+      <p class="lock-notice" [class.locked]="evaluation.verrouillee">
+        <ng-container *ngIf="evaluation.verrouillee">
+          La fiche est verrouillée — les deux signatures sont complètes.
+        </ng-container>
+        <ng-container *ngIf="!evaluation.verrouillee">
+          La fiche est verrouillée lorsque les signatures sont complètes.
+        </ng-container>
+      </p>
+
+    </ng-container>
   </section>
 </div>

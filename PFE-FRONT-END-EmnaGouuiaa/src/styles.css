@@ -328,7 +328,10 @@ a {
 }
 
 .admin-content .actions {
-  white-space: nowrap;
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
 }
 
 .admin-content .cell-title {
@@ -359,11 +362,13 @@ a {
 .admin-content .modal-content {
   width: 100%;
   max-width: 640px;
+  max-height: calc(100dvh - 48px);
+  overflow-y: auto;
+  overflow-x: hidden;
   background: rgba(255, 255, 255, 0.96);
   border: 1px solid rgba(255, 255, 255, 0.65);
   border-radius: 28px;
   box-shadow: var(--shadow-lg);
-  overflow: hidden;
 }
 
 .admin-content .modal-header {
@@ -438,6 +443,7 @@ a {
   display: flex;
   justify-content: flex-end;
   gap: 12px;
+  flex-wrap: wrap;
   margin-top: 8px;
   padding-top: 18px;
   border-top: 1px solid rgba(16, 71, 120, 0.08);
@@ -481,10 +487,10 @@ a {
     align-items: stretch;
   }
 
-  .admin-content .input,
-  .admin-content .select,
-  .admin-content .btn {
+  .admin-content .filters .input,
+  .admin-content .filters .select {
     width: 100%;
+    min-width: 0;
   }
 }
 
@@ -498,18 +504,41 @@ a {
   }
 
   .admin-content .modal-overlay {
-    padding: 16px;
+    padding: 12px;
+    align-items: flex-end;
   }
 
   .admin-content .modal,
   .admin-content .modal-content {
-    border-radius: 22px;
+    max-height: calc(100dvh - 24px);
+    border-radius: 22px 22px 10px 10px;
+    max-width: 100%;
   }
 
   .admin-content .modal-header,
   .admin-content .form,
   .admin-content .user-form {
-    padding-left: 18px;
-    padding-right: 18px;
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+
+  .admin-content .form-actions {
+    flex-direction: column-reverse;
+    align-items: stretch;
+  }
+
+  .admin-content .btn-cancel,
+  .admin-content .btn-submit {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .admin-content .actions {
+    gap: 6px;
+  }
+
+  .admin-content .actions .btn {
+    padding: 0 12px;
+    font-size: 0.84rem;
   }
 }

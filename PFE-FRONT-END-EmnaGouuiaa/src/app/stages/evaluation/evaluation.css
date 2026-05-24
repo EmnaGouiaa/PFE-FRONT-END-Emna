@@ -1,0 +1,215 @@
+/* ── Variables ──────────────────────────────────────────────────────────── */
+:host {
+  --blue-dark:  #1a3a6e;
+  --blue-mid:   #2980b9;
+  --blue-light: #d6e5f5;
+  --blue-bg:    #ebf5ff;
+  --yellow:     #f39c12;
+  --green:      #27ae60;
+  --gray-text:  #2c3e50;
+  --gray-bg:    #f5f5f5;
+}
+
+/* ── Bouton PDF ─────────────────────────────────────────────────────────── */
+.pdf-btn {
+  background: var(--blue-dark);
+  color: #fff;
+  border: none;
+  padding: 0.5rem 1.2rem;
+  border-radius: 6px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.pdf-btn:hover:not(:disabled) { background: var(--blue-mid); }
+.pdf-btn:disabled { opacity: 0.65; cursor: not-allowed; }
+
+/* ── Statut badge ───────────────────────────────────────────────────────── */
+.badge {
+  display: inline-block;
+  padding: 0.3rem 0.85rem;
+  border-radius: 20px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.badge-success { background: #e8f5e9; color: var(--green); border: 1px solid var(--green); }
+.badge-warning { background: #fff8e1; color: #e67e22; border: 1px solid #e67e22; }
+
+/* ── Note finale highlight ──────────────────────────────────────────────── */
+.note-finale {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--blue-dark);
+}
+
+/* ── Deux colonnes évaluateurs ──────────────────────────────────────────── */
+.two-col-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+@media (max-width: 768px) {
+  .two-col-grid { grid-template-columns: 1fr; }
+}
+
+/* ── Blocs évaluateurs ──────────────────────────────────────────────────── */
+.evaluateur-panel { padding: 0; overflow: hidden; }
+
+.evaluateur-header {
+  padding: 0.7rem 1rem;
+  color: #fff;
+}
+.evaluateur-header h3 {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+.ep-header { background: var(--blue-dark); }
+.re-header { background: var(--blue-mid);  }
+
+.evaluateur-body { padding: 1rem; }
+
+.eval-section { margin-bottom: 0.9rem; }
+.eval-label {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--blue-dark);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-bottom: 0.35rem;
+}
+.eval-text {
+  background: var(--blue-bg);
+  border: 1px solid var(--blue-light);
+  border-radius: 5px;
+  padding: 0.55rem 0.75rem;
+  font-size: 0.88rem;
+  color: var(--gray-text);
+  min-height: 2.5rem;
+}
+
+/* Zone signature */
+.sig-zone {
+  margin-top: 0.8rem;
+  border: 1.5px dashed var(--blue-mid);
+  border-radius: 6px;
+  padding: 0.7rem 1rem;
+  background: var(--gray-bg);
+  text-align: center;
+  min-height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.sig-zone.signed {
+  border-style: solid;
+  border-color: var(--green);
+  background: #f0faf3;
+}
+.sig-name   { font-weight: 700; font-size: 0.9rem; color: var(--gray-text); }
+.sig-role   { font-size: 0.78rem; color: var(--blue-mid); font-style: italic; margin: 2px 0; }
+.sig-date   { font-size: 0.75rem; color: #888; }
+.sig-pending { font-style: italic; font-size: 0.82rem; color: var(--blue-mid); }
+
+/* ── Tableau des notes ──────────────────────────────────────────────────── */
+.table-wrapper { overflow-x: auto; }
+
+.notes-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.88rem;
+}
+.notes-table thead tr {
+  background: var(--blue-dark);
+  color: #fff;
+}
+.notes-table th {
+  padding: 0.6rem 0.75rem;
+  font-weight: 700;
+  font-size: 0.82rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  border: 1px solid rgba(255,255,255,0.2);
+}
+.notes-table td {
+  padding: 0.55rem 0.75rem;
+  border: 1px solid var(--blue-light);
+  color: var(--gray-text);
+}
+.notes-table .row-alt td { background: #f1f8ff; }
+.col-critere { width: 38%; }
+.col-center  { text-align: center; }
+.note-val    { font-weight: 700; color: var(--blue-dark); }
+.score-val   { font-weight: 700; color: var(--blue-mid); }
+
+/* Pied de tableau — note finale */
+.notes-table tfoot tr { background: var(--blue-dark); color: #fff; }
+.note-finale-label {
+  padding: 0.65rem 0.75rem;
+  font-weight: 700;
+  font-size: 0.85rem;
+  text-align: right;
+  letter-spacing: 0.02em;
+}
+.note-finale-val {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--yellow);
+  text-align: center;
+  padding: 0.65rem 0.75rem;
+}
+
+/* ── Echelle ────────────────────────────────────────────────────────────── */
+.echelle-panel { padding: 1rem 1.2rem; }
+.echelle-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  margin-top: 0.5rem;
+}
+.echelle-item {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  background: var(--blue-bg);
+  border: 1px solid var(--blue-light);
+  border-radius: 6px;
+  padding: 0.4rem 0.8rem;
+}
+.echelle-note {
+  font-weight: 700;
+  color: var(--blue-dark);
+  font-size: 0.95rem;
+  min-width: 1rem;
+  text-align: center;
+}
+.echelle-label {
+  font-size: 0.82rem;
+  color: var(--gray-text);
+}
+
+/* ── Notice verrouillage ────────────────────────────────────────────────── */
+.lock-notice {
+  text-align: center;
+  font-size: 0.82rem;
+  font-style: italic;
+  color: var(--blue-mid);
+  margin: 0.5rem 0 1rem;
+}
+.lock-notice.locked {
+  color: var(--green);
+  font-style: normal;
+  font-weight: 600;
+}
+
+/* ── Panel statut ───────────────────────────────────────────────────────── */
+.status-panel .panel-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}

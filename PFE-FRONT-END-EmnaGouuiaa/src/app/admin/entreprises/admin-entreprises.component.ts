@@ -8,14 +8,20 @@ import {
   AdminCompanyAccountRequest,
   AdminCompanyAccountsService
 } from '../../services/admin-company-accounts.service';
+import {
+  EncadrantsProfessionnelsService,
+  EncadrantProfessionnel,
+  CreateEncadrantRequest
+} from '../../services/encadrants-professionnels.service';
 import { phoneValidator, strictEmailValidator } from '../admin-form-validators';
+import { PhoneInputComponent } from '../../components/phone-input/phone-input.component';
 
 type FieldErrors = Record<string, string>;
 
 @Component({
   selector: 'app-admin-entreprises',
   standalone: true,
-  imports: [CommonModule, FormsModule, ReactiveFormsModule, MatSnackBarModule],
+  imports: [CommonModule, FormsModule, ReactiveFormsModule, MatSnackBarModule, PhoneInputComponent],
   templateUrl: './admin-entreprises.component.html',
   styleUrls: ['./admin-entreprises.component.css']
 })
@@ -35,6 +41,22 @@ export class AdminEntreprisesComponent implements OnInit {
   formSubmitAttempted = false;
   fieldErrors: FieldErrors = {};
 
+  // ── Detail view ──────────────────────────────────────────────────────────────
+  detailAccount: AdminCompanyAccount | null = null;
+
+  // ── Encadrant management ─────────────────────────────────────────────────────
+  encadrants: EncadrantProfessionnel[] = [];
+  isLoadingEncadrants = false;
+  showEncadrantForm = false;
+  isEditEncadrantMode = false;
+  editingEncadrantId: number | null = null;
+  isSubmittingEncadrant = false;
+  encadrantForm!: FormGroup;
+  encadrantFormSubmitAttempted = false;
+  encadrantFieldErrors: FieldErrors = {};
+  encadrantErrorMessage = '';
+  encadrantSuccessMessage = '';
+
   get linkedRepresentativeCount(): number {
     return this.companyAccounts.filter((item) => item.representantId !== null).length;
   }
@@ -45,6 +67,7 @@ export class AdminEntreprisesComponent implements OnInit {
 
   constructor(
     private service: AdminCompanyAccountsService,
+    private encadrantsService: EncadrantsProfessionnelsService,
     private fb: FormBuilder,
     private snackBar: MatSnackBar
   ) {}
@@ -61,6 +84,16 @@ export class AdminEntreprisesComponent implements OnInit {
       emailResponsable: ['', [Validators.required, strictEmailValidator()]],
       telephoneResponsable: ['', [phoneValidator()]]
     });
+
+    this.encadrantForm = this.fb.group({
+      nom: ['', [Validators.required, Validators.minLength(2)]],
+      prenom: ['', [Validators.required, Validators.minLength(2)]],
+      email: ['', [Validators.required, strictEmailValidator()]],
+      telephone: ['', [phoneValidator()]],
+      poste: [''],
+      service: ['']
+    });
+
     this.load();
   }
 
@@ -299,6 +332,10 @@ export class AdminEntreprisesComponent implements OnInit {
               'Entreprise et representant mis a jour avec succes.'
             );
             this.upsertCompanyAccountInState(updatedAccount);
+            // Sync detail view if it's the same account
+            if (this.detailAccount?.entrepriseId === updatedAccount.entrepriseId) {
+              this.detailAccount = { ...updatedAccount };
+            }
             this.snackBar.open(this.successMessage, 'Fermer', { duration: 3500 });
             this.closeForm();
           } finally {
@@ -347,6 +384,197 @@ export class AdminEntreprisesComponent implements OnInit {
 
     const control = this.form.get(fieldName);
     if (!control || !(control.touched || this.formSubmitAttempted)) {
+      return '';
+    }
+
+    if (control.errors?.['required']) return 'Ce champ est obligatoire.';
+    if (control.errors?.['minlength']) return 'Minimum 2 caracteres.';
+    if (control.errors?.['missingAt']) return "L'email doit contenir @.";
+    if (control.errors?.['email']) return 'Format email invalide.';
+    if (control.errors?.['phone']) return 'Numero de telephone invalide.';
+
+    return '';
+  }
+
+  // ── Detail view ──────────────────────────────────────────────────────────────
+
+  selectEntreprise(account: AdminCompanyAccount): void {
+    this.detailAccount = { ...account };
+    this.encadrants = [];
+    this.encadrantErrorMessage = '';
+    this.encadrantSuccessMessage = '';
+    this.showEncadrantForm = false;
+    this.loadEncadrants();
+  }
+
+  backToList(): void {
+    this.detailAccount = null;
+    this.encadrants = [];
+    this.showEncadrantForm = false;
+    this.encadrantErrorMessage = '';
+    this.encadrantSuccessMessage = '';
+    this.encadrantForm?.reset();
+  }
+
+  // ── Encadrant management ─────────────────────────────────────────────────────
+
+  loadEncadrants(): void {
+    if (!this.detailAccount) return;
+    this.isLoadingEncadrants = true;
+    this.encadrantErrorMessage = '';
+
+    this.encadrantsService.listByEntreprise(this.detailAccount.entrepriseId).pipe(
+      timeout(15000)
+    ).subscribe({
+      next: (items) => {
+        this.encadrants = items ?? [];
+        this.isLoadingEncadrants = false;
+      },
+      error: (err) => {
+        const status: number = err?.status ?? 0;
+        if (status === 403) {
+          this.encadrantErrorMessage = 'Acces refuse (403) — permissions insuffisantes pour charger les encadrants.';
+        } else if (status === 404) {
+          this.encadrantErrorMessage = 'Entreprise introuvable (404) — impossible de charger les encadrants.';
+        } else if (status === 0) {
+          this.encadrantErrorMessage = 'Serveur injoignable — verifiez que le backend est en cours d\'execution.';
+        } else {
+          this.encadrantErrorMessage = this.extractErrorMessage(
+            err,
+            `Echec du chargement des encadrants (HTTP ${status || '?'}).`
+          );
+        }
+        this.isLoadingEncadrants = false;
+      }
+    });
+  }
+
+  openAddEncadrant(): void {
+    this.isEditEncadrantMode = false;
+    this.editingEncadrantId = null;
+    this.showEncadrantForm = true;
+    this.encadrantFormSubmitAttempted = false;
+    this.encadrantFieldErrors = {};
+    this.encadrantErrorMessage = '';
+    this.encadrantSuccessMessage = '';
+    this.encadrantForm.reset({ nom: '', prenom: '', email: '', telephone: '', poste: '', service: '' });
+  }
+
+  openEditEncadrant(enc: EncadrantProfessionnel): void {
+    this.isEditEncadrantMode = true;
+    this.editingEncadrantId = enc.id;
+    this.showEncadrantForm = true;
+    this.encadrantFormSubmitAttempted = false;
+    this.encadrantFieldErrors = {};
+    this.encadrantErrorMessage = '';
+    this.encadrantSuccessMessage = '';
+    this.encadrantForm.reset({
+      nom: enc.nom ?? '',
+      prenom: enc.prenom ?? '',
+      email: enc.email ?? '',
+      telephone: enc.telephone ?? '',
+      poste: enc.poste ?? '',
+      service: enc.service ?? ''
+    });
+  }
+
+  closeEncadrantForm(): void {
+    this.showEncadrantForm = false;
+    this.isEditEncadrantMode = false;
+    this.editingEncadrantId = null;
+    this.encadrantFormSubmitAttempted = false;
+    this.encadrantFieldErrors = {};
+    this.encadrantForm.reset();
+  }
+
+  submitEncadrant(): void {
+    this.encadrantFormSubmitAttempted = true;
+    this.encadrantErrorMessage = '';
+    this.encadrantSuccessMessage = '';
+
+    if (this.encadrantForm.invalid) {
+      this.encadrantForm.markAllAsTouched();
+      this.encadrantErrorMessage = 'Verifiez les champs obligatoires avant de continuer.';
+      return;
+    }
+
+    if (!this.detailAccount) return;
+
+    this.isSubmittingEncadrant = true;
+    const value = this.encadrantForm.getRawValue();
+    const dto: CreateEncadrantRequest = {
+      nom: String(value.nom ?? '').trim(),
+      prenom: String(value.prenom ?? '').trim(),
+      email: String(value.email ?? '').trim(),
+      telephone: String(value.telephone ?? '').trim(),
+      poste: String(value.poste ?? '').trim(),
+      service: String(value.service ?? '').trim()
+    };
+
+    const entrepriseId = this.detailAccount.entrepriseId;
+
+    if (this.isEditEncadrantMode && this.editingEncadrantId !== null) {
+      this.encadrantsService.updateForEntreprise(entrepriseId, this.editingEncadrantId, dto).pipe(
+        timeout(15000)
+      ).subscribe({
+        next: (updated) => {
+          try {
+            const index = this.encadrants.findIndex((e) => e.id === updated.id);
+            if (index >= 0) {
+              const next = [...this.encadrants];
+              next[index] = updated;
+              this.encadrants = next;
+            }
+            this.encadrantSuccessMessage = 'Encadrant mis a jour avec succes.';
+            this.snackBar.open(this.encadrantSuccessMessage, 'Fermer', { duration: 3500 });
+            this.closeEncadrantForm();
+          } finally {
+            this.isSubmittingEncadrant = false;
+          }
+        },
+        error: (err) => {
+          try {
+            this.encadrantErrorMessage = this.extractErrorMessage(err, "Echec de la mise a jour de l'encadrant.");
+            this.snackBar.open(this.encadrantErrorMessage, 'Fermer', { duration: 4500 });
+          } finally {
+            this.isSubmittingEncadrant = false;
+          }
+        }
+      });
+      return;
+    }
+
+    this.encadrantsService.createForEntreprise(entrepriseId, dto).pipe(
+      timeout(15000)
+    ).subscribe({
+      next: (created) => {
+        try {
+          this.encadrants = [created, ...this.encadrants];
+          this.encadrantSuccessMessage = 'Encadrant cree avec succes.';
+          this.snackBar.open(this.encadrantSuccessMessage, 'Fermer', { duration: 3500 });
+          this.closeEncadrantForm();
+        } finally {
+          this.isSubmittingEncadrant = false;
+        }
+      },
+      error: (err) => {
+        try {
+          this.encadrantErrorMessage = this.extractErrorMessage(err, "Echec de la creation de l'encadrant.");
+          this.snackBar.open(this.encadrantErrorMessage, 'Fermer', { duration: 4500 });
+        } finally {
+          this.isSubmittingEncadrant = false;
+        }
+      }
+    });
+  }
+
+  getEncadrantFieldError(fieldName: string): string {
+    if (this.encadrantFieldErrors[fieldName]) {
+      return this.encadrantFieldErrors[fieldName];
+    }
+
+    const control = this.encadrantForm.get(fieldName);
+    if (!control || !(control.touched || this.encadrantFormSubmitAttempted)) {
       return '';
     }
 

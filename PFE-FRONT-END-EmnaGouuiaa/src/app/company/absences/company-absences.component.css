@@ -1,0 +1,329 @@
+/* ── Grille de stages ────────────────────────────────────────────────────── */
+
+.stages-grid {
+  display: grid;
+  gap: 1.5rem;
+}
+
+/* ── Carte par stage ─────────────────────────────────────────────────────── */
+
+.stage-card {
+  display: grid;
+  gap: 1.1rem;
+}
+
+.stage-card__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.stage-card__title {
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: #0f172a;
+}
+
+.stage-card__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.45rem;
+}
+
+.stage-card__actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-shrink: 0;
+}
+
+/* ── Meta chips ──────────────────────────────────────────────────────────── */
+
+.meta-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #475569;
+  background: rgba(15, 23, 42, 0.05);
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  padding: 0.2rem 0.65rem;
+  border-radius: 999px;
+}
+
+.meta-chip--stat {
+  background: rgba(26, 58, 110, 0.08);
+  border-color: rgba(26, 58, 110, 0.16);
+  color: #1a3a6e;
+  font-weight: 700;
+}
+
+.meta-icon {
+  width: 13px;
+  height: 13px;
+  flex-shrink: 0;
+}
+
+/* ── Bouton déclarer ─────────────────────────────────────────────────────── */
+
+.btn-declarer {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  white-space: nowrap;
+}
+
+/* ── Tableau des absences ────────────────────────────────────────────────── */
+
+.absence-table-wrap {
+  overflow-x: auto;
+  border-radius: 16px;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+}
+
+.absence-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+.absence-table thead tr {
+  background: linear-gradient(180deg, #f1f5f9 0%, #e8edf5 100%);
+}
+
+.absence-table th {
+  padding: 0.7rem 1rem;
+  text-align: left;
+  font-size: 0.75rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #475569;
+  border-bottom: 1px solid rgba(15, 23, 42, 0.08);
+  white-space: nowrap;
+}
+
+.absence-table td {
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid rgba(15, 23, 42, 0.05);
+  vertical-align: middle;
+  color: #334155;
+}
+
+.absence-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.absence-table tbody tr:hover td {
+  background: rgba(99, 102, 241, 0.03);
+}
+
+.cell-date {
+  font-weight: 700;
+  color: #1e293b;
+  white-space: nowrap;
+}
+
+.cell-nb {
+  white-space: nowrap;
+}
+
+.heures-badge {
+  display: inline-block;
+  padding: 0.15rem 0.6rem;
+  background: rgba(26, 58, 110, 0.1);
+  color: #1a3a6e;
+  border-radius: 999px;
+  font-weight: 800;
+  font-size: 0.82rem;
+}
+
+.cell-comment {
+  max-width: 240px;
+  color: #64748b;
+  font-size: 0.86rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.col-actions {
+  width: 1%;
+}
+
+.cell-actions {
+  display: flex;
+  gap: 0.4rem;
+  align-items: center;
+  white-space: nowrap;
+}
+
+/* ── Boutons icône ───────────────────────────────────────────────────────── */
+
+.btn-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+
+.btn-icon--edit {
+  background: rgba(41, 128, 185, 0.08);
+  border-color: rgba(41, 128, 185, 0.18);
+  color: #2980b9;
+}
+
+.btn-icon--edit:hover {
+  background: rgba(41, 128, 185, 0.18);
+  border-color: rgba(41, 128, 185, 0.32);
+}
+
+.btn-icon--delete {
+  background: rgba(220, 38, 38, 0.07);
+  border-color: rgba(220, 38, 38, 0.15);
+  color: #dc2626;
+}
+
+.btn-icon--delete:hover {
+  background: rgba(220, 38, 38, 0.14);
+  border-color: rgba(220, 38, 38, 0.28);
+}
+
+/* ── Badge refused (non justifiée) ──────────────────────────────────────── */
+
+.badge-refused {
+  color: #9f1239;
+  background: rgba(220, 38, 38, 0.09);
+  border-color: rgba(220, 38, 38, 0.18);
+}
+
+/* ── État vide par stage ─────────────────────────────────────────────────── */
+
+.empty-stage-absences {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1rem 1.2rem;
+  border-radius: 14px;
+  background: #f8fafc;
+  border: 1px dashed rgba(15, 23, 42, 0.12);
+  color: #94a3b8;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.empty-stage-absences svg {
+  flex-shrink: 0;
+  opacity: 0.45;
+}
+
+/* ── Pagination ──────────────────────────────────────────────────────────── */
+
+.pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  padding: 0.75rem 1rem;
+  border-top: 1px solid rgba(15, 23, 42, 0.06);
+}
+
+.page-btn {
+  min-width: 34px;
+  height: 34px;
+  padding: 0 0.55rem;
+  border-radius: 10px;
+  border: 1px solid rgba(15, 23, 42, 0.1);
+  background: #fff;
+  color: #475569;
+  font-size: 0.85rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+
+.page-btn:hover:not(:disabled) {
+  background: rgba(26, 58, 110, 0.06);
+  border-color: rgba(26, 58, 110, 0.2);
+  color: #1a3a6e;
+}
+
+.page-btn--active {
+  background: #1a3a6e;
+  border-color: #1a3a6e;
+  color: #fff;
+}
+
+.page-btn--active:hover {
+  background: #1a3a6e !important;
+  color: #fff !important;
+}
+
+.page-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+/* ── Sous-titre du modal ─────────────────────────────────────────────────── */
+
+.modal-subtitle {
+  margin: 4px 0 0;
+  font-size: 0.88rem;
+  color: #64748b;
+  font-weight: 500;
+}
+
+/* ── Validation errors ───────────────────────────────────────────────────── */
+
+.validation-errors {
+  padding: 0.75rem 1rem;
+  border-radius: 12px;
+  background: rgba(220, 38, 38, 0.07);
+  border: 1px solid rgba(220, 38, 38, 0.18);
+  color: #9f1239;
+}
+
+.validation-errors ul {
+  margin: 0;
+  padding: 0 0 0 1.2rem;
+}
+
+.validation-errors li {
+  font-size: 0.88rem;
+  font-weight: 600;
+  line-height: 1.6;
+}
+
+/* ── Responsive ──────────────────────────────────────────────────────────── */
+
+@media (max-width: 768px) {
+  .stage-card__header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .btn-declarer {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .cell-comment {
+    display: none;
+  }
+}
+
+@media (max-width: 480px) {
+  .absence-table th:nth-child(3),
+  .absence-table td:nth-child(3) {
+    display: none;
+  }
+}

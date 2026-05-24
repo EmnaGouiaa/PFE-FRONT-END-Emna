@@ -1,7 +1,7 @@
 .admin-validation-container {
   padding: 24px;
   background: #f8fafc;
-  min-height: calc(100vh - 64px);
+  min-height: calc(100dvh - 64px);
 }
 
 .header {
@@ -22,7 +22,7 @@
 
 .table-container {
   border-radius: 12px;
-  overflow: hidden;
+  overflow-x: auto;
   background: white;
 }
 

@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable } from 'rxjs';
-import { map, tap } from 'rxjs/operators';
+import { forkJoin, Observable, of } from 'rxjs';
+import { catchError, map, tap } from 'rxjs/operators';
 import { API_BASE_URL } from '../api.config';
 import {
   FacultyAcademicSupervisor,
@@ -16,7 +16,8 @@ import {
   FacultyOffer,
   FacultyReport,
   FacultyStudentAssignment,
-  FacultyUserRef
+  FacultyUserRef,
+  StatutDocument
 } from './faculty.models';
 
 @Injectable({ providedIn: 'root' })
@@ -25,6 +26,7 @@ export class FacultyPortalService {
   private readonly studentsUrl = `${API_BASE_URL}/stagiaires`;
   private readonly supervisorsUrl = `${API_BASE_URL}/encadrants-academiques`;
   private readonly meetingsUrl = `${API_BASE_URL}/reunions`;
+  private readonly weeklyMeetingsUrl = `${API_BASE_URL}/reunions-hebdomadaires`;
   private readonly finalMeetingsUrl = `${API_BASE_URL}/reunions-finales`;
   private readonly agreementsUrl = `${API_BASE_URL}/conventions-stage`;
   private readonly evaluationsUrl = `${API_BASE_URL}/fiches-evaluation`;
@@ -118,7 +120,6 @@ export class FacultyPortalService {
   }
 
   updateFinalMeetingFormUrls(meetingId: number, payload: {
-    urlFormEvaluation: string | null;
     urlFormSatisfaction: string | null;
     titreEnqueteSatisfaction?: string | null;
     descriptionEnqueteSatisfaction?: string | null;
@@ -170,6 +171,46 @@ export class FacultyPortalService {
 
   getReportByStage(stageId: number): Observable<FacultyReport> {
     return this.http.get<any>(`${this.reportsUrl}/stage/${stageId}`).pipe(map((item) => this.normalizeReport(item)));
+  }
+
+  /** Fetches all meetings (weekly + final) for a stage, sorted by date. */
+  listMeetingsForStage(stageId: number): Observable<FacultyMeeting[]> {
+    return forkJoin([
+      this.http.get<any>(`${this.weeklyMeetingsUrl}/stage/${stageId}`).pipe(
+        map((response) => this.extractCollection(response).map((item) => this.normalizeMeeting(item, 'HEBDOMADAIRE'))),
+        catchError(() => of([] as FacultyMeeting[]))
+      ),
+      this.http.get<any>(`${this.finalMeetingsUrl}/stage/${stageId}`).pipe(
+        map((response) => this.extractCollection(response).map((item) => this.normalizeMeeting(item, 'FINALE'))),
+        catchError(() => of([] as FacultyMeeting[]))
+      )
+    ]).pipe(
+      map(([weekly, finale]) => [...weekly, ...finale].sort((a, b) => a.date.localeCompare(b.date)))
+    );
+  }
+
+  /** Fetches the data-URI signature stored in a user profile.
+   *  Returns an empty string on any error (graceful degradation). */
+  getUserSignature(userId: number | null): Observable<string> {
+    if (!userId) return of('');
+    return this.http.get<any>(`${API_BASE_URL}/utilisateurs/${userId}`).pipe(
+      map((raw) => String(raw?.urlSignature ?? raw?.nomFichierSignature ?? '')),
+      catchError(() => of(''))
+    );
+  }
+
+  /** Fetches absences for a given internship stage.
+   *  Returns an empty array on any error (graceful degradation). */
+  getAbsencesForStage(stageId: number): Observable<{ dateAbsence: string; nbAbsence: number; justification: string; statut: string }[]> {
+    return this.http.get<any[]>(`${API_BASE_URL}/absences/stage/${stageId}`).pipe(
+      map((items) => (items ?? []).map((item) => ({
+        dateAbsence: String(item?.dateAbsence ?? ''),
+        nbAbsence: Number(item?.nbAbsence ?? 1),
+        justification: String(item?.justification ?? ''),
+        statut: String(item?.statut ?? '')
+      }))),
+      catchError(() => of([]))
+    );
   }
 
   listStageDocuments(): Observable<FacultyStageDocumentsOverview[]> {
@@ -324,7 +365,6 @@ export class FacultyPortalService {
       companyName: String(raw?.entrepriseNom ?? ''),
       participantIds: Array.isArray(raw?.participantIds) ? raw.participantIds.map((item: unknown) => Number(item)) : [],
       note: this.normalizeNullableNumber(raw?.note),
-      urlFormEvaluation: String(raw?.urlFormEvaluation ?? ''),
       urlFormSatisfaction: String(raw?.urlFormSatisfaction ?? ''),
       titreEnqueteSatisfaction: String(raw?.titreEnqueteSatisfaction ?? ''),
       descriptionEnqueteSatisfaction: String(raw?.descriptionEnqueteSatisfaction ?? '')
@@ -359,11 +399,13 @@ export class FacultyPortalService {
   }
 
   private normalizeAgreement(raw: any): FacultyAgreement {
+    const dateDebut = String(raw?.dateDebut ?? '');
     return {
       id: Number(raw?.id ?? 0),
       numConv: this.normalizeNullableNumber(raw?.numConv),
-      dateDebut: String(raw?.dateDebut ?? ''),
+      dateDebut,
       dateFin: String(raw?.dateFin ?? ''),
+      anneeUniversitaire: this.computeAnneeUniversitaire(dateDebut),
       signeeEncAca: Boolean(raw?.signeeEncAca),
       signeeEncPro: Boolean(raw?.signeeEncPro),
       signeeEntreprise: Boolean(raw?.signeeEntreprise),
@@ -375,6 +417,15 @@ export class FacultyPortalService {
       stageTitre: String(raw?.stageTitre ?? ''),
       demandeStageId: this.normalizeNullableNumber(raw?.demandeStageId)
     };
+  }
+
+  private computeAnneeUniversitaire(dateDebut: string): string {
+    if (!dateDebut) return '';
+    const d = new Date(dateDebut);
+    if (isNaN(d.getTime())) return '';
+    const year = d.getFullYear();
+    const month = d.getMonth() + 1;
+    return month >= 9 ? `${year}/${year + 1}` : `${year - 1}/${year}`;
   }
 
   private normalizeEvaluation(raw: any): FacultyEvaluation {
@@ -419,6 +470,8 @@ export class FacultyPortalService {
       stageId: Number(raw?.stageId ?? 0),
       stageTitre: String(raw?.stageTitre ?? ''),
       stageStatut: String(raw?.stageStatut ?? ''),
+      dateDebut: String(raw?.dateDebut ?? ''),
+      dateFin: String(raw?.dateFin ?? ''),
       stagiaireNom: String(raw?.stagiaireNom ?? ''),
       entrepriseNom: String(raw?.entrepriseNom ?? ''),
       encadrantAcademiqueNom: String(raw?.encadrantAcademiqueNom ?? ''),
@@ -444,7 +497,8 @@ export class FacultyPortalService {
       statut: String(raw?.statut ?? ''),
       raisonAbsence: String(raw?.raisonAbsence ?? ''),
       signeeParResponsableUniversitaire: Boolean(raw?.signeeParResponsableUniversitaire),
-      dateSignatureResponsableUniversitaire: String(raw?.dateSignatureResponsableUniversitaire ?? '')
+      dateSignatureResponsableUniversitaire: String(raw?.dateSignatureResponsableUniversitaire ?? ''),
+      statutDocument: (raw?.statutDocument ?? null) as StatutDocument | null
     };
   }
 

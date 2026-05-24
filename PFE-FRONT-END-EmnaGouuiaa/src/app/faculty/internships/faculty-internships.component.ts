@@ -165,24 +165,8 @@ import { FacultyAgreement, FacultyInternship } from '../../services/faculty/facu
               <div class="info-meta" *ngIf="!selectedInternship.trelloBoardUrl">
                 Aucun tableau Trello lié à ce stage.
               </div>
-              <div class="info-meta" *ngIf="progressEntries.length === 0 && !detailLoading">
-                Aucun résumé de progression supplémentaire renvoyé par l'API.
-              </div>
-              <div class="info-meta" *ngIf="detailLoading">Chargement du suivi détaillé...</div>
-              <div class="info-meta" *ngFor="let entry of progressEntries">{{ entry.key }}: {{ entry.value }}</div>
             </div>
 
-            <div class="detail-card">
-              <div class="info-title">Résumé du rapport généré</div>
-              <div class="info-meta" *ngIf="reportEntries.length === 0 && !detailLoading">
-                L'API ne renvoie pas encore de résumé exploitable pour ce stage.
-              </div>
-              <div class="info-meta" *ngFor="let entry of reportEntries">{{ entry.key }}: {{ entry.value }}</div>
-            </div>
-
-            <div class="inline-actions" *ngIf="selectedAgreement">
-              <a class="btn btn-secondary" [routerLink]="['/stages/convention', selectedAgreement.id]">Afficher la convention</a>
-            </div>
           </div>
         </article>
       </section>
@@ -203,8 +187,6 @@ export class FacultyInternshipsPageComponent implements OnInit {
   searchQuery = '';
   statusFilter = 'ALL';
   supervisorFilter = 'ALL';
-  progressEntries: Array<{ key: string; value: string }> = [];
-  reportEntries: Array<{ key: string; value: string }> = [];
 
   constructor(private facultyPortalService: FacultyPortalService) {}
 
@@ -280,33 +262,16 @@ export class FacultyInternshipsPageComponent implements OnInit {
 
   private loadInternshipDetails(stageId: number): void {
     this.detailLoading = true;
-    this.progressEntries = [];
-    this.reportEntries = [];
 
     this.facultyPortalService.getInternshipById(stageId).subscribe({
       next: (item) => {
         this.selectedInternship = item;
+        this.detailLoading = false;
+      },
+      error: () => {
+        this.detailLoading = false;
       }
     });
-
-    this.facultyPortalService.getStageProgressSummary(stageId).pipe(
-      catchError(() => of({}))
-    ).subscribe((summary) => {
-      this.progressEntries = this.objectEntries(summary);
-    });
-
-    this.facultyPortalService.getStageReportSummary(stageId).pipe(
-      catchError(() => of({}))
-    ).subscribe((summary) => {
-      this.reportEntries = this.objectEntries(summary);
-      this.detailLoading = false;
-    });
-  }
-
-  private objectEntries(data: Record<string, unknown>): Array<{ key: string; value: string }> {
-    return Object.entries(data ?? {})
-      .filter(([, value]) => value !== null && value !== undefined && `${value}`.trim().length > 0)
-      .map(([key, value]) => ({ key, value: Array.isArray(value) ? value.join(', ') : String(value) }));
   }
 
   private extractErrorMessage(error: any, fallback: string): string {

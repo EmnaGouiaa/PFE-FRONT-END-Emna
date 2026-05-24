@@ -12,7 +12,7 @@ import { SatisfactionSurvey, SatisfactionSurveyService } from '../../services/sa
       <header class="page-hero">
         <div>
           <h1>Enquête de satisfaction</h1>
-          <p>Préparez l’enquête générale qui sera proposée aux acteurs concernés le jour de leur réunion finale.</p>
+          <p>Préparez l'enquête générale qui sera proposée aux acteurs concernés le jour de leur réunion finale.</p>
           <div class="hero-badges">
             <span class="hero-badge">Enquête générale</span>
             <span class="hero-badge">Formulaire externe</span>
@@ -27,14 +27,14 @@ import { SatisfactionSurvey, SatisfactionSurveyService } from '../../services/sa
 
       <div *ngIf="successMessage" class="alert alert-success">{{ successMessage }}</div>
       <div *ngIf="errorMessage" class="alert alert-error">{{ errorMessage }}</div>
-      <div *ngIf="isLoading" class="loading">Chargement de l’enquête de satisfaction...</div>
+      <div *ngIf="isLoading" class="loading">Chargement de l'enquête de satisfaction...</div>
 
       <section class="content-grid single-form-grid" *ngIf="!isLoading">
         <article class="panel">
           <div class="panel-header">
             <div>
-              <h2>Configuration de l’enquête</h2>
-              <div class="panel-subtitle">Une seule enquête est enregistrée pour toute l’application.</div>
+              <h2>Configuration de l'enquête</h2>
+              <div class="panel-subtitle">Une seule enquête est enregistrée pour toute l'application.</div>
             </div>
             <span class="status-pill" [class.status-positive]="isConfigured" [class.status-neutral]="!isConfigured">
               {{ isConfigured ? 'Configurée' : 'Non configurée' }}
@@ -44,7 +44,7 @@ import { SatisfactionSurvey, SatisfactionSurveyService } from '../../services/sa
           <form class="stack" (ngSubmit)="saveSurvey()">
             <div class="form-grid">
               <div class="full-width">
-                <label for="titre-satisfaction">Titre de l’enquête</label>
+                <label for="titre-satisfaction">Titre de l'enquête</label>
                 <input
                   id="titre-satisfaction"
                   name="titre"
@@ -65,7 +65,7 @@ import { SatisfactionSurvey, SatisfactionSurveyService } from '../../services/sa
                   class="textarea"
                   rows="5"
                   [(ngModel)]="draft.description"
-                  placeholder="Expliquez brièvement l’objectif de l’enquête."
+                  placeholder="Expliquez brièvement l'objectif de l'enquête."
                   [disabled]="isSaving"
                 ></textarea>
                 <div *ngIf="validationErrors.description" class="field-error">{{ validationErrors.description }}</div>
@@ -88,7 +88,7 @@ import { SatisfactionSurvey, SatisfactionSurveyService } from '../../services/sa
 
             <div class="inline-actions">
               <button type="submit" class="btn btn-primary" [disabled]="isSaving">
-                {{ isSaving ? 'Enregistrement...' : (isConfigured ? 'Modifier l’enquête' : 'Enregistrer l’enquête') }}
+                {{ isSaving ? 'Enregistrement...' : (isConfigured ? "Modifier l'enquête" : "Enregistrer l'enquête") }}
               </button>
               <button type="button" class="btn btn-secondary" (click)="resetDraft()" [disabled]="isSaving">
                 Réinitialiser
@@ -103,16 +103,16 @@ import { SatisfactionSurvey, SatisfactionSurveyService } from '../../services/sa
         <article class="panel">
           <div class="panel-header">
             <div>
-              <h2>Règle d’affichage</h2>
-              <div class="panel-subtitle">Cette enquête n’est pas liée à une réunion finale précise.</div>
+              <h2>Règle d'affichage</h2>
+              <div class="panel-subtitle">Cette enquête n'est pas liée à une réunion finale précise.</div>
             </div>
           </div>
 
           <div class="detail-card">
             <div class="info-title">Disponibilité automatique</div>
-            <div class="info-meta">L’enquête apparaît uniquement dans le dashboard de l’utilisateur concerné le jour de sa réunion finale.</div>
-            <div class="info-meta">La comparaison est faite côté backend sur la date système, sans tenir compte de l’heure.</div>
-            <div class="info-meta">Aucun formulaire de réponse interne n’est créé dans l’application.</div>
+            <div class="info-meta">L'enquête apparaît uniquement dans le dashboard de l'utilisateur concerné le jour de sa réunion finale.</div>
+            <div class="info-meta">La comparaison est faite côté backend sur la date système, sans tenir compte de l'heure.</div>
+            <div class="info-meta">Aucun formulaire de réponse interne n'est créé dans l'application.</div>
           </div>
         </article>
       </section>
@@ -181,7 +181,7 @@ export class FacultyFinalMeetingFormsPageComponent implements OnInit {
         this.isLoading = false;
       },
       error: (error) => {
-        this.errorMessage = this.extractErrorMessage(error, 'Impossible de charger l’enquête de satisfaction.');
+        this.errorMessage = this.extractErrorMessage(error, "Impossible de charger l'enquête de satisfaction.");
         this.isLoading = false;
       }
     });
@@ -206,15 +206,15 @@ export class FacultyFinalMeetingFormsPageComponent implements OnInit {
     const urlFormulaire = this.normalizeRequiredUrl(this.draft.urlFormulaire);
 
     if (!titre) {
-      this.validationErrors.titre = 'Le titre de l’enquête est obligatoire.';
+      this.validationErrors.titre = "Le titre de l'enquête est obligatoire.";
     }
 
     if (!description) {
-      this.validationErrors.description = 'La description de l’enquête est obligatoire.';
+      this.validationErrors.description = "La description de l'enquête est obligatoire.";
     }
 
     if (urlFormulaire === null) {
-      this.validationErrors.urlFormulaire = 'L’URL externe du formulaire est obligatoire.';
+      this.validationErrors.urlFormulaire = "L'URL externe du formulaire est obligatoire.";
     } else if (urlFormulaire === undefined) {
       this.validationErrors.urlFormulaire = 'Veuillez saisir une URL http(s) valide.';
     }
@@ -228,11 +228,11 @@ export class FacultyFinalMeetingFormsPageComponent implements OnInit {
       next: (survey) => {
         this.configuredSurvey = survey;
         this.resetDraft();
-        this.successMessage = 'L’enquête de satisfaction a été enregistrée avec succès.';
+        this.successMessage = "L'enquête de satisfaction a été enregistrée avec succès.";
         this.isSaving = false;
       },
       error: (error) => {
-        this.errorMessage = this.extractErrorMessage(error, 'Impossible d’enregistrer l’enquête de satisfaction.');
+        this.errorMessage = this.extractErrorMessage(error, "Impossible d'enregistrer l'enquête de satisfaction.");
         this.isSaving = false;
       }
     });
@@ -263,7 +263,7 @@ export class FacultyFinalMeetingFormsPageComponent implements OnInit {
   private extractErrorMessage(error: any, fallback: string): string {
     if (error?.status === 401) return 'Session expirée ou non authentifiée.';
     if (error?.status === 403) return 'Accès refusé à cette fonctionnalité.';
-    if (error?.status === 404) return 'API de l’enquête de satisfaction introuvable.';
+    if (error?.status === 404) return "API de l'enquête de satisfaction introuvable.";
     if (typeof error?.error === 'string' && error.error.trim()) return error.error;
     if (typeof error?.error?.message === 'string' && error.error.message.trim()) return error.error.message;
     if (typeof error?.message === 'string' && error.message.trim()) return error.message;

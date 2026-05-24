@@ -37,7 +37,7 @@ export class JwtInterceptor implements HttpInterceptor {
         }
 
         if (erreur.status === 403) {
-          // Important: ne pas transformer l’erreur en message générique, sinon les pages admin ne peuvent
+          // Important: ne pas transformer l'erreur en message générique, sinon les pages admin ne peuvent
           // pas afficher la vraie cause (403 backend) et cela ressemble à un “échec silencieux”.
           console.warn('Accès interdit : permissions insuffisantes');
           return throwError(() => erreur);

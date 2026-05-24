@@ -192,9 +192,8 @@ import { FacultyMeeting } from '../../services/faculty/faculty.models';
             <div class="detail-card" *ngIf="selectedMeeting.source === 'FINALE'">
               <div class="info-title">Informations de la réunion finale</div>
               <div class="info-meta">Note : {{ selectedMeeting.note ?? 'N/D' }}</div>
-              <div class="info-meta">Formulaire d’évaluation : {{ selectedMeeting.urlFormEvaluation || 'Aucun lien défini' }}</div>
               <div class="info-meta">Enquête de satisfaction : {{ selectedMeeting.urlFormSatisfaction || 'Aucun lien défini' }}</div>
-              <div class="info-meta">Titre de l’enquête : {{ selectedMeeting.titreEnqueteSatisfaction || 'Enquête de satisfaction' }}</div>
+              <div class="info-meta">Titre de l'enquête : {{ selectedMeeting.titreEnqueteSatisfaction || 'Enquête de satisfaction' }}</div>
               <div class="info-meta">Description : {{ selectedMeeting.descriptionEnqueteSatisfaction || 'Aucune description définie' }}</div>
             </div>
 

@@ -1,8 +1,13 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
-import { Observable, throwError } from 'rxjs';
+import { Observable, of, throwError } from 'rxjs';
 import { catchError, map } from 'rxjs/operators';
 import { API_BASE_URL } from './api.config';
+
+export interface Filiere {
+    id: number;
+    nom: string;
+}
 
 export interface User {
     id: number;
@@ -13,8 +18,10 @@ export interface User {
     actif: boolean;
     matricule?: string;
     filiere?: string;
+    filiereId?: number | null;
     filiereNom?: string;
-    niveau?: string;
+    /** Niveau d'etude du stagiaire (numerique cote backend, parfois serialise en string). */
+    niveau?: string | number;
     niveauStage?: string;
     grade?: string;
     specialite?: string;
@@ -35,6 +42,12 @@ export interface CreateUserRequest {
     email: string;
     telephone?: string;
     role: string;
+    /** Matricule du stagiaire — saisi uniquement par l'administrateur à la création. */
+    matricule?: string;
+    /** Identifiant de la filière — obligatoire pour un STAGIAIRE. */
+    filiereId?: number;
+    /** Niveau du stagiaire — saisi uniquement par l'administrateur à la création. */
+    niveau?: number;
 }
 
 export interface UpdateUserRequest {
@@ -45,6 +58,10 @@ export interface UpdateUserRequest {
     nomFichierSignature?: string;
     role?: string;
     actif?: boolean;
+    /** Filiere du stagiaire — uniquement transmise lors de la modification d'un STAGIAIRE. */
+    filiereId?: number;
+    /** Niveau d'etude du stagiaire — uniquement transmis lors de la modification d'un STAGIAIRE. */
+    niveau?: number;
 }
 
 
@@ -118,6 +135,7 @@ export class UserManagementService {
             actif,
             matricule: raw?.matricule,
             filiere: raw?.filiere ?? raw?.filiereNom,
+            filiereId: raw?.filiereId != null ? Number(raw.filiereId) : null,
             filiereNom: raw?.filiereNom ?? raw?.filiere,
             niveau: raw?.niveau,
             niveauStage: raw?.niveauStage,
@@ -194,6 +212,39 @@ export class UserManagementService {
 
     activerUser(id: number): Observable<any> {
         return this.http.patch(`${this.API_URL}/${id}/activer`, {});
+    }
+
+    changeUserRole(id: number, role: string): Observable<User> {
+        return this.http.patch<any>(`${this.API_URL}/${id}/role`, { role }).pipe(
+            map((response) => this.normalizeUser(this.unwrapObject<any>(response))),
+            catchError((error: HttpErrorResponse) => throwError(() => error))
+        );
+    }
+
+    /**
+     * Supprime un utilisateur (DELETE /utilisateurs/{id}). Reserve a l'administrateur.
+     * Backend : soft-delete (supprime=true) + anonymisation des champs uniques.
+     * Cote API, la suppression echoue avec un message explicite en cas de contrainte
+     * metier (suppression du propre compte, utilisateur deja supprime, etc.).
+     */
+    deleteUser(id: number): Observable<void> {
+        return this.http.delete<void>(`${this.API_URL}/${id}`).pipe(
+            catchError((error: HttpErrorResponse) => throwError(() => error))
+        );
+    }
+
+    /**
+     * Récupère la liste de toutes les filières disponibles.
+     * Retourne un tableau vide en cas d'erreur réseau.
+     */
+    getFilieres(): Observable<Filiere[]> {
+        return this.http.get<any>(`${API_BASE_URL}/filieres`).pipe(
+            map((res: any) => {
+                const raw: any[] = Array.isArray(res) ? res : (res?.data ?? []);
+                return raw.map((f: any) => ({ id: Number(f.id), nom: String(f.nom ?? '') }));
+            }),
+            catchError(() => of([]))
+        );
     }
 }
 

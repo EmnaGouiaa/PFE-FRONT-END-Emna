@@ -192,7 +192,7 @@ import { AuthService, UserRole, User } from '../../services/auth.service';
       </div>
 
       <!-- Internship Service Dashboard -->
-      <div *ngIf="(userRole$ | async) === 'RESPONSABLE_SERVICE_STAGES' || (userRole$ | async) === 'RESPONSABLE_UNIVERSITAIRE_STAGES'" class="service-dashboard">
+      <div *ngIf="(userRole$ | async) === 'RESPONSABLE_STAGE'" class="service-dashboard">
         <div class="stats-grid">
           <div class="stat-card">
             <h3>{{ (dashboardStats$ | async)?.totalInternships || 0 }}</h3>
@@ -416,8 +416,7 @@ export class RoleBasedDashboard implements OnInit {
               upcomingMeetings: 2,
               averageRating: 4.2
             };
-          case UserRole.RESPONSABLE_SERVICE_STAGES:
-          case UserRole.RESPONSABLE_UNIVERSITAIRE_STAGES:
+          case UserRole.RESPONSABLE_STAGE:
             return {
               totalInternships: 45,
               activeStudents: 38,
@@ -446,8 +445,7 @@ export class RoleBasedDashboard implements OnInit {
       [UserRole.STAGIAIRE]: 'fas fa-user-graduate',
       [UserRole.ENCADRANT_PROFESSIONNEL]: 'fas fa-chalkboard-teacher',
       [UserRole.ENCADRANT_ACADEMIQUE]: 'fas fa-university',
-      [UserRole.RESPONSABLE_SERVICE_STAGES]: 'fas fa-briefcase',
-      [UserRole.RESPONSABLE_UNIVERSITAIRE_STAGES]: 'fas fa-school',
+      [UserRole.RESPONSABLE_STAGE]: 'fas fa-graduation-cap',
       [UserRole.RESPONSABLE_ENTREPRISE]: 'fas fa-building'
     };
     return roleIcons[role] || 'fas fa-user';
@@ -461,8 +459,7 @@ export class RoleBasedDashboard implements OnInit {
       [UserRole.STAGIAIRE]: 'Student',
       [UserRole.ENCADRANT_PROFESSIONNEL]: 'Professional Supervisor',
       [UserRole.ENCADRANT_ACADEMIQUE]: 'Academic Supervisor',
-      [UserRole.RESPONSABLE_SERVICE_STAGES]: 'Internship Service Manager',
-      [UserRole.RESPONSABLE_UNIVERSITAIRE_STAGES]: 'University Internship Manager',
+      [UserRole.RESPONSABLE_STAGE]: 'Responsable des stages',
       [UserRole.RESPONSABLE_ENTREPRISE]: 'Company Manager'
     };
     return roleNames[role] || 'User';

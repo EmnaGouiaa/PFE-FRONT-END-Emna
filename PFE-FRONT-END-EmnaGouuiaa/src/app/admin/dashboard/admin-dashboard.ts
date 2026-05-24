@@ -83,6 +83,40 @@ export class AdminDashboard implements OnInit {
     return !this.isLoading && this.profileCompletionMissingFields.length > 0;
   }
 
+  // ── Display helpers (logic extracted from template) ──────────────────────
+
+  get syncStatusLabel(): string {
+    if (this.isLoading && !this.lastUpdatedAt) return 'Synchronisation…';
+    if (this.lastUpdatedAt) return this.formatShortDate(this.lastUpdatedAt);
+    return 'En attente';
+  }
+
+  get entreprisesStatusChip(): string {
+    if (this.apiStatus.entreprises === 'ok') return `${this.entreprises.active} actives`;
+    if (this.apiStatus.entreprises === 'loading') return 'Chargement…';
+    return 'API indisponible';
+  }
+
+  get usersApiStatusLabel(): string {
+    if (this.apiStatus.users === 'ok') return 'Connectée';
+    if (this.apiStatus.users === 'error') return 'Erreur / indisponible';
+    return 'Connexion…';
+  }
+
+  get entreprisesApiStatusLabel(): string {
+    if (this.apiStatus.entreprises === 'ok') return `${this.entreprises.total} entreprise(s)`;
+    if (this.apiStatus.entreprises === 'error') return 'Erreur / indisponible';
+    return 'Connexion…';
+  }
+
+  get derniereMAJLabel(): string {
+    return this.lastUpdatedAt ? this.formatShortDate(this.lastUpdatedAt) : '-';
+  }
+
+  formatShortDate(date: Date): string {
+    return date.toLocaleString('fr-FR', { dateStyle: 'short', timeStyle: 'short' });
+  }
+
   loadStats(): void {
     console.log('[AdminDashboard] loadStats triggered');
     this.errorMessage = '';
@@ -190,7 +224,7 @@ export class AdminDashboard implements OnInit {
     this.kpis.activeUsers = users.filter((u) => u.actif).length;
     this.kpis.inactiveUsers = users.filter((u) => !u.actif).length;
     this.kpis.admins = roles.filter((r) => r === RoleUtilisateur.ADMINISTRATEUR).length;
-    this.kpis.managers = roles.filter((r) => r === RoleUtilisateur.RESPONSABLE_SERVICE_STAGES).length;
+    this.kpis.managers = roles.filter((r) => r === RoleUtilisateur.RESPONSABLE_STAGE).length;
     this.kpis.entrepriseReps = roles.filter((r) => r === RoleUtilisateur.RESPONSABLE_ENTREPRISE).length;
     this.kpis.activationRate = this.stats.totalUsers > 0
       ? Math.round((this.kpis.activeUsers / this.stats.totalUsers) * 100)
@@ -258,7 +292,7 @@ export class AdminDashboard implements OnInit {
         return 'badge-teacher';
       case RoleUtilisateur.RESPONSABLE_ENTREPRISE:
         return 'badge-company';
-      case RoleUtilisateur.RESPONSABLE_SERVICE_STAGES:
+      case RoleUtilisateur.RESPONSABLE_STAGE:
         return 'badge-manager';
       default:
         return 'badge-default';
@@ -273,7 +307,7 @@ export class AdminDashboard implements OnInit {
       ENCADRANT_ACADEMIQUE: 'Encadrant academique',
       ENCADRANT_PROFESSIONNEL: 'Encadrant professionnel',
       RESPONSABLE_ENTREPRISE: 'Responsable entreprise',
-      RESPONSABLE_SERVICE_STAGES: 'Responsable service stages'
+      RESPONSABLE_STAGE: 'Responsable service stages'
     };
 
     return labels[normalized] || normalized || String(role);

@@ -5,6 +5,7 @@ import { catchError, map } from 'rxjs/operators';
 import { API_BASE_URL } from '../api.config';
 import { RoleUtilisateur } from '../authentification.service';
 import {
+  EvaluationNoteDto,
   SupervisorAgreement,
   SupervisorEvaluation,
   SupervisorInternship,
@@ -36,7 +37,21 @@ export class SupervisorPortalService {
 
     return this.http
       .get<any[]>(`${this.stagesUrl}/${endpoint}`)
-      .pipe(map((items) => (items ?? []).map((item) => this.normalizeInternship(item))));
+      .pipe(
+        map((items) => (items ?? []).map((item) => this.normalizeInternship(item))),
+        map((internships) => {
+          // Garde-fou : évite que le même stage soit traité deux fois (ce qui
+          // dédoublerait ensuite réunions, documents, évaluations, etc.).
+          const seen = new Set<number>();
+          return internships.filter((internship) => {
+            if (seen.has(internship.id)) {
+              return false;
+            }
+            seen.add(internship.id);
+            return true;
+          });
+        })
+      );
   }
 
   validateSubject(stageId: number): Observable<SupervisorInternship> {
@@ -96,11 +111,33 @@ export class SupervisorPortalService {
       )
     ).pipe(
       map((groups) =>
-        groups
-          .flat()
+        this.dedupeMeetings(groups.flat())
           .sort((a, b) => `${b.date} ${b.heure}`.localeCompare(`${a.date} ${a.heure}`))
       )
     );
+  }
+
+  /**
+   * Supprime les réunions en double. Une réunion finale (ex: "RF-2") peut être
+   * renvoyée à la fois par l'endpoint des réunions hebdomadaires et par celui des
+   * réunions finales, ce qui dédoublait l'historique côté UI.
+   * - Si un numéro de réunion est présent, il identifie la réunion de façon fiable
+   *   (indépendamment de l'endpoint source).
+   * - Sinon on retombe sur la combinaison source/id/date/heure/stage.
+   */
+  private dedupeMeetings(meetings: SupervisorMeeting[]): SupervisorMeeting[] {
+    const seen = new Set<string>();
+    return meetings.filter((meeting) => {
+      const num = (meeting.numReunion ?? '').trim();
+      const key = num
+        ? `num:${num.toUpperCase()}|stage:${meeting.stageId}`
+        : `id:${meeting.source}-${meeting.id}|${meeting.date}|${meeting.heure}|stage:${meeting.stageId}`;
+      if (seen.has(key)) {
+        return false;
+      }
+      seen.add(key);
+      return true;
+    });
   }
 
   saveMeeting(payload: SupervisorMeetingPayload): Observable<SupervisorMeeting> {
@@ -135,9 +172,11 @@ export class SupervisorPortalService {
     return this.http.get<any>(`${this.logbooksUrl}/stage/${stageId}`).pipe(map((item) => this.normalizeLogbook(item)));
   }
 
-  signLogbook(role: SupervisorRole, logbookId: number): Observable<SupervisorLogbook> {
+  signLogbook(role: SupervisorRole, logbookId: number, signatureImage: string): Observable<SupervisorLogbook> {
     const endpoint = role === 'ENCADRANT_ACADEMIQUE' ? 'signer-encadrant-academique' : 'signer-encadrant-professionnel';
-    return this.http.put<any>(`${this.logbooksUrl}/${logbookId}/${endpoint}`, {}).pipe(map((item) => this.normalizeLogbook(item)));
+    return this.http
+      .put<any>(`${this.logbooksUrl}/${logbookId}/${endpoint}`, { signatureImage })
+      .pipe(map((item) => this.normalizeLogbook(item)));
   }
 
   getEvaluationByStage(stageId: number): Observable<SupervisorEvaluation> {
@@ -157,8 +196,47 @@ export class SupervisorPortalService {
     return this.http.patch<any>(`${this.evaluationsUrl}/${id}/signer/${userId}`, {}).pipe(map((item) => this.normalizeEvaluation(item)));
   }
 
+  saveEvaluationNotes(id: number, userId: number, notes: EvaluationNoteDto[]): Observable<SupervisorEvaluation> {
+    return this.http
+      .put<any>(`${this.evaluationsUrl}/${id}/notes/${userId}`, notes)
+      .pipe(map((item) => this.normalizeEvaluation(item)));
+  }
+
   downloadDocument(stageId: number, type: 'convention' | 'fiche-evaluation' | 'cahier-stage'): Observable<Blob> {
     return this.http.get(`${this.stagesUrl}/${stageId}/documents/${type}/pdf`, { responseType: 'blob' });
+  }
+
+  getMeetingsForStage(stageId: number): Observable<SupervisorMeeting[]> {
+    return forkJoin([
+      this.http.get<any[]>(`${this.meetingsUrl}/stage/${stageId}`).pipe(catchError(() => of([]))),
+      this.http.get<any[]>(`${this.finalMeetingsUrl}/stage/${stageId}`).pipe(catchError(() => of([])))
+    ]).pipe(
+      map(([weekly, finale]) =>
+        this.dedupeMeetings(
+          [...(weekly ?? []), ...(finale ?? [])].map((item) => this.normalizeMeeting(item))
+        ).sort((a, b) => a.date.localeCompare(b.date))
+      )
+    );
+  }
+
+  getAbsencesForStage(stageId: number): Observable<{ dateAbsence: string; nbAbsence: number; justification: string; statut: string }[]> {
+    return this.http.get<any[]>(`${API_BASE_URL}/absences/stage/${stageId}`).pipe(
+      map((items) => (items ?? []).map((item) => ({
+        dateAbsence: String(item?.dateAbsence ?? ''),
+        nbAbsence: Number(item?.nbAbsence ?? 1),
+        justification: String(item?.justification ?? ''),
+        statut: String(item?.statut ?? '')
+      }))),
+      catchError(() => of([]))
+    );
+  }
+
+  getUserSignature(userId: number | null): Observable<string> {
+    if (!userId) return of('');
+    return this.http.get<any>(`${API_BASE_URL}/utilisateurs/${userId}`).pipe(
+      map((raw) => String(raw?.urlSignature ?? raw?.nomFichierSignature ?? '')),
+      catchError(() => of(''))
+    );
   }
 
   generateLogbook(stageId: number): Observable<unknown> {
@@ -217,17 +295,18 @@ export class SupervisorPortalService {
       nomEncadrantCreateur: String(raw?.nomEncadrantCreateur ?? ''),
       participantIds: Array.isArray(raw?.participantIds) ? raw.participantIds.map((item: unknown) => Number(item)) : [],
       note: this.normalizeNullableNumber(raw?.note),
-      urlFormEvaluation: String(raw?.urlFormEvaluation ?? ''),
       urlFormSatisfaction: String(raw?.urlFormSatisfaction ?? '')
     };
   }
 
   private normalizeAgreement(raw: any): SupervisorAgreement {
+    const dateDebut = String(raw?.dateDebut ?? '');
     return {
       id: Number(raw?.id ?? 0),
       numConv: this.normalizeNullableNumber(raw?.numConv),
-      dateDebut: String(raw?.dateDebut ?? ''),
+      dateDebut,
       dateFin: String(raw?.dateFin ?? ''),
+      anneeUniversitaire: this.computeAnneeUniversitaire(dateDebut),
       signeeEncAca: Boolean(raw?.signeeEncAca),
       signeeEncPro: Boolean(raw?.signeeEncPro),
       signeeEntreprise: Boolean(raw?.signeeEntreprise),
@@ -238,6 +317,15 @@ export class SupervisorPortalService {
       stageTitre: String(raw?.stageTitre ?? ''),
       demandeStageId: this.normalizeNullableNumber(raw?.demandeStageId)
     };
+  }
+
+  private computeAnneeUniversitaire(dateDebut: string): string {
+    if (!dateDebut) return '';
+    const d = new Date(dateDebut);
+    if (isNaN(d.getTime())) return '';
+    const year = d.getFullYear();
+    const month = d.getMonth() + 1;
+    return month >= 9 ? `${year}/${year + 1}` : `${year - 1}/${year}`;
   }
 
   private normalizeLogbook(raw: any): SupervisorLogbook {
@@ -273,7 +361,20 @@ export class SupervisorPortalService {
       donneesCompletes: Boolean(raw?.donneesCompletes),
       signaturesCompletes: Boolean(raw?.signaturesCompletes),
       complete: Boolean(raw?.complete),
-      verrouillee: Boolean(raw?.verrouillee)
+      verrouillee: Boolean(raw?.verrouillee),
+      notesAttribuees: Array.isArray(raw?.notesAttribuees)
+        ? raw.notesAttribuees.map((n: any) => ({
+            ficheEvaluationId: this.normalizeNullableNumber(n?.ficheEvaluationId),
+            critereEvaluationId: this.normalizeNullableNumber(n?.critereEvaluationId),
+            poids: Number(n?.poids ?? 0),
+            bareme: Number(n?.bareme ?? 5),
+            note: Number(n?.note ?? 0),
+            commentaire: String(n?.commentaire ?? ''),
+            critereLibelle: String(n?.critereLibelle ?? ''),
+            scorePondere: n?.scorePondere != null ? Number(n.scorePondere) : null,
+            evaluee: Boolean(n?.evaluee)
+          }))
+        : []
     };
   }
 
@@ -334,6 +435,7 @@ export class SupervisorPortalService {
   
     const result: any = {
       ...payload,
+      typeReunion: 'HEBDOMADAIRE',
       heure: formattedHeure,
       observation: payload.observation.trim(),
       compteRendu: payload.compteRendu?.trim() || '',

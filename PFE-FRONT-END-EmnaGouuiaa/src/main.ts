@@ -17,5 +17,5 @@ window.addEventListener('unhandledrejection', (event) => {
 bootstrapApplication(App, appConfig)
   .catch((err) => {
     console.error('Bootstrap error:', err);
-    alert(`Échec du démarrage de l’application : ${err.message}`);
+    alert(`Échec du démarrage de l'application : ${err.message}`);
   });

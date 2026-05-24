@@ -54,7 +54,7 @@
                 <div class="cell-sub">{{ stage.sujet || 'Sujet non renseigné' }}</div>
               </td>
               <td>{{ stage.entreprise?.nom || '-' }}</td>
-              <td>{{ stage.stagiaire ? ((stage.stagiaire.prenom || '') + ' ' + (stage.stagiaire.nom || '')).trim() : '-' }}</td>
+              <td>{{ nomStagiaire(stage) }}</td>
               <td>{{ stage.dateDebut || '-' }} → {{ stage.dateFin || '-' }}</td>
               <td><span class="status-pill" [ngClass]="'status-' + (stage.statut || 'neutral')">{{ stage.statut || 'N/D' }}</span></td>
             </tr>
@@ -85,7 +85,7 @@
           </div>
           <div class="detail-item">
             <span class="label">Stagiaire</span>
-            <span class="value">{{ stageSelectionne.stagiaire ? ((stageSelectionne.stagiaire.prenom || '') + ' ' + (stageSelectionne.stagiaire.nom || '')).trim() : '-' }}</span>
+            <span class="value">{{ nomStagiaireSelectionne }}</span>
           </div>
           <div class="detail-item">
             <span class="label">E-mail</span>
@@ -111,15 +111,57 @@
           </div>
         </div>
 
+        <!-- Statut de clôture du stage -->
+        <div class="closure-checklist">
+          <div class="closure-checklist__title">Statut de clôture</div>
+          <div *ngIf="chargementFiche" class="closure-loading">Vérification de la fiche d'évaluation…</div>
+          <ul class="closure-steps" *ngIf="!chargementFiche">
+            <li [class.step-ok]="ficheGeneree" [class.step-pending]="!ficheGeneree">
+              <span class="step-icon">{{ ficheGeneree ? '✓' : '○' }}</span>
+              <span>Fiche d'évaluation générée</span>
+            </li>
+            <li [class.step-ok]="epSigne" [class.step-pending]="!epSigne">
+              <span class="step-icon">{{ epSigne ? '✓' : '○' }}</span>
+              <span>Signature encadrant professionnel
+                <em *ngIf="epSigne" class="step-date">({{ ficheEvaluation.dateSignatureEncadrantProfessionnel | date:'dd/MM/yyyy' }})</em>
+              </span>
+            </li>
+            <li [class.step-ok]="reSigne" [class.step-pending]="!reSigne">
+              <span class="step-icon">{{ reSigne ? '✓' : '○' }}</span>
+              <span>Signature représentant de l'entreprise
+                <em *ngIf="reSigne" class="step-date">({{ ficheEvaluation.dateSignatureRepresentantEntreprise | date:'dd/MM/yyyy' }})</em>
+              </span>
+            </li>
+          </ul>
+          <div class="closure-notice" *ngIf="!chargementFiche && stageEnCoursDateDepassee && !(ficheGeneree && epSigne && reSigne)">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink:0;margin-top:1px">
+              <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+            </svg>
+            La date de fin du stage est dépassée. Le stage restera <strong>EN_COURS</strong> jusqu'à la signature complète de la fiche d'évaluation.
+          </div>
+        </div>
+
         <div class="inline-actions">
-          <a
-            class="btn btn-secondary"
-            *ngIf="conventionSelectionnee"
-            [routerLink]="['/stages/convention', conventionSelectionnee.id]"
-          >
-            Afficher la convention
-          </a>
-          <a class="btn btn-secondary" [routerLink]="['/stages/evaluation', stageSelectionne.id]">Afficher l’évaluation</a>
+          <!-- Convention : visible uniquement pour les rôles autorisés (pas RESPONSABLE_STAGE) -->
+          <ng-container *ngIf="peutVoirConvention">
+            <!-- Convention intégralement signée → lien actif -->
+            <a
+              class="btn btn-secondary"
+              *ngIf="conventionSelectionnee && conventionSelectionnee.statutSignatures"
+              [routerLink]="['/stages/convention', conventionSelectionnee.id]"
+            >
+              Afficher la convention
+            </a>
+            <!-- Convention présente mais signatures incomplètes → accès refusé -->
+            <span
+              class="btn btn-disabled"
+              *ngIf="conventionSelectionnee && !conventionSelectionnee.statutSignatures"
+              title="La convention sera accessible une fois toutes les signatures recueillies."
+            >
+              Convention en attente de signatures
+            </span>
+          </ng-container>
+          <a class="btn btn-secondary" [routerLink]="['/stages/evaluation', stageSelectionne.id]">Afficher l'évaluation</a>
           <a class="btn btn-secondary" [routerLink]="['/stages/journal-de-bord', stageSelectionne.id]">Afficher le journal de bord</a>
         </div>
       </div>

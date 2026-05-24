@@ -43,8 +43,6 @@
       <a routerLink="/etudiant/profil" class="btn btn-primary">Compléter mon profil</a>
     </section>
 
-    <app-satisfaction-survey-section></app-satisfaction-survey-section>
-
     <section class="stats-grid student-stat-grid">
       <article class="stat-card student-stat-card">
         <div class="student-stat-head">
@@ -58,7 +56,7 @@
         </div>
         <strong class="stat-value">{{ stats.stages }}</strong>
         <div class="stat-subtitle">
-          {{ currentInternship ? 'Un stage est actuellement rattache a votre compte' : 'Aucun stage affecte pour le moment' }}
+          {{ statStageLabel }}
         </div>
       </article>
 
@@ -123,15 +121,15 @@
         <div class="kv-list" *ngIf="currentInternship">
           <div class="kv-item">
             <span class="label">Titre</span>
-            <span class="value">{{ currentInternship.titre || 'Non renseigne' }}</span>
+            <span class="value">{{ getTitreStage(currentInternship) }}</span>
           </div>
           <div class="kv-item">
             <span class="label">Sujet</span>
-            <span class="value">{{ currentInternship.sujet || currentInternship.titre || 'Non renseigne' }}</span>
+            <span class="value">{{ getSujetStage(currentInternship) }}</span>
           </div>
           <div class="kv-item">
             <span class="label">Entreprise</span>
-            <span class="value">{{ currentInternship.company.nom || 'Non renseignee' }}</span>
+            <span class="value">{{ getEntrepriseNom(currentInternship) }}</span>
           </div>
           <div class="kv-item">
             <span class="label">Date de debut</span>
@@ -139,7 +137,7 @@
           </div>
           <div class="kv-item">
             <span class="label">Duree</span>
-            <span class="value">{{ currentInternship.duree ? (currentInternship.duree + ' mois') : 'Non renseignee' }}</span>
+            <span class="value">{{ getDureeStage(currentInternship) }}</span>
           </div>
           <div class="kv-item">
             <span class="label">Statut</span>
@@ -151,11 +149,11 @@
           </div>
           <div class="kv-item">
             <span class="label">Encadrant academique</span>
-            <span class="value">{{ currentInternship.academicSupervisor.fullName || 'Non affecte' }}</span>
+            <span class="value">{{ getEncadrantAcademique(currentInternship) }}</span>
           </div>
           <div class="kv-item">
             <span class="label">Encadrant professionnel</span>
-            <span class="value">{{ currentInternship.professionalSupervisor.fullName || 'Non affecte' }}</span>
+            <span class="value">{{ getEncadrantProfessionnel(currentInternship) }}</span>
           </div>
         </div>
       </section>
@@ -175,7 +173,7 @@
         <div class="kv-list" *ngIf="currentInternship">
           <div class="kv-item">
             <span class="label">Prochaine reunion</span>
-            <span class="value">{{ nextMeeting?.numReunion || (nextMeeting ? 'Reunion planifiee' : 'Aucune reunion a venir') }}</span>
+            <span class="value">{{ getProchaineMeetingLabel() }}</span>
           </div>
           <div class="kv-item">
             <span class="label">Date et heure</span>
@@ -183,7 +181,7 @@
           </div>
           <div class="kv-item">
             <span class="label">Type de reunion</span>
-            <span class="value">{{ nextMeeting ? (nextMeeting.source === 'FINALE' ? 'Reunion finale' : 'Reunion de suivi') : 'Non planifie' }}</span>
+            <span class="value">{{ getTypeMeeting() }}</span>
           </div>
           <div class="kv-item">
             <span class="label">Taches Trello</span>
@@ -222,17 +220,19 @@
       <div class="mini-offer-grid" *ngIf="availableOffers.length > 0">
         <article class="mini-offer-card" *ngFor="let offer of availableOffers">
           <div class="mini-offer-head">
-            <h3>{{ offer.titre || 'Sans titre' }}</h3>
+            <h3>{{ getTitreOffre(offer) }}</h3>
             <span class="status-pill" [ngClass]="statusClass(offer.statut)">{{ formatStatus(offer.statut) }}</span>
           </div>
-          <p class="mini-offer-company">{{ offer.entrepriseNom || 'Entreprise non renseignee' }}</p>
-          <p class="mini-offer-description">{{ offer.descriptionMissions || 'Aucune description fournie.' }}</p>
+          <p class="mini-offer-company">{{ getEntrepriseNomOffre(offer) }}</p>
+          <p class="mini-offer-description">{{ getDescriptionOffre(offer) }}</p>
           <div class="mini-offer-meta">
-            <span>{{ offer.profilRecherche || 'Profil non precise' }}</span>
+            <span>{{ getProfilOffre(offer) }}</span>
             <span>{{ formatDate(offer.dateDebutPrevue) }}</span>
           </div>
         </article>
       </div>
     </section>
+
+
   </ng-container>
 </div>

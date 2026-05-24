@@ -34,6 +34,28 @@ export class CompanyLayoutComponent implements OnInit {
     });
   }
 
+  get nomEntrepriseAffiche(): string {
+    return (
+      this.context?.entreprise?.nomEntreprise ||
+      this.context?.responsable?.entrepriseNom ||
+      "Espace représentant d'entreprise"
+    );
+  }
+
+  get nomCompletResponsable(): string {
+    if (!this.context) return '';
+    const { prenom, nom } = this.context.responsable;
+    return `${prenom ?? ''} ${nom ?? ''}`.trim();
+  }
+
+  get emailResponsable(): string {
+    return this.context?.responsable?.email ?? '';
+  }
+
+  get secteurActivite(): string {
+    return this.context?.entreprise?.secteurActivite ?? '';
+  }
+
   logout(): void {
     this.authService.deconnexion();
     this.router.navigate(['/connexion']);

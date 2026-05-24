@@ -58,7 +58,7 @@ export class StudentDashboardComponent implements OnInit {
   }
 
   viewRequestDetails(requestId: number): void {
-    alert(`Détails de la demande #${requestId} : cette fonctionnalité n’est pas disponible pour le moment.`);
+    alert(`Détails de la demande #${requestId} : cette fonctionnalité n'est pas disponible pour le moment.`);
   }
 
   getStatusColor(status: string): string {

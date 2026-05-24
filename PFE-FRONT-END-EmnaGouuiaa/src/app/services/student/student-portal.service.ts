@@ -1,9 +1,10 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
-import { forkJoin, Observable, throwError } from 'rxjs';
+import { forkJoin, Observable, of, throwError } from 'rxjs';
 import { catchError, map, switchMap } from 'rxjs/operators';
 import { API_BASE_URL } from '../api.config';
 import {
+  StatutDocument,
   StudentAgreement,
   StudentCompanyRef,
   StudentCompanyRequest,
@@ -36,7 +37,61 @@ export class StudentPortalService {
   private readonly reportsUrl = `${API_BASE_URL}/cahiers-stage`;
   private readonly evaluationsUrl = `${API_BASE_URL}/fiches-evaluation`;
 
+  /** Clé de persistance du stage sélectionné, partagée entre toutes les pages stagiaire. */
+  private readonly selectedStageKey = 'student.selectedStageId';
+
   constructor(private http: HttpClient) {}
+
+  /** Mémorise le stage sélectionné pour que toutes les pages le retrouvent. */
+  setSelectedStageId(stageId: number | null): void {
+    try {
+      if (stageId == null) {
+        localStorage.removeItem(this.selectedStageKey);
+      } else {
+        localStorage.setItem(this.selectedStageKey, String(stageId));
+      }
+    } catch {
+      // Persistance best-effort uniquement.
+    }
+  }
+
+  /** Renvoie l'identifiant du stage précédemment sélectionné, ou null. */
+  getSelectedStageId(): number | null {
+    try {
+      const raw = localStorage.getItem(this.selectedStageKey);
+      const id = raw != null ? Number(raw) : NaN;
+      return Number.isFinite(id) && id > 0 ? id : null;
+    } catch {
+      return null;
+    }
+  }
+
+  /**
+   * Détermine le stage à afficher de façon cohérente sur toutes les pages :
+   *  1. le dernier stage sélectionné (persisté) s'il fait toujours partie de la liste ;
+   *  2. sinon le stage « courant » d'après son statut ;
+   *  3. sinon, à défaut, le premier stage de la liste.
+   * Le choix est re-persisté afin que les autres pages restent synchronisées.
+   * Avec un seul stage affecté, il est donc sélectionné automatiquement.
+   */
+  resolveSelectedInternship(internships: StudentInternship[]): StudentInternship | null {
+    if (!internships.length) {
+      this.setSelectedStageId(null);
+      return null;
+    }
+
+    const persistedId = this.getSelectedStageId();
+    const persisted = persistedId != null
+      ? internships.find((item) => item.id === persistedId)
+      : undefined;
+
+    const resolved = persisted
+      ?? this.pickCurrentInternship(internships)
+      ?? internships[0];
+
+    this.setSelectedStageId(resolved?.id ?? null);
+    return resolved ?? null;
+  }
 
   getProfile(studentId: number): Observable<StudentProfile> {
     return this.http
@@ -52,7 +107,11 @@ export class StudentPortalService {
       adresse: this.normalizeOptionalString(payload.adresse),
       matricule: this.normalizeOptionalString(payload.matricule),
       dateNaiss: this.normalizeOptionalString(payload.dateNaiss),
-      nomFichierSignature: this.normalizeOptionalString(payload.nomFichierSignature)
+      // Le backend (UpdateProfileRequest) attend le champ "urlSignature".
+      // La valeur est l'image importée encodée en Base-64 ('' efface la signature).
+      urlSignature: typeof payload.nomFichierSignature === 'string'
+        ? payload.nomFichierSignature.trim()
+        : undefined
     };
 
     return this.http
@@ -228,6 +287,30 @@ export class StudentPortalService {
       .pipe(map((item) => this.normalizeEvaluation(item)), catchError((error) => this.handleError(error)));
   }
 
+  /** Fetches the data-URI signature stored in a user profile.
+   *  Returns an empty string on any error (graceful degradation). */
+  getUserSignature(userId: number | null): Observable<string> {
+    if (!userId) return of('');
+    return this.http.get<any>(`${this.usersUrl}/${userId}`).pipe(
+      map((raw) => String(raw?.urlSignature ?? raw?.nomFichierSignature ?? '')),
+      catchError(() => of(''))
+    );
+  }
+
+  /** Fetches absences for a given internship stage.
+   *  Returns an empty array on any error (graceful degradation). */
+  getAbsencesForStage(stageId: number): Observable<{ dateAbsence: string; nbAbsence: number; justification: string; statut: string }[]> {
+    return this.http.get<any[]>(`${API_BASE_URL}/absences/stage/${stageId}`).pipe(
+      map((items) => (items ?? []).map((item) => ({
+        dateAbsence: String(item?.dateAbsence ?? ''),
+        nbAbsence: Number(item?.nbAbsence ?? 1),
+        justification: String(item?.justification ?? ''),
+        statut: String(item?.statut ?? '')
+      }))),
+      catchError(() => of([]))
+    );
+  }
+
   describeError(error: unknown, fallback: string): string {
     if (error instanceof HttpErrorResponse) {
       if (error.status === 0) {
@@ -237,10 +320,10 @@ export class StudentPortalService {
         return 'Votre session a expiré. Veuillez vous reconnecter.';
       }
       if (error.status === 403) {
-        return 'Cette action n’est pas autorisée pour le rôle stagiaire avec l’API actuelle.';
+        return "Cette action n'est pas autorisée pour le rôle stagiaire avec l'API actuelle.";
       }
       if (error.status === 404) {
-        return 'Aucune donnée correspondante n’a été trouvée.';
+        return "Aucune donnée correspondante n'a été trouvée.";
       }
       return error.error?.message ?? error.message ?? fallback;
     }
@@ -273,7 +356,8 @@ export class StudentPortalService {
       telephone: String(raw?.telephone ?? ''),
       adresse: String(raw?.adresse ?? ''),
       actif: Boolean(raw?.actif),
-      nomFichierSignature: String(raw?.nomFichierSignature ?? ''),
+      // Le backend renvoie "urlSignature" ; "nomFichierSignature" gardé comme repli legacy.
+      nomFichierSignature: String(raw?.urlSignature ?? raw?.nomFichierSignature ?? ''),
       role: String(raw?.role ?? ''),
       matricule: String(raw?.matricule ?? ''),
       dateNaiss: String(raw?.dateNaiss ?? ''),
@@ -380,17 +464,18 @@ export class StudentPortalService {
       encadrantCreateurId: this.normalizeId(raw?.encadrantCreateurId),
       participantIds: Array.isArray(raw?.participantIds) ? raw.participantIds.map((item: unknown) => Number(item)) : [],
       note: this.normalizeNumber(raw?.note),
-      urlFormEvaluation: String(raw?.urlFormEvaluation ?? ''),
       urlFormSatisfaction: String(raw?.urlFormSatisfaction ?? '')
     };
   }
 
   private normalizeAgreement(raw: any): StudentAgreement {
+    const dateDebut = String(raw?.dateDebut ?? '');
     return {
       id: Number(raw?.id ?? 0),
       numConv: this.normalizeNumber(raw?.numConv),
-      dateDebut: String(raw?.dateDebut ?? ''),
+      dateDebut,
       dateFin: String(raw?.dateFin ?? ''),
+      anneeUniversitaire: this.computeAnneeUniversitaire(dateDebut),
       signeeEncAca: Boolean(raw?.signeeEncAca),
       signeeEncPro: Boolean(raw?.signeeEncPro),
       signeeEntreprise: Boolean(raw?.signeeEntreprise),
@@ -400,6 +485,15 @@ export class StudentPortalService {
       stageId: Number(raw?.stageId ?? 0),
       stageTitre: String(raw?.stageTitre ?? '')
     };
+  }
+
+  private computeAnneeUniversitaire(dateDebut: string): string {
+    if (!dateDebut) return '';
+    const d = new Date(dateDebut);
+    if (isNaN(d.getTime())) return '';
+    const year = d.getFullYear();
+    const month = d.getMonth() + 1;
+    return month >= 9 ? `${year}/${year + 1}` : `${year - 1}/${year}`;
   }
 
   private normalizeReport(raw: any): StudentReport {
@@ -485,7 +579,8 @@ export class StudentPortalService {
       statut: String(raw?.statut ?? ''),
       raisonAbsence: String(raw?.raisonAbsence ?? ''),
       signeeParResponsableUniversitaire: Boolean(raw?.signeeParResponsableUniversitaire),
-      dateSignatureResponsableUniversitaire: String(raw?.dateSignatureResponsableUniversitaire ?? '')
+      dateSignatureResponsableUniversitaire: String(raw?.dateSignatureResponsableUniversitaire ?? ''),
+      statutDocument: (raw?.statutDocument ?? null) as StatutDocument | null
     };
   }
 

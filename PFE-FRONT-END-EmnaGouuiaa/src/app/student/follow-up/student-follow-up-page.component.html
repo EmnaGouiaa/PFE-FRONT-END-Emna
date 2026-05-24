@@ -19,7 +19,8 @@
           </p>
         </div>
 
-        <div class="header-actions" *ngIf="internships.length">
+        <!-- Le sélecteur n'apparaît que si le stagiaire a plusieurs stages affectés. -->
+        <div class="header-actions" *ngIf="internships.length > 1">
           <select class="select stage-selector" [ngModel]="selectedStageId" (ngModelChange)="onStageChange($event)">
             <option *ngFor="let internship of internships" [ngValue]="internship.id">
               {{ internship.titre || internship.sujet || ('Stage #' + internship.id) }}

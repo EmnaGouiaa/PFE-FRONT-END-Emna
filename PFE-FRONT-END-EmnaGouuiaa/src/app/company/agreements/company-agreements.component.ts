@@ -45,7 +45,7 @@ export class CompanyAgreementsPageComponent implements OnInit {
         this.context = context;
 
         if (!context.responsable.entrepriseId) {
-          this.errorMessage = 'Aucune entreprise n’est rattachée à ce compte.';
+          this.errorMessage = "Aucune entreprise n'est rattachée à ce compte.";
           this.isLoading = false;
           return;
         }

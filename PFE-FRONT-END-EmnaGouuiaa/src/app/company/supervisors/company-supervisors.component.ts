@@ -7,13 +7,14 @@ import { CompanyContextService } from '../../services/company/company-context.se
 import { ProfessionalSupervisorsService } from '../../services/company/professional-supervisors.service';
 import { CompanyContext, ProfessionalSupervisor, ProfessionalSupervisorPayload } from '../../services/company/company.models';
 import { phoneValidator, strictEmailValidator } from '../../admin/admin-form-validators';
+import { PhoneInputComponent } from '../../components/phone-input/phone-input.component';
 
 type FieldErrors = Record<string, string>;
 
 @Component({
   selector: 'app-company-supervisors-page',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, MatSnackBarModule],
+  imports: [CommonModule, ReactiveFormsModule, MatSnackBarModule, PhoneInputComponent],
   templateUrl: './company-supervisors.component.html',
   styleUrls: ['../company-shared.css', './company-supervisors.component.css']
 })

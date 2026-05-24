@@ -23,8 +23,7 @@ export class AdminLayoutComponent implements OnInit {
     const role = this.serviceAuthentification.getRoleUtilisateur();
     this.isAdmin = role === RoleUtilisateur.ADMINISTRATEUR;
     this.isResponsableStages =
-      role === RoleUtilisateur.RESPONSABLE_SERVICE_STAGES ||
-      role === RoleUtilisateur.RESPONSABLE_UNIVERSITAIRE_STAGES;
+      role === RoleUtilisateur.RESPONSABLE_STAGE;
   }
 
   logout(): void {

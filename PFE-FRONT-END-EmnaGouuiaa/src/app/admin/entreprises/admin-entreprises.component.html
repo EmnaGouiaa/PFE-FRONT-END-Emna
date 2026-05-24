@@ -1,111 +1,238 @@
 <div class="page">
   <div class="page-bg"></div>
 
-  <header class="page-header">
-    <div>
-      <span class="eyebrow">Admin</span>
-      <h1>Entreprises & responsables</h1>
-      <p>Creation centralisee d'une entreprise et de son representant avec controle de validite, unicite et envoi d'identifiants par email.</p>
-    </div>
-    <button class="btn btn-primary" (click)="openCreate()" [disabled]="isLoading || isSubmitting">
-      + Nouvelle fiche
-    </button>
-  </header>
+  <!-- ═══════════════════════════════════════════════════════════════════════════
+       LIST VIEW — shown when no company is selected
+  ══════════════════════════════════════════════════════════════════════════════ -->
+  <ng-container *ngIf="detailAccount === null">
 
-  <section class="summary-grid">
-    <article class="summary-card">
-      <span class="summary-label">Entreprises</span>
-      <strong>{{ companyAccounts.length }}</strong>
-      <p>Structures gerees depuis un seul formulaire.</p>
-    </article>
-    <article class="summary-card">
-      <span class="summary-label">Representants relies</span>
-      <strong>{{ linkedRepresentativeCount }}</strong>
-      <p>Comptes relies automatiquement a leur entreprise.</p>
-    </article>
-    <article class="summary-card">
-      <span class="summary-label">Emails renseignes</span>
-      <strong>{{ configuredEmailCount }}</strong>
-      <p>Necessaires pour la transmission des identifiants.</p>
-    </article>
-  </section>
+    <header class="page-header">
+      <div>
+        <span class="eyebrow">Admin</span>
+        <h1>Entreprises &amp; responsables</h1>
+        <p>Creation centralisee d'une entreprise et de son representant avec controle de validite, unicite et envoi d'identifiants par email.</p>
+      </div>
+      <button class="btn btn-primary" (click)="openCreate()" [disabled]="isLoading || isSubmitting">
+        + Nouvelle fiche
+      </button>
+    </header>
 
-  <section class="toolbar">
-    <div class="search-box">
-      <input
-        class="input"
-        type="text"
-        placeholder="Rechercher une entreprise, un responsable ou un contact..."
-        [(ngModel)]="searchQuery"
-        (input)="filter()"
-      />
-    </div>
-    <button class="btn btn-secondary" (click)="load()" [disabled]="isLoading || isSubmitting">Rafraichir</button>
-  </section>
+    <section class="summary-grid">
+      <article class="summary-card">
+        <span class="summary-label">Entreprises</span>
+        <strong>{{ companyAccounts.length }}</strong>
+        <p>Structures gerees depuis un seul formulaire.</p>
+      </article>
+      <article class="summary-card">
+        <span class="summary-label">Representants relies</span>
+        <strong>{{ linkedRepresentativeCount }}</strong>
+        <p>Comptes relies automatiquement a leur entreprise.</p>
+      </article>
+      <article class="summary-card">
+        <span class="summary-label">Emails renseignes</span>
+        <strong>{{ configuredEmailCount }}</strong>
+        <p>Necessaires pour la transmission des identifiants.</p>
+      </article>
+    </section>
 
-  <div *ngIf="errorMessage" class="alert alert-error">{{ errorMessage }}</div>
-  <div *ngIf="successMessage" class="alert alert-success">{{ successMessage }}</div>
+    <section class="toolbar">
+      <div class="search-box">
+        <input
+          class="input"
+          type="text"
+          placeholder="Rechercher une entreprise, un responsable ou un contact..."
+          [(ngModel)]="searchQuery"
+          (input)="filter()"
+        />
+      </div>
+      <button class="btn btn-secondary" (click)="load()" [disabled]="isLoading || isSubmitting">Rafraichir</button>
+    </section>
 
-  <section class="table-card">
-    <div class="table-status" *ngIf="isLoading">
-      <span class="spinner"></span>
-      Chargement...
-    </div>
+    <div *ngIf="errorMessage" class="alert alert-error">{{ errorMessage }}</div>
+    <div *ngIf="successMessage" class="alert alert-success">{{ successMessage }}</div>
 
-    <div *ngIf="!isLoading && filtered.length === 0" class="empty">
-      <h3>Aucune fiche disponible</h3>
-      <p>Ajoutez une entreprise et son representant depuis une seule action.</p>
-      <button class="btn btn-primary" (click)="openCreate()" [disabled]="isSubmitting">Creer une fiche</button>
-    </div>
+    <section class="table-card">
+      <div class="table-status" *ngIf="isLoading">
+        <span class="spinner"></span>
+        Chargement...
+      </div>
 
-    <div *ngIf="!isLoading && filtered.length > 0" class="table-wrap">
-      <table class="table">
-        <thead>
-          <tr>
-            <th>Entreprise</th>
-            <th>Contact entreprise</th>
-            <th>Representant</th>
-            <th>Contact representant</th>
-            <th>Secteur</th>
-            <th>Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr *ngFor="let item of filtered">
-            <td>
-              <div class="main-info">
-                <strong>{{ item.nomEntreprise }}</strong>
-                <span>{{ item.adresse || 'Adresse non renseignee' }}</span>
-              </div>
-            </td>
-            <td>
-              <div class="contact-stack">
-                <span>{{ item.emailEntreprise || 'Email non renseigne' }}</span>
-                <span>{{ item.telephoneEntreprise || 'Telephone non renseigne' }}</span>
-              </div>
-            </td>
-            <td>
-              <div class="main-info">
-                <strong>{{ item.prenomResponsable }} {{ item.nomResponsable }}</strong>
-                <span>{{ item.representantId ? 'Compte lie' : 'Compte a completer' }}</span>
-              </div>
-            </td>
-            <td>
-              <div class="contact-stack">
-                <span>{{ item.emailResponsable || 'Email non renseigne' }}</span>
-                <span>{{ item.telephoneResponsable || 'Telephone non renseigne' }}</span>
-              </div>
-            </td>
-            <td>{{ item.secteurActivite || '-' }}</td>
-            <td class="actions">
-              <button class="btn btn-secondary" (click)="openEdit(item)" [disabled]="isSubmitting">Modifier</button>
-            </td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-  </section>
+      <div *ngIf="!isLoading && filtered.length === 0" class="empty">
+        <h3>Aucune fiche disponible</h3>
+        <p>Ajoutez une entreprise et son representant depuis une seule action.</p>
+        <button class="btn btn-primary" (click)="openCreate()" [disabled]="isSubmitting">Creer une fiche</button>
+      </div>
 
+      <div *ngIf="!isLoading && filtered.length > 0" class="table-wrap">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>Entreprise</th>
+              <th>Contact entreprise</th>
+              <th>Representant</th>
+              <th>Contact representant</th>
+              <th>Secteur</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let item of filtered">
+              <td>
+                <div class="main-info">
+                  <strong>{{ item.nomEntreprise }}</strong>
+                  <span>{{ item.adresse || 'Adresse non renseignee' }}</span>
+                </div>
+              </td>
+              <td>
+                <div class="contact-stack">
+                  <span>{{ item.emailEntreprise || 'Email non renseigne' }}</span>
+                  <span>{{ item.telephoneEntreprise || 'Telephone non renseigne' }}</span>
+                </div>
+              </td>
+              <td>
+                <div class="main-info">
+                  <strong>{{ item.prenomResponsable }} {{ item.nomResponsable }}</strong>
+                  <span>{{ item.representantId ? 'Compte lie' : 'Compte a completer' }}</span>
+                </div>
+              </td>
+              <td>
+                <div class="contact-stack">
+                  <span>{{ item.emailResponsable || 'Email non renseigne' }}</span>
+                  <span>{{ item.telephoneResponsable || 'Telephone non renseigne' }}</span>
+                </div>
+              </td>
+              <td>{{ item.secteurActivite || '-' }}</td>
+              <td class="actions">
+                <button class="btn btn-detail" (click)="selectEntreprise(item)" [disabled]="isSubmitting" title="Voir le detail et les encadrants">
+                  Voir
+                </button>
+                <button class="btn btn-secondary" (click)="openEdit(item)" [disabled]="isSubmitting">Modifier</button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+  </ng-container>
+
+  <!-- ═══════════════════════════════════════════════════════════════════════════
+       DETAIL VIEW — shown when a company is selected
+  ══════════════════════════════════════════════════════════════════════════════ -->
+  <ng-container *ngIf="detailAccount !== null">
+
+    <header class="page-header detail-header">
+      <div class="detail-breadcrumb">
+        <button class="btn-back" (click)="backToList()">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <path d="M15 18l-6-6 6-6"/>
+          </svg>
+          Retour a la liste
+        </button>
+        <span class="eyebrow" style="margin-left: 8px;">Entreprise</span>
+        <h1>{{ detailAccount.nomEntreprise }}</h1>
+        <p>{{ detailAccount.secteurActivite || 'Secteur non renseigne' }} &mdash; {{ detailAccount.adresse || 'Adresse non renseignee' }}</p>
+      </div>
+      <button class="btn btn-secondary" (click)="openEdit(detailAccount)" [disabled]="isSubmitting">
+        Modifier la fiche
+      </button>
+    </header>
+
+    <!-- Summary cards for the selected company -->
+    <section class="summary-grid detail-summary">
+      <article class="summary-card">
+        <span class="summary-label">Representant</span>
+        <strong style="font-size:1.1rem; line-height:1.3">
+          {{ detailAccount.prenomResponsable }} {{ detailAccount.nomResponsable }}
+        </strong>
+        <p>{{ detailAccount.emailResponsable || 'Email non renseigne' }}</p>
+      </article>
+      <article class="summary-card">
+        <span class="summary-label">Telephone responsable</span>
+        <strong style="font-size:1.1rem">{{ detailAccount.telephoneResponsable || '-' }}</strong>
+        <p>{{ detailAccount.representantId ? 'Compte utilisateur lie' : 'Compte a completer' }}</p>
+      </article>
+      <article class="summary-card">
+        <span class="summary-label">Encadrants</span>
+        <strong>{{ encadrants.length }}</strong>
+        <p>Encadrants professionnels rattaches a cette entreprise.</p>
+      </article>
+    </section>
+
+    <!-- Feedback banners for encadrant operations -->
+    <div *ngIf="encadrantErrorMessage" class="alert alert-error">{{ encadrantErrorMessage }}</div>
+    <div *ngIf="encadrantSuccessMessage" class="alert alert-success">{{ encadrantSuccessMessage }}</div>
+
+    <!-- Encadrants panel -->
+    <section class="table-card">
+      <div class="encadrant-panel-header">
+        <div>
+          <h2 class="panel-title">Encadrants professionnels</h2>
+          <p class="panel-subtitle">Ajoutez ou modifiez les encadrants rattaches a cette entreprise.</p>
+        </div>
+        <button class="btn btn-primary" (click)="openAddEncadrant()" [disabled]="isSubmittingEncadrant">
+          + Ajouter un encadrant
+        </button>
+      </div>
+
+      <div class="table-status" *ngIf="isLoadingEncadrants">
+        <span class="spinner"></span>
+        Chargement des encadrants...
+      </div>
+
+      <div *ngIf="!isLoadingEncadrants && encadrants.length === 0" class="empty">
+        <h3>Aucun encadrant</h3>
+        <p>Cette entreprise n'a pas encore d'encadrant professionnel.</p>
+        <button class="btn btn-primary" (click)="openAddEncadrant()" [disabled]="isSubmittingEncadrant">
+          Ajouter un encadrant
+        </button>
+      </div>
+
+      <div *ngIf="!isLoadingEncadrants && encadrants.length > 0" class="table-wrap">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>Nom</th>
+              <th>Email</th>
+              <th>Telephone</th>
+              <th>Poste</th>
+              <th>Service</th>
+              <th>Statut</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let enc of encadrants">
+              <td>
+                <div class="main-info">
+                  <strong>{{ enc.prenom }} {{ enc.nom }}</strong>
+                </div>
+              </td>
+              <td>{{ enc.email }}</td>
+              <td>{{ enc.telephone || '-' }}</td>
+              <td>{{ enc.poste || '-' }}</td>
+              <td>{{ enc.service || '-' }}</td>
+              <td>
+                <span class="status-badge" [class.active]="enc.actif" [class.inactive]="!enc.actif">
+                  {{ enc.actif ? 'Actif' : 'Inactif' }}
+                </span>
+              </td>
+              <td class="actions">
+                <button class="btn btn-secondary" (click)="openEditEncadrant(enc)" [disabled]="isSubmittingEncadrant">
+                  Modifier
+                </button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+  </ng-container>
+
+  <!-- ═══════════════════════════════════════════════════════════════════════════
+       MODAL — Create / Edit company + representant
+  ══════════════════════════════════════════════════════════════════════════════ -->
   <div class="modal-overlay" *ngIf="showForm" (click)="closeForm()">
     <div class="modal" (click)="$event.stopPropagation()">
       <div class="modal-header">
@@ -143,7 +270,7 @@
 
             <div class="form-group">
               <label>Telephone entreprise</label>
-              <input class="input" formControlName="telephoneEntreprise" />
+              <app-phone-input formControlName="telephoneEntreprise" [submitted]="formSubmitAttempted"></app-phone-input>
               <div class="field-error" *ngIf="getFieldError('telephoneEntreprise')">{{ getFieldError('telephoneEntreprise') }}</div>
             </div>
 
@@ -177,7 +304,7 @@
 
             <div class="form-group">
               <label>Telephone responsable</label>
-              <input class="input" formControlName="telephoneResponsable" />
+              <app-phone-input formControlName="telephoneResponsable" [submitted]="formSubmitAttempted"></app-phone-input>
               <div class="field-error" *ngIf="getFieldError('telephoneResponsable')">{{ getFieldError('telephoneResponsable') }}</div>
             </div>
           </div>
@@ -197,4 +324,80 @@
       </form>
     </div>
   </div>
+
+  <!-- ═══════════════════════════════════════════════════════════════════════════
+       MODAL — Create / Edit encadrant
+  ══════════════════════════════════════════════════════════════════════════════ -->
+  <div class="modal-overlay" *ngIf="showEncadrantForm" (click)="closeEncadrantForm()">
+    <div class="modal" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <div>
+          <h2>{{ isEditEncadrantMode ? 'Modifier encadrant' : 'Nouvel encadrant professionnel' }}</h2>
+          <p>
+            {{ isEditEncadrantMode
+              ? 'Modifiez les informations de cet encadrant professionnel.'
+              : 'Le compte sera rattache automatiquement a ' + (detailAccount?.nomEntreprise || 'cette entreprise') + '.' }}
+          </p>
+        </div>
+        <button class="btn-close" (click)="closeEncadrantForm()" aria-label="Fermer">x</button>
+      </div>
+
+      <form [formGroup]="encadrantForm" (ngSubmit)="submitEncadrant()" class="form">
+        <section class="form-section">
+          <div class="section-title">Identite</div>
+          <div class="form-grid">
+            <div class="form-group">
+              <label>Prenom *</label>
+              <input class="input" formControlName="prenom" autofocus />
+              <div class="field-error" *ngIf="getEncadrantFieldError('prenom')">{{ getEncadrantFieldError('prenom') }}</div>
+            </div>
+
+            <div class="form-group">
+              <label>Nom *</label>
+              <input class="input" formControlName="nom" />
+              <div class="field-error" *ngIf="getEncadrantFieldError('nom')">{{ getEncadrantFieldError('nom') }}</div>
+            </div>
+
+            <div class="form-group">
+              <label>Email *</label>
+              <input class="input" type="email" formControlName="email" />
+              <div class="field-error" *ngIf="getEncadrantFieldError('email')">{{ getEncadrantFieldError('email') }}</div>
+            </div>
+
+            <div class="form-group">
+              <label>Telephone</label>
+              <app-phone-input formControlName="telephone" [submitted]="encadrantFormSubmitAttempted"></app-phone-input>
+              <div class="field-error" *ngIf="getEncadrantFieldError('telephone')">{{ getEncadrantFieldError('telephone') }}</div>
+            </div>
+          </div>
+        </section>
+
+        <section class="form-section">
+          <div class="section-title">Fonction</div>
+          <div class="form-grid">
+            <div class="form-group">
+              <label>Poste</label>
+              <input class="input" formControlName="poste" placeholder="Ex: Ingenieur, Chef de projet..." />
+            </div>
+
+            <div class="form-group">
+              <label>Service / Departement</label>
+              <input class="input" formControlName="service" placeholder="Ex: DSI, RH, Production..." />
+            </div>
+          </div>
+        </section>
+
+        <div *ngIf="encadrantErrorMessage" class="alert alert-error" style="margin:0">{{ encadrantErrorMessage }}</div>
+
+        <div class="form-actions">
+          <button type="button" class="btn btn-secondary" (click)="closeEncadrantForm()" [disabled]="isSubmittingEncadrant">Annuler</button>
+          <button type="submit" class="btn btn-primary" [disabled]="isSubmittingEncadrant">
+            <span class="spinner small" *ngIf="isSubmittingEncadrant"></span>
+            {{ isSubmittingEncadrant ? (isEditEncadrantMode ? 'Mise a jour...' : 'Creation...') : (isEditEncadrantMode ? 'Mettre a jour' : 'Creer') }}
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
 </div>

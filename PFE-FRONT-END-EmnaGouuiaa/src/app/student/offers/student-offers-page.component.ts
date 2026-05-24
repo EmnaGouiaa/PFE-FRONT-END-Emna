@@ -43,27 +43,21 @@ import { StudentPortalService } from '../../services/student/student-portal.serv
           <div class="offer-card-grid" *ngIf="filteredOffers.length">
             <article class="offer-card" *ngFor="let offer of filteredOffers" (click)="selectOffer(offer)">
               <div class="offer-card-top">
-                <div>
+                <div style="min-width:0">
                   <h3>{{ offer.titre || 'Sans titre' }}</h3>
                   <p>{{ offer.entrepriseNom || 'Entreprise non renseignee' }}</p>
                 </div>
                 <span class="status-pill" [ngClass]="'status-' + offer.statut">{{ offer.statut || 'OUVERTE' }}</span>
               </div>
 
-              <p class="offer-card-description">{{ offer.descriptionMissions || 'Aucune description fournie.' }}</p>
-
               <div class="offer-card-meta">
-                <div class="offer-meta-item">
-                  <span class="label">Profil</span>
-                  <span class="value">{{ offer.profilRecherche || 'Non precise' }}</span>
-                </div>
                 <div class="offer-meta-item">
                   <span class="label">Debut</span>
                   <span class="value">{{ formatDate(offer.dateDebutPrevue) }}</span>
                 </div>
                 <div class="offer-meta-item">
                   <span class="label">Duree</span>
-                  <span class="value">{{ offer.duree ? (offer.duree + ' mois') : 'Non renseignee' }}</span>
+                  <span class="value">{{ offer.duree ? (offer.duree + ' mois') : '-' }}</span>
                 </div>
               </div>
 
@@ -79,44 +73,41 @@ import { StudentPortalService } from '../../services/student/student-portal.serv
       <div class="modal-overlay" *ngIf="showDetailsModal && selectedOffer" (click)="closeOfferDetails()">
         <div class="modal" (click)="$event.stopPropagation()">
           <div class="modal-header">
-            <h2>Detail de l'offre</h2>
-            <button type="button" class="btn-close" (click)="closeOfferDetails()">x</button>
+            <div style="min-width:0">
+              <h2 style="margin:0;font-size:1.15rem">{{ selectedOffer.titre || 'Sans titre' }}</h2>
+              <p style="margin:4px 0 0;color:var(--text-muted);font-size:0.92rem">{{ selectedOffer.entrepriseNom || 'Entreprise non renseignee' }}</p>
+            </div>
+            <button type="button" class="btn-close" (click)="closeOfferDetails()">×</button>
           </div>
 
           <div class="form">
-            <div class="kv-list">
-              <div class="kv-item">
-                <span class="label">Titre</span>
-                <span class="value">{{ selectedOffer.titre || 'Sans titre' }}</span>
-              </div>
-              <div class="kv-item">
+            <div class="detail-grid">
+              <div class="detail-item">
                 <span class="label">Entreprise</span>
-                <span class="value">{{ selectedOffer.entrepriseNom || 'Non renseignee' }}</span>
+                <span class="value">{{ selectedOffer.entrepriseNom || '-' }}</span>
               </div>
-              <div class="kv-item">
+              <div class="detail-item">
+                <span class="label">Statut</span>
+                <span class="value">
+                  <span class="status-pill" [ngClass]="'status-' + selectedOffer.statut">{{ selectedOffer.statut || 'OUVERTE' }}</span>
+                </span>
+              </div>
+              <div class="detail-item">
                 <span class="label">Date de debut prevue</span>
                 <span class="value">{{ formatDate(selectedOffer.dateDebutPrevue) }}</span>
               </div>
-              <div class="kv-item">
+              <div class="detail-item">
                 <span class="label">Duree</span>
                 <span class="value">{{ selectedOffer.duree ? (selectedOffer.duree + ' mois') : 'Non renseignee' }}</span>
               </div>
-              <div class="kv-item">
-                <span class="label">Statut</span>
-                <span class="value">{{ selectedOffer.statut || 'Non precise' }}</span>
-              </div>
-              <div class="kv-item">
+              <div class="detail-item full-width">
                 <span class="label">Profil recherche</span>
                 <span class="value">{{ selectedOffer.profilRecherche || 'Non precise' }}</span>
               </div>
-              <div class="kv-item">
-                <span class="label">Missions</span>
-                <span class="value">{{ selectedOffer.descriptionMissions || 'Aucune description fournie.' }}</span>
+              <div class="detail-item full-width">
+                <span class="label">Description des missions</span>
+                <span class="value" style="white-space:pre-wrap;line-height:1.6">{{ selectedOffer.descriptionMissions || 'Aucune description fournie.' }}</span>
               </div>
-            </div>
-
-            <div class="message-info">
-              L'API actuelle permet seulement la consultation des offres ouvertes. Le suivi principal reste centre sur le stage reel lorsqu'il existe.
             </div>
 
             <div class="inline-actions">

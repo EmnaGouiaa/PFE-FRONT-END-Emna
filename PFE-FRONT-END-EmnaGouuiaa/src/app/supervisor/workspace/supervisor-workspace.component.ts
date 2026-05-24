@@ -8,10 +8,10 @@ import { AuthentificationService, RoleUtilisateur } from '../../services/authent
 import { CurrentUserProfileService } from '../../services/current-user-profile.service';
 import { NotificationService, UserNotification } from '../../services/notification.service';
 import { ProfileCompletionService } from '../../services/profile-completion.service';
-import { SatisfactionSurveySectionComponent } from '../../components/satisfaction-survey-section.component';
 import {
   SupervisorAgreement,
   SupervisorEvaluation,
+  EvaluationNoteDto,
   SupervisorInternship,
   SupervisorLogbook,
   SupervisorMeeting,
@@ -23,6 +23,7 @@ import {
 } from '../../services/supervisor/supervisor.models';
 import { PdfWindowService } from '../../services/pdf-window.service';
 import { SupervisorPortalService } from '../../services/supervisor/supervisor-portal.service';
+import { SignatureCaptureModalComponent } from '../../components/signature-capture-modal/signature-capture-modal.component';
 
 type SupervisorSection =
   | 'dashboard'
@@ -37,7 +38,7 @@ type SupervisorSection =
 @Component({
   selector: 'app-supervisor-workspace',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule, SatisfactionSurveySectionComponent],
+  imports: [CommonModule, FormsModule, RouterModule, SignatureCaptureModalComponent],
   templateUrl: './supervisor-workspace.component.html',
   styleUrls: ['../../admin/dashboard/admin-dashboard.css', '../supervisor-shared.css']
 })
@@ -74,11 +75,19 @@ export class SupervisorWorkspaceComponent implements OnInit {
   meetingDetailsModal: SupervisorMeeting | null = null;
   reportModal: SupervisorMeeting | null = null;
   evaluationModal: SupervisorEvaluation | null = null;
+  docDetailsModal: { titre: string; status: SupervisorStageDocumentStatus } | null = null;
 
   reportText = '';
+
+  // ── Capture de signature du cahier de stage ────────────────────────────────
+  /** Cahier en attente d'apposition d'une signature (null = modale fermee). */
+  pendingSignLogbook: SupervisorLogbook | null = null;
+  /** Vrai pendant l'appel reseau pour griser les actions de la modale. */
+  signingLogbookInProgress = false;
   evaluationDraft = {
     pointFortEncadrantPro: '',
-    axeAmeliorationEncadrantPro: ''
+    axeAmeliorationEncadrantPro: '',
+    notesAttribuees: [] as EvaluationNoteDto[]
   };
   meetingDraft: SupervisorMeetingPayload = this.emptyMeetingDraft();
 
@@ -234,7 +243,7 @@ export class SupervisorWorkspaceComponent implements OnInit {
   }
 
   canCancelMeeting(meeting: SupervisorMeeting): boolean {
-    return this.canModifyMeeting(meeting);
+    return false;
   }
 
   getMeetingTypeLabel(meeting: SupervisorMeeting): string {
@@ -415,8 +424,9 @@ export class SupervisorWorkspaceComponent implements OnInit {
           numReunion: meeting.numReunion,
           date: meeting.date,
           heure: meeting.heure,
+          typeReunion: meeting.source || 'HEBDOMADAIRE',
           observation: meeting.observation,
-          compteRendu: meeting.compteRendu,
+          compteRendu: '',
           stageId: meeting.stageId,
           participantIds: meeting.participantIds
         }
@@ -429,7 +439,7 @@ export class SupervisorWorkspaceComponent implements OnInit {
   }
 
   saveMeeting(): void {
-    if (!this.meetingDraft.stageId || !this.meetingDraft.date || !this.meetingDraft.heure || !this.meetingDraft.observation) {
+    if (!this.meetingDraft.stageId || !this.meetingDraft.date || !this.meetingDraft.heure || !String(this.meetingDraft.typeReunion ?? '').trim() || !String(this.meetingDraft.observation ?? '').trim() || !(this.meetingDraft.participantIds?.length)) {
       this.errorMessage = 'Veuillez remplir tous les champs de la réunion.';
       return;
     }
@@ -451,22 +461,32 @@ export class SupervisorWorkspaceComponent implements OnInit {
 
   openReportModal(meeting: SupervisorMeeting): void {
     this.reportModal = meeting;
-    this.reportText = meeting.compteRendu || '';
+    this.reportText = meeting.observation || '';
   }
 
   saveReport(): void {
     if (!this.reportModal) return;
+    if (this.meetingDraft.typeReunion !== 'HEBDOMADAIRE' || !this.isMeetingDateWithinSelectedStage()) {
+      this.errorMessage = 'Les données saisies sont invalides ou hors période du stage.';
+      return;
+    }
+
+    if (!this.isMeetingDelayRespected(this.meetingDraft.date, this.meetingDraft.heure)) {
+      this.errorMessage = 'Une réunion doit être planifiée ou modifiée au moins 24 heures avant son début.';
+      return;
+    }
+
     this.isSaving = true;
     this.supervisorService.saveReport(this.reportModal.id, this.reportText).pipe(timeout(15000)).subscribe({
       next: () => {
         this.isSaving = false;
-        this.successMessage = 'Compte rendu enregistré.';
+        this.successMessage = 'Observation enregistrée.';
         this.closeModals();
         this.loadAll();
       },
       error: (error) => {
         this.isSaving = false;
-        this.errorMessage = error?.error?.message ?? "Impossible d'enregistrer le compte rendu.";
+        this.errorMessage = error?.error?.message ?? "Impossible d'enregistrer l'observation.";
       }
     });
   }
@@ -483,16 +503,45 @@ export class SupervisorWorkspaceComponent implements OnInit {
     });
   }
 
+  /**
+   * Ouvre la modale de capture de signature. La signature reelle est posee dans
+   * onSignatureCaptured() une fois que l'utilisateur a uploade et confirme une image.
+   */
   signLogbook(logbook: SupervisorLogbook): void {
-    this.supervisorService.signLogbook(this.role, logbook.id).pipe(timeout(15000)).subscribe({
+    if (this.isLogbookSignedByMe(logbook)) {
+      this.errorMessage = 'Vous avez déjà signé ce cahier.';
+      return;
+    }
+    this.errorMessage = '';
+    this.successMessage = '';
+    this.pendingSignLogbook = logbook;
+  }
+
+  /** Callback de la modale : envoie la signature au backend avec l'image obligatoire. */
+  onSignatureCaptured(signatureImage: string): void {
+    if (!this.pendingSignLogbook || !signatureImage) {
+      return;
+    }
+    const logbook = this.pendingSignLogbook;
+    this.signingLogbookInProgress = true;
+    this.supervisorService.signLogbook(this.role, logbook.id, signatureImage).pipe(timeout(15000)).subscribe({
       next: () => {
-        this.successMessage = 'Cahier validé et signé.';
+        this.signingLogbookInProgress = false;
+        this.pendingSignLogbook = null;
+        this.successMessage = 'Cahier signé avec succès. La preuve visuelle a été enregistrée.';
         this.loadAll();
       },
       error: (error) => {
+        this.signingLogbookInProgress = false;
         this.errorMessage = error?.error?.message ?? 'Impossible de signer le cahier.';
       }
     });
+  }
+
+  /** Callback de la modale : annulation utilisateur. */
+  onSignatureCancelled(): void {
+    if (this.signingLogbookInProgress) return;
+    this.pendingSignLogbook = null;
   }
 
   generateLogbook(internship: SupervisorInternship): void {
@@ -523,7 +572,8 @@ export class SupervisorWorkspaceComponent implements OnInit {
     this.evaluationModal = evaluation;
     this.evaluationDraft = {
       pointFortEncadrantPro: evaluation.pointFortEncadrantPro,
-      axeAmeliorationEncadrantPro: evaluation.axeAmeliorationEncadrantPro
+      axeAmeliorationEncadrantPro: evaluation.axeAmeliorationEncadrantPro,
+      notesAttribuees: (evaluation.notesAttribuees ?? []).map((note) => ({ ...note }))
     };
   }
 
@@ -536,6 +586,40 @@ export class SupervisorWorkspaceComponent implements OnInit {
         this.successMessage = 'Partie entreprise enregistrée.';
         this.closeModals();
         this.loadAll();
+      },
+      error: (error) => {
+        this.isSaving = false;
+        this.errorMessage = error?.error?.message ?? "Impossible d'enregistrer l'évaluation.";
+      }
+    });
+  }
+
+  saveEvaluationSheet(): void {
+    if (!this.evaluationModal) return;
+    if (!this.evaluationDraft.pointFortEncadrantPro.trim() || !this.evaluationDraft.axeAmeliorationEncadrantPro.trim()) {
+      this.errorMessage = "Veuillez renseigner les points forts et les axes d'amélioration.";
+      return;
+    }
+    if (this.evaluationDraft.notesAttribuees.some((note) => !note.critereLibelle?.trim() || note.note == null || note.poids == null)) {
+      this.errorMessage = "Chaque note doit contenir un critère, une note sur 5 et un coefficient.";
+      return;
+    }
+
+    this.isSaving = true;
+    this.supervisorService.fillProfessionalEvaluation(this.evaluationModal.id, this.userId, this.evaluationDraft).pipe(timeout(15000)).subscribe({
+      next: () => {
+        this.supervisorService.saveEvaluationNotes(this.evaluationModal!.id, this.userId, this.evaluationDraft.notesAttribuees).pipe(timeout(15000)).subscribe({
+          next: () => {
+            this.isSaving = false;
+            this.successMessage = "Évaluation enregistrée avec succès.";
+            this.closeModals();
+            this.loadAll();
+          },
+          error: (error) => {
+            this.isSaving = false;
+            this.errorMessage = error?.error?.message ?? "Impossible d'enregistrer les notes d'évaluation.";
+          }
+        });
       },
       error: (error) => {
         this.isSaving = false;
@@ -578,7 +662,7 @@ export class SupervisorWorkspaceComponent implements OnInit {
   }
 
   markNotificationRead(notification: UserNotification): void {
-    this.notificationService.markAsRead(notification.id, this.userId).pipe(timeout(15000)).subscribe({
+    this.notificationService.markAsRead(notification.id).pipe(timeout(15000)).subscribe({
       next: () => {
         notification.read = true;
       },
@@ -630,6 +714,88 @@ export class SupervisorWorkspaceComponent implements OnInit {
     this.meetingDetailsModal = null;
     this.reportModal = null;
     this.evaluationModal = null;
+    this.docDetailsModal = null;
+  }
+
+  addEvaluationNote(): void {
+    this.evaluationDraft.notesAttribuees = [
+      ...this.evaluationDraft.notesAttribuees,
+      {
+        ficheEvaluationId: this.evaluationModal?.id ?? null,
+        critereEvaluationId: null,
+        critereLibelle: '',
+        poids: 1,
+        bareme: 5,
+        note: null,
+        commentaire: '',
+        scorePondere: null,
+        evaluee: false
+      }
+    ];
+  }
+
+  removeEvaluationNote(index: number): void {
+    this.evaluationDraft.notesAttribuees = this.evaluationDraft.notesAttribuees.filter((_, currentIndex) => currentIndex !== index);
+  }
+
+  updateEvaluationNoteScore(note: EvaluationNoteDto): void {
+    if (note.note == null || note.poids == null) {
+      note.scorePondere = null;
+      return;
+    }
+    note.scorePondere = (note.note / 5) * note.poids;
+  }
+
+  get evaluationTotalScore(): number {
+    return this.evaluationDraft.notesAttribuees.reduce(
+      (total, note) => total + (note.scorePondere ?? 0),
+      0
+    );
+  }
+
+  get evaluationTotalWeight(): number {
+    return this.evaluationDraft.notesAttribuees.reduce(
+      (total, note) => total + (note.poids ?? 0),
+      0
+    );
+  }
+
+  get evaluationModalInternship(): SupervisorInternship | null {
+    return this.evaluationModal
+      ? (this.internships.find((i) => i.id === this.evaluationModal!.stageId) ?? null)
+      : null;
+  }
+
+  getDocStatusLabel(status: SupervisorStageDocumentStatus | null): string {
+    if (!status) return 'Non disponible';
+    if (status.disponible && status.genere) return 'Généré';
+    if (status.disponible) return 'Disponible';
+    if (status.generationAutorisee && !status.genere) return 'Prêt';
+    if (status.documentId && !status.disponible) return 'En attente';
+    return status.statut || 'À remplir';
+  }
+
+  getDocStatusBadgeClass(status: SupervisorStageDocumentStatus | null): string {
+    if (!status) return 'status-neutral';
+    const label = this.getDocStatusLabel(status);
+    if (label === 'Disponible' || label === 'Généré') return 'status-positive';
+    if (label === 'Prêt') return 'status-info';
+    if (label === 'À remplir' || label === 'Non disponible') return 'status-neutral';
+    return 'status-warning';
+  }
+
+  getEvalStatusLabel(evaluation: SupervisorEvaluation): string {
+    if (evaluation.signaturesCompletes) return 'Signé';
+    if (evaluation.verrouillee) return 'Verrouillée';
+    if (evaluation.donneesCompletes) return 'Complète';
+    return 'À remplir';
+  }
+
+  getEvalStatusBadgeClass(evaluation: SupervisorEvaluation): string {
+    if (evaluation.signaturesCompletes) return 'status-positive';
+    if (evaluation.donneesCompletes) return 'status-info';
+    if (evaluation.verrouillee) return 'status-warning';
+    return 'status-neutral';
   }
 
   private loadRelatedData(internships: SupervisorInternship[]): void {
@@ -708,10 +874,48 @@ export class SupervisorWorkspaceComponent implements OnInit {
     return this.documentStatusesByStage.get(stageId)?.ficheEvaluation ?? null;
   }
 
+  /** Ouvre la fenêtre de détails d'un document de stage. */
+  openDocDetails(titre: string, status: SupervisorStageDocumentStatus | null): void {
+    if (!status) {
+      return;
+    }
+    this.docDetailsModal = { titre, status };
+  }
+
+  /** Vrai si la convention est déjà signée par l'encadrant connecté (selon son rôle). */
+  isAgreementSignedByMe(agreement: SupervisorAgreement): boolean {
+    return this.role === 'ENCADRANT_ACADEMIQUE' ? agreement.signeeEncAca : agreement.signeeEncPro;
+  }
+
+  /** Vrai si le cahier de stage est déjà signé par l'encadrant connecté (selon son rôle). */
+  isLogbookSignedByMe(logbook: SupervisorLogbook): boolean {
+    return this.role === 'ENCADRANT_ACADEMIQUE' ? logbook.signeeEncAcad : logbook.signeeEncPro;
+  }
+
+  /** Vrai si la fiche d'évaluation est déjà signée par l'encadrant professionnel (seul signataire encadrant). */
+  isEvaluationSignedByMe(evaluation: SupervisorEvaluation): boolean {
+    return !!evaluation.signatureEncadrantProfessionnel;
+  }
+
+  /** Titre lisible d'une section de documents (remplace la logique ternaire du template). */
+  getDocumentTableTitle(type: string): string {
+    switch (type) {
+      case 'cahier':
+        return 'Cahier de stage';
+      case 'conventions':
+        return 'Conventions';
+      case 'evaluations':
+        return 'Fiches d’évaluation';
+      default:
+        return 'Documents';
+    }
+  }
+
   private emptyMeetingDraft(): SupervisorMeetingPayload {
     return {
       date: '',
       heure: '',
+      typeReunion: 'HEBDOMADAIRE',
       observation: '',
       compteRendu: '',
       stageId: this.internships[0]?.id ?? 0,
@@ -719,11 +923,67 @@ export class SupervisorWorkspaceComponent implements OnInit {
     };
   }
 
+  getMeetingParticipantOptions(stageId: number): Array<{ id: number; label: string }> {
+    const internship = this.internships.find((item) => item.id === stageId);
+    if (!internship) {
+      return [];
+    }
+
+    const participants = [
+      internship.student.id ? { id: internship.student.id, label: internship.student.fullName || 'Stagiaire' } : null,
+      internship.academicSupervisor.id ? { id: internship.academicSupervisor.id, label: internship.academicSupervisor.fullName || 'Encadrant académique' } : null,
+      internship.professionalSupervisor.id ? { id: internship.professionalSupervisor.id, label: internship.professionalSupervisor.fullName || 'Encadrant professionnel' } : null,
+      internship.companySupervisor.id ? { id: internship.companySupervisor.id, label: internship.companySupervisor.fullName || 'Responsable entreprise' } : null
+    ].filter((item): item is { id: number; label: string } => !!item);
+
+    const uniqueById = new Map<number, { id: number; label: string }>();
+    participants.forEach((participant) => uniqueById.set(participant.id, participant));
+    return Array.from(uniqueById.values());
+  }
+
+  toggleMeetingParticipant(participantId: number, checked: boolean): void {
+    const currentIds = Array.isArray(this.meetingDraft.participantIds) ? [...this.meetingDraft.participantIds] : [];
+    const uniqueIds = new Set(currentIds);
+    if (checked) {
+      uniqueIds.add(participantId);
+    } else {
+      uniqueIds.delete(participantId);
+    }
+    this.meetingDraft.participantIds = Array.from(uniqueIds);
+  }
+
+  isMeetingParticipantSelected(participantId: number): boolean {
+    return Array.isArray(this.meetingDraft.participantIds) && this.meetingDraft.participantIds.includes(participantId);
+  }
+
+  getSelectedMeetingStage(): SupervisorInternship | null {
+    return this.internships.find((item) => item.id === this.meetingDraft.stageId) ?? null;
+  }
+
+  private isMeetingDateWithinSelectedStage(): boolean {
+    const stage = this.getSelectedMeetingStage();
+    if (!stage?.dateDebut || !stage?.dateFin || !this.meetingDraft.date) {
+      return false;
+    }
+
+    return this.meetingDraft.date >= stage.dateDebut && this.meetingDraft.date <= stage.dateFin;
+  }
+
+  private isMeetingDelayRespected(date: string, heure: string): boolean {
+    const timestamp = Date.parse(`${date}T${heure}`);
+    if (Number.isNaN(timestamp)) {
+      return false;
+    }
+
+    const twentyFourHoursInMs = 24 * 60 * 60 * 1000;
+    return timestamp - Date.now() >= twentyFourHoursInMs;
+  }
+
   private normalize(value: string): string {
     return value
       .toLowerCase()
       .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/[̀-ͯ]/g, '')
       .trim();
   }
 

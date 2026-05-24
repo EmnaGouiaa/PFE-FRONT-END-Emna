@@ -29,7 +29,7 @@ export class StudentReportPageComponent implements OnInit {
     this.studentPortalService.listMyInternships().subscribe({
       next: (internships) => {
         this.internships = internships;
-        this.selectedInternship = this.studentPortalService.pickCurrentInternship(internships);
+        this.selectedInternship = this.studentPortalService.resolveSelectedInternship(internships);
         this.selectedStageId = this.selectedInternship?.id ?? null;
         this.isLoadingInternships = false;
         if (this.selectedInternship) {
@@ -46,6 +46,7 @@ export class StudentReportPageComponent implements OnInit {
   onStageChange(stageId: number): void {
     this.selectedStageId = Number(stageId);
     this.selectedInternship = this.internships.find((item) => item.id === this.selectedStageId) ?? null;
+    this.studentPortalService.setSelectedStageId(this.selectedStageId);
     if (this.selectedInternship) {
       this.loadStageData(this.selectedInternship.id);
     }

@@ -99,6 +99,8 @@
 .filters {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 220px 240px;
+  gap: 12px;
+  margin-bottom: 18px;
 }
 
 .table {
@@ -152,6 +154,8 @@
 
 .refusal-modal {
   width: min(760px, 100%);
+  max-height: calc(100dvh - 48px);
+  overflow-y: auto;
   padding: 28px;
   border-radius: 28px;
   background: linear-gradient(180deg, #fff9f8 0%, #ffffff 100%);
@@ -272,5 +276,48 @@
 
   .refusal-actions {
     flex-direction: column-reverse;
+  }
+}
+
+@media (max-width: 640px) {
+  .refusal-modal-backdrop {
+    padding: 12px;
+    align-items: flex-end;
+  }
+
+  .refusal-modal {
+    max-height: calc(100dvh - 24px);
+    padding: 20px 18px;
+    border-radius: 22px 22px 10px 10px;
+  }
+
+  .dashboard-stat {
+    min-height: auto;
+  }
+
+  .stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 480px) {
+  .refusal-modal-backdrop {
+    padding: 0;
+  }
+
+  .refusal-modal {
+    max-height: calc(100dvh - 8px);
+    border-radius: 18px 18px 0 0;
+    width: 100%;
+  }
+
+  .stats {
+    grid-template-columns: 1fr;
+  }
+
+  .refusal-help {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
   }
 }

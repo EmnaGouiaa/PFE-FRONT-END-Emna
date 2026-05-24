@@ -2,7 +2,7 @@
   <section class="page-hero">
     <div>
       <h1>Évaluation</h1>
-      <p>Consultez votre fiche d’évaluation si l’API backend l’expose au rôle stagiaire.</p>
+      <p>Consultez votre fiche d'évaluation si l'API backend l'expose au rôle stagiaire.</p>
     </div>
   </section>
 
@@ -13,11 +13,11 @@
     <div class="panel-header">
       <div>
         <h2>Choix du stage</h2>
-        <p class="panel-subtitle">La fiche d’évaluation est liée au stage sélectionné.</p>
+        <p class="panel-subtitle">La fiche d'évaluation est liée au stage sélectionné.</p>
       </div>
     </div>
 
-    <select class="select stage-selector" [ngModel]="selectedStageId" (ngModelChange)="onStageChange($event)">
+    <select *ngIf="internships.length > 1" class="select stage-selector" [ngModel]="selectedStageId" (ngModelChange)="onStageChange($event)">
       <option *ngFor="let internship of internships" [ngValue]="internship.id">
         {{ internship.titre || internship.sujet || ('Stage #' + internship.id) }}
       </option>
@@ -30,13 +30,13 @@
   <section class="panel" *ngIf="selectedInternship">
     <div class="panel-header">
       <div>
-          <h2>Fiche d’évaluation</h2>
+          <h2>Fiche d'évaluation</h2>
         <p class="panel-subtitle">Consultation uniquement</p>
       </div>
     </div>
 
     <div class="empty-card" *ngIf="isLoadingData">Chargement de la fiche...</div>
-    <div class="empty-card" *ngIf="!isLoadingData && !evaluation && !infoMessage">Aucune fiche d’évaluation disponible pour ce stage.</div>
+    <div class="empty-card" *ngIf="!isLoadingData && !evaluation && !infoMessage">Aucune fiche d'évaluation disponible pour ce stage.</div>
 
     <div class="detail-grid" *ngIf="evaluation">
       <div class="detail-item">
@@ -48,11 +48,11 @@
         <span class="value">{{ evaluation.complete ? 'Complète' : 'Partielle' }}</span>
       </div>
       <div class="detail-item full-width">
-        <span class="label">Points forts de l’encadrant professionnel</span>
+        <span class="label">Points forts de l'encadrant professionnel</span>
         <span class="value">{{ evaluation.pointFortEncadrantPro || 'Non renseigné' }}</span>
       </div>
       <div class="detail-item full-width">
-        <span class="label">Axes d’amélioration de l’encadrant professionnel</span>
+        <span class="label">Axes d'amélioration de l'encadrant professionnel</span>
         <span class="value">{{ evaluation.axeAmeliorationEncadrantPro || 'Non renseigné' }}</span>
       </div>
       <div class="detail-item full-width">
@@ -60,7 +60,7 @@
         <span class="value">{{ evaluation.pointFortResponsableEntreprise || 'Non renseigné' }}</span>
       </div>
       <div class="detail-item full-width">
-        <span class="label">Axes d’amélioration du responsable entreprise</span>
+        <span class="label">Axes d'amélioration du responsable entreprise</span>
         <span class="value">{{ evaluation.axeAmeliorationResponsableEntreprise || 'Non renseigné' }}</span>
       </div>
     </div>

@@ -2,11 +2,12 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, RouterModule } from '@angular/router';
 import { AuthentificationService, RoleUtilisateur } from '../../services/authentification.service';
+import { NotificationBellComponent } from '../notification-bell/notification-bell.component';
 
 @Component({
   selector: 'app-navbar',
   standalone: true,
-  imports: [CommonModule, RouterModule],
+  imports: [CommonModule, RouterModule, NotificationBellComponent],
   templateUrl: './navbar.html',
   styleUrls: ['./navbar.css']
 })
@@ -39,8 +40,7 @@ export class Navbar implements OnInit {
       this.userRole === RoleUtilisateur.ENCADRANT_PROFESSIONNEL;
     this.isResponsableEntreprise = this.userRole === RoleUtilisateur.RESPONSABLE_ENTREPRISE;
     this.isResponsableUniversitaire =
-      this.userRole === RoleUtilisateur.RESPONSABLE_SERVICE_STAGES ||
-      this.userRole === RoleUtilisateur.RESPONSABLE_UNIVERSITAIRE_STAGES;
+      this.userRole === RoleUtilisateur.RESPONSABLE_STAGE;
   }
 
   logout(): void {
@@ -64,8 +64,7 @@ export class Navbar implements OnInit {
       [RoleUtilisateur.STAGIAIRE]: 'Stagiaire',
       [RoleUtilisateur.ENCADRANT_PROFESSIONNEL]: 'Encadrant professionnel',
       [RoleUtilisateur.ENCADRANT_ACADEMIQUE]: 'Encadrant académique',
-      [RoleUtilisateur.RESPONSABLE_SERVICE_STAGES]: 'Responsable des stages',
-      [RoleUtilisateur.RESPONSABLE_UNIVERSITAIRE_STAGES]: 'Responsable universitaire des stages',
+      [RoleUtilisateur.RESPONSABLE_STAGE]: 'Responsable des stages',
       [RoleUtilisateur.RESPONSABLE_ENTREPRISE]: 'Responsable entreprise'
     };
 

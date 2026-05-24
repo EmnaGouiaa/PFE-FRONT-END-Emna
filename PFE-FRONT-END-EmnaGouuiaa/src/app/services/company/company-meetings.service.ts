@@ -1,15 +1,33 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable } from 'rxjs';
-import { map } from 'rxjs/operators';
+import { forkJoin, Observable, of } from 'rxjs';
+import { catchError, map } from 'rxjs/operators';
 import { API_BASE_URL } from '../api.config';
 import { CompanyMeeting } from './company.models';
 
 @Injectable({ providedIn: 'root' })
 export class CompanyMeetingsService {
   private readonly apiUrl = `${API_BASE_URL}/reunions`;
+  private readonly weeklyUrl = `${API_BASE_URL}/reunions-hebdomadaires`;
+  private readonly finalUrl = `${API_BASE_URL}/reunions-finales`;
 
   constructor(private http: HttpClient) {}
+
+  /** Fetches all meetings (weekly + final) for a specific stage, sorted by date. */
+  listForStage(stageId: number): Observable<CompanyMeeting[]> {
+    return forkJoin([
+      this.http.get<any>(`${this.weeklyUrl}/stage/${stageId}`).pipe(
+        map((response) => this.extractCollection(response).map((item) => this.normalizeMeeting(item))),
+        catchError(() => of([] as CompanyMeeting[]))
+      ),
+      this.http.get<any>(`${this.finalUrl}/stage/${stageId}`).pipe(
+        map((response) => this.extractCollection(response).map((item) => this.normalizeMeeting(item))),
+        catchError(() => of([] as CompanyMeeting[]))
+      )
+    ]).pipe(
+      map(([weekly, finale]) => [...weekly, ...finale].sort((a, b) => a.date.localeCompare(b.date)))
+    );
+  }
 
   listForCurrentCompany(): Observable<CompanyMeeting[]> {
     return this.http
@@ -39,7 +57,6 @@ export class CompanyMeetingsService {
       entrepriseNom: String(raw?.entrepriseNom ?? ''),
       participantIds: Array.isArray(raw?.participantIds) ? raw.participantIds.map((item: unknown) => Number(item)) : [],
       note: this.normalizeNullableNumber(raw?.note),
-      urlFormEvaluation: String(raw?.urlFormEvaluation ?? ''),
       urlFormSatisfaction: String(raw?.urlFormSatisfaction ?? '')
     };
   }

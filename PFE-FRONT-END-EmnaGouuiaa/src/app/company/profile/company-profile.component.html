@@ -21,7 +21,7 @@
     <article class="panel">
       <div class="panel-header">
         <div>
-          <h2>Représentant d’entreprise</h2>
+          <h2>Représentant d'entreprise</h2>
           <div class="panel-subtitle">{{ isEditingProfile ? 'Édition du compte' : 'Informations du compte en lecture seule' }}</div>
         </div>
       </div>
@@ -44,7 +44,7 @@
         </div>
         <div>
           <label>Téléphone</label>
-          <input class="input" formControlName="telephone" [readonly]="!isEditingProfile" [class.readonly-input]="!isEditingProfile" />
+          <app-phone-input formControlName="telephone" [readonly]="!isEditingProfile"></app-phone-input>
         </div>
         <div>
           <label>Poste</label>
@@ -55,16 +55,57 @@
           <input class="input" formControlName="service" [readonly]="!isEditingProfile" [class.readonly-input]="!isEditingProfile" />
         </div>
         <div class="full-width">
-          <label>URL ou nom du fichier de signature</label>
-          <input
-            class="input"
-            formControlName="nomFichierSignature"
-            placeholder="https://.../signature.png ou signature.png"
-            [readonly]="!isEditingProfile"
-            [class.readonly-input]="!isEditingProfile"
-          />
+          <label>Signature</label>
+
+          <!-- Mode lecture -->
+          <ng-container *ngIf="!isEditingProfile">
+            <img
+              *ngIf="hasSignature"
+              [src]="profileForm.get('nomFichierSignature')?.value"
+              alt="Signature"
+              class="sig-preview-readonly"
+            />
+            <span *ngIf="!hasSignature" class="sig-empty">Aucune signature enregistrée.</span>
+          </ng-container>
+
+          <!-- Mode édition -->
+          <ng-container *ngIf="isEditingProfile">
+            <!-- Input fichier caché — déclenché par la zone ci-dessous -->
+            <input
+              #signatureFileInput
+              type="file"
+              accept="image/png,image/jpeg,image/jpg,image/webp"
+              style="display:none"
+              (change)="onSignatureSelectionnee($event)"
+            />
+            <!-- Input caché pour la valeur du formulaire réactif -->
+            <input type="hidden" formControlName="nomFichierSignature" />
+
+            <div class="sig-upload-zone" (click)="ouvrirSelecteurFichier()">
+              <img
+                *ngIf="signatureApercuLocal"
+                [src]="signatureApercuLocal"
+                alt="Aperçu signature"
+                class="sig-preview-edit"
+              />
+              <div *ngIf="!signatureApercuLocal" class="sig-upload-placeholder">
+                <span class="sig-upload-icon">🖋</span>
+                <span>Cliquez pour importer une image de signature</span>
+                <span class="sig-upload-hint">PNG · JPG · WEBP · max 1 Mo</span>
+              </div>
+            </div>
+
+            <button
+              *ngIf="signatureApercuLocal"
+              type="button"
+              class="btn btn-secondary sig-remove-btn"
+              (click)="supprimerSignature(); $event.stopPropagation()"
+            >
+              Supprimer la signature
+            </button>
+          </ng-container>
+
           <div class="panel-subtitle">Cette signature sera utilisée pour les conventions et évaluations à signer.</div>
-          <div class="field-error" *ngIf="isProfileInvalid('nomFichierSignature')">La référence de signature est trop longue.</div>
         </div>
       </form>
 
@@ -91,9 +132,9 @@
 
       <form [formGroup]="companyForm" class="form-grid" (ngSubmit)="saveCompany()">
         <div class="full-width">
-          <label>Nom de l’entreprise</label>
+          <label>Nom de l'entreprise</label>
           <input class="input" formControlName="nomEntreprise" [readonly]="!isEditingCompany" [class.readonly-input]="!isEditingCompany" />
-          <div class="field-error" *ngIf="isCompanyInvalid('nomEntreprise')">Le nom de l’entreprise est requis.</div>
+          <div class="field-error" *ngIf="isCompanyInvalid('nomEntreprise')">Le nom de l'entreprise est requis.</div>
         </div>
         <div class="full-width">
           <label>Adresse</label>
@@ -106,10 +147,10 @@
         </div>
         <div>
           <label>Téléphone</label>
-          <input class="input" formControlName="telephoneEntreprise" [readonly]="!isEditingCompany" [class.readonly-input]="!isEditingCompany" />
+          <app-phone-input formControlName="telephoneEntreprise" [readonly]="!isEditingCompany"></app-phone-input>
         </div>
         <div class="full-width">
-          <label>Secteur d’activité</label>
+          <label>Secteur d'activité</label>
           <input class="input" formControlName="secteurActivite" [readonly]="!isEditingCompany" [class.readonly-input]="!isEditingCompany" />
         </div>
       </form>
@@ -119,7 +160,7 @@
           Modifier
         </button>
         <button type="button" class="btn btn-primary" *ngIf="isEditingCompany" (click)="saveCompany()" [disabled]="isSavingCompany">
-          {{ isSavingCompany ? 'Enregistrement...' : 'Enregistrer l’entreprise' }}
+          {{ isSavingCompany ? 'Enregistrement...' : 'Enregistrer l'entreprise' }}
         </button>
         <button type="button" class="btn btn-secondary" *ngIf="isEditingCompany" (click)="cancelCompanyEditing()" [disabled]="isSavingCompany">
           Annuler

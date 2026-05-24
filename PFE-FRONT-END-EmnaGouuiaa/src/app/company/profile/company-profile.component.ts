@@ -1,21 +1,23 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, ElementRef, OnInit, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
-import { switchMap, timeout } from 'rxjs/operators';
+import { map, switchMap, timeout } from 'rxjs/operators';
 import { CompanyContextService } from '../../services/company/company-context.service';
 import { CompanyContext } from '../../services/company/company.models';
 import { CurrentUserProfileService } from '../../services/current-user-profile.service';
 import { EntreprisesService } from '../../services/entreprises.service';
-import { ResponsablesEntrepriseService } from '../../services/responsables-entreprise.service';
+import { PhoneInputComponent } from '../../components/phone-input/phone-input.component';
 
 @Component({
   selector: 'app-company-profile-page',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule],
+  imports: [CommonModule, ReactiveFormsModule, PhoneInputComponent],
   templateUrl: './company-profile.component.html',
   styleUrls: ['../company-shared.css', './company-profile.component.css']
 })
 export class CompanyProfilePageComponent implements OnInit {
+  @ViewChild('signatureFileInput') signatureFileInput!: ElementRef<HTMLInputElement>;
+
   context: CompanyContext | null = null;
   profileForm!: FormGroup;
   emailConfirmationForm!: FormGroup;
@@ -31,11 +33,16 @@ export class CompanyProfilePageComponent implements OnInit {
   successMessage = '';
   emailConfirmationError = '';
 
+  /** Aperçu local de la signature (data-URI ou URL) affiché pendant l'édition. */
+  signatureApercuLocal: string | null = null;
+
+  /** Signature chargée depuis le serveur, utilisée pour annuler les modifications. */
+  private signatureChargee = '';
+
   constructor(
     private fb: FormBuilder,
     private companyContextService: CompanyContextService,
     private currentUserProfileService: CurrentUserProfileService,
-    private responsablesEntrepriseService: ResponsablesEntrepriseService,
     private entreprisesService: EntreprisesService
   ) {}
 
@@ -47,7 +54,8 @@ export class CompanyProfilePageComponent implements OnInit {
       telephone: [''],
       poste: [''],
       service: [''],
-      nomFichierSignature: ['', [Validators.maxLength(255)]]
+      // Pas de limite de longueur : la valeur peut être une image encodée en Base-64.
+      nomFichierSignature: ['']
     });
 
     this.emailConfirmationForm = this.fb.group({
@@ -65,6 +73,10 @@ export class CompanyProfilePageComponent implements OnInit {
     this.loadContext();
   }
 
+  get hasSignature(): boolean {
+    return Boolean(String(this.profileForm?.get('nomFichierSignature')?.value ?? '').trim());
+  }
+
   loadContext(preserveSuccessMessage = false): void {
     this.isLoading = true;
     this.isEditingProfile = false;
@@ -76,18 +88,29 @@ export class CompanyProfilePageComponent implements OnInit {
     }
     this.emailConfirmationError = '';
 
-    this.companyContextService.refresh().pipe(timeout(15000)).subscribe({
-      next: (context) => {
+    this.companyContextService.refresh().pipe(
+      switchMap((context) =>
+        this.currentUserProfileService.getCurrentProfile().pipe(
+          map((profile) => ({ context, profile }))
+        )
+      ),
+      timeout(15000)
+    ).subscribe({
+      next: ({ context, profile }) => {
         this.context = context;
+        const signature = profile.nomFichierSignature || '';
+        this.signatureChargee = signature;
+
         this.profileForm.patchValue({
-          email: context.responsable.email ?? '',
-          prenom: context.responsable.prenom ?? '',
-          nom: context.responsable.nom ?? '',
-          telephone: context.responsable.telephone ?? '',
-          poste: context.responsable.poste ?? '',
-          service: context.responsable.service ?? '',
-          nomFichierSignature: context.responsable.nomFichierSignature ?? this.currentUserProfileService.getCachedSignature()
+          email: context.responsable.email ?? profile.email ?? '',
+          prenom: context.responsable.prenom ?? profile.prenom ?? '',
+          nom: context.responsable.nom ?? profile.nom ?? '',
+          telephone: context.responsable.telephone ?? profile.telephone ?? '',
+          poste: context.responsable.poste ?? profile.poste ?? '',
+          service: context.responsable.service ?? profile.service ?? '',
+          nomFichierSignature: signature
         });
+        this.signatureApercuLocal = signature.trim() || null;
         this.emailConfirmationForm.reset();
 
         this.companyForm.patchValue({
@@ -126,8 +149,50 @@ export class CompanyProfilePageComponent implements OnInit {
       telephone: this.context.responsable.telephone ?? '',
       poste: this.context.responsable.poste ?? '',
       service: this.context.responsable.service ?? '',
-      nomFichierSignature: this.context.responsable.nomFichierSignature ?? this.currentUserProfileService.getCachedSignature()
+      nomFichierSignature: this.signatureChargee
     });
+    this.signatureApercuLocal = this.signatureChargee.trim() || null;
+  }
+
+  // ── Gestion de l'import de signature ───────────────────────────────────────
+
+  ouvrirSelecteurFichier(): void {
+    this.signatureFileInput?.nativeElement.click();
+  }
+
+  onSignatureSelectionnee(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const fichier = input.files?.[0];
+    if (!fichier) return;
+
+    const typesAcceptes = ['image/png', 'image/jpeg', 'image/jpg', 'image/gif', 'image/webp'];
+    if (!typesAcceptes.includes(fichier.type)) {
+      this.errorMessage = 'Format non supporté. Utilisez PNG, JPG ou WEBP.';
+      return;
+    }
+
+    const tailleMaxKo = 1024; // 1 Mo
+    if (fichier.size > tailleMaxKo * 1024) {
+      this.errorMessage = `L'image ne doit pas dépasser ${tailleMaxKo} Ko.`;
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const dataUri = e.target?.result as string;
+      this.signatureApercuLocal = dataUri;
+      this.profileForm.get('nomFichierSignature')?.setValue(dataUri);
+      this.errorMessage = '';
+    };
+    reader.readAsDataURL(fichier);
+
+    // Remet l'input à zéro pour permettre de re-sélectionner le même fichier.
+    input.value = '';
+  }
+
+  supprimerSignature(): void {
+    this.signatureApercuLocal = null;
+    this.profileForm.get('nomFichierSignature')?.setValue('');
   }
 
   saveProfile(): void {
@@ -168,7 +233,7 @@ export class CompanyProfilePageComponent implements OnInit {
       email: values.email,
       motDePasseActuel: this.emailConfirmationForm.get('motDePasse')?.value
     }).pipe(
-      switchMap(() => this.saveProfileRequest(values.email)),
+      switchMap(() => this.saveProfileRequest()),
       timeout(15000)
     ).subscribe({
       next: () => {
@@ -224,7 +289,7 @@ export class CompanyProfilePageComponent implements OnInit {
 
     const entrepriseId = this.context?.entreprise?.id;
     if (!entrepriseId) {
-      this.errorMessage = 'Aucune entreprise n’est disponible pour la mise à jour.';
+      this.errorMessage = "Aucune entreprise n'est disponible pour la mise à jour.";
       return;
     }
 
@@ -242,7 +307,7 @@ export class CompanyProfilePageComponent implements OnInit {
       .pipe(timeout(15000))
       .subscribe({
         next: () => {
-          this.successMessage = 'Informations de l’entreprise mises à jour avec succès.';
+          this.successMessage = "Informations de l'entreprise mises à jour avec succès.";
           this.isSavingCompany = false;
           this.isEditingCompany = false;
           this.loadContext(true);
@@ -276,7 +341,7 @@ export class CompanyProfilePageComponent implements OnInit {
     this.errorMessage = '';
     this.successMessage = '';
 
-    this.saveProfileRequest(this.context.responsable.email ?? '')
+    this.saveProfileRequest()
       .pipe(timeout(15000))
       .subscribe({
         next: () => {
@@ -292,28 +357,23 @@ export class CompanyProfilePageComponent implements OnInit {
       });
   }
 
-  private saveProfileRequest(email: string) {
-    const context = this.context!;
+  /**
+   * Met à jour le profil via l'endpoint self-service `/api/utilisateurs/me/profile`.
+   * Ce point d'accès gère prenom/nom/telephone/poste/service/signature pour le rôle
+   * RESPONSABLE_ENTREPRISE — il n'est plus nécessaire d'appeler l'endpoint admin
+   * `PUT /api/responsables-entreprise/{id}` (réservé à l'ADMINISTRATEUR -> 403).
+   */
+  private saveProfileRequest() {
     const values = this.profileForm.getRawValue();
 
-    return this.currentUserProfileService
-      .updateCurrentProfile({
-        prenom: values.prenom,
-        nom: values.nom,
-        telephone: values.telephone,
-        nomFichierSignature: values.nomFichierSignature
-      })
-      .pipe(
-        switchMap(() => this.responsablesEntrepriseService.update(context.responsable.id, {
-          prenom: values.prenom,
-          nom: values.nom,
-          email,
-          telephone: values.telephone,
-          poste: values.poste,
-          service: values.service,
-          entrepriseId: context.responsable.entrepriseId
-        }))
-      );
+    return this.currentUserProfileService.updateCurrentProfile({
+      prenom: values.prenom,
+      nom: values.nom,
+      telephone: values.telephone,
+      poste: values.poste,
+      service: values.service,
+      nomFichierSignature: values.nomFichierSignature
+    });
   }
 
   private openEmailConfirmation(): void {

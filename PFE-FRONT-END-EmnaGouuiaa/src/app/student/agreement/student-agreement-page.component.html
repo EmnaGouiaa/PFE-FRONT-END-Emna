@@ -2,7 +2,7 @@
   <section class="page-hero">
     <div>
       <h1>Convention de stage</h1>
-      <p>Consultez la convention générée par le backend et suivez l’état des signatures.</p>
+      <p>Consultez la convention générée par le backend et suivez l'état des signatures.</p>
     </div>
   </section>
 
@@ -17,7 +17,7 @@
       </div>
     </div>
 
-    <select class="select stage-selector" [ngModel]="selectedStageId" (ngModelChange)="onStageChange($event)">
+    <select *ngIf="internships.length > 1" class="select stage-selector" [ngModel]="selectedStageId" (ngModelChange)="onStageChange($event)">
       <option *ngFor="let internship of internships" [ngValue]="internship.id">
         {{ internship.titre || internship.sujet || ('Stage #' + internship.id) }}
       </option>

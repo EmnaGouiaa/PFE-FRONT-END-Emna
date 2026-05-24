@@ -1,18 +1,21 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, ElementRef, OnInit, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { switchMap } from 'rxjs/operators';
 import { ProfileCompletionService } from '../services/profile-completion.service';
 import { DonneesProfil, ServiceProfilService } from '../services/service-profil.service';
+import { PhoneInputComponent } from './phone-input/phone-input.component';
 
 @Component({
   selector: 'app-profile-management',
   standalone: true,
-  imports: [CommonModule, FormsModule, ReactiveFormsModule],
+  imports: [CommonModule, FormsModule, ReactiveFormsModule, PhoneInputComponent],
   templateUrl: './profile-management.component.html',
   styleUrls: ['../admin/dashboard/admin-dashboard.css', '../company/company-shared.css', './profile-management.component.css']
 })
 export class ProfileManagementComponent implements OnInit {
+  @ViewChild('signatureFileInput') signatureFileInput!: ElementRef<HTMLInputElement>;
+
   profil: DonneesProfil | null = null;
   enChargement = false;
   enregistrementEnCours = false;
@@ -21,6 +24,9 @@ export class ProfileManagementComponent implements OnInit {
   afficherChampsMotDePasse = false;
   modeEditionProfil = false;
   afficherConfirmationEmail = false;
+
+  /** Aperçu local de la signature (data-URI ou URL) affiché pendant l'édition. */
+  signatureApercuLocal: string | null = null;
 
   formulaireProfil!: FormGroup;
   formulaireConfirmationEmail!: FormGroup;
@@ -76,7 +82,8 @@ export class ProfileManagementComponent implements OnInit {
       grade: [''],
       matricule: [''],
       dateNaiss: [''],
-      nomFichierSignature: ['', [Validators.maxLength(255)]]
+      // Pas de limite de longueur : la valeur peut être une image encodée en Base-64
+      nomFichierSignature: ['']
     });
 
     this.formulaireConfirmationEmail = this.fb.group({
@@ -126,7 +133,51 @@ export class ProfileManagementComponent implements OnInit {
       nomFichierSignature: this.profil.nomFichierSignature || ''
     });
 
+    // Synchronise l'aperçu de signature avec les données du profil
+    this.signatureApercuLocal = this.profil.nomFichierSignature?.trim() || null;
+
     this.formulaireConfirmationEmail.reset();
+  }
+
+  // ── Gestion de l'import de signature ───────────────────────────────────────
+
+  ouvrirSelecteurFichier(): void {
+    this.signatureFileInput?.nativeElement.click();
+  }
+
+  onSignatureSelectionnee(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const fichier = input.files?.[0];
+    if (!fichier) return;
+
+    const typesAcceptes = ['image/png', 'image/jpeg', 'image/jpg', 'image/gif', 'image/webp'];
+    if (!typesAcceptes.includes(fichier.type)) {
+      this.messageErreur = 'Format non supporté. Utilisez PNG, JPG ou WEBP.';
+      return;
+    }
+
+    const tailleMaxKo = 1024; // 1 Mo
+    if (fichier.size > tailleMaxKo * 1024) {
+      this.messageErreur = `L'image ne doit pas dépasser ${tailleMaxKo} Ko.`;
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const dataUri = e.target?.result as string;
+      this.signatureApercuLocal = dataUri;
+      this.formulaireProfil.get('nomFichierSignature')?.setValue(dataUri);
+      this.messageErreur = null;
+    };
+    reader.readAsDataURL(fichier);
+
+    // Remet l'input à zéro pour permettre de re-sélectionner le même fichier
+    input.value = '';
+  }
+
+  supprimerSignature(): void {
+    this.signatureApercuLocal = null;
+    this.formulaireProfil.get('nomFichierSignature')?.setValue('');
   }
 
   champInvalide(formulaire: FormGroup, nomChamp: string): boolean {
@@ -316,14 +367,29 @@ export class ProfileManagementComponent implements OnInit {
     this.messageErreur = null;
     this.messageSucces = null;
 
+    // Capture the submitted signature before the API call so we can verify it was saved.
+    const signatureEnvoyee = (this.formulaireProfil.get('nomFichierSignature')?.value ?? '').trim();
+
     this.serviceProfil.mettreAJourProfil(this.construirePayloadProfil()).subscribe({
       next: (reponse) => {
-        this.messageSucces = 'Profil mis à jour avec succès.';
         this.profil = reponse;
         this.remplirFormulaire();
         this.modeEditionProfil = false;
         this.enregistrementEnCours = false;
-        setTimeout(() => (this.messageSucces = null), 3000);
+
+        // N'afficher le succès que si la signature soumise est bien retournée par le serveur.
+        // Comparaison exacte : évite qu'une valeur mise en cache masque un échec de sauvegarde.
+        const signatureRetournee = (reponse.nomFichierSignature ?? '').trim();
+        const signatureNonSauvegardee =
+          signatureEnvoyee.length > 0 && signatureRetournee !== signatureEnvoyee;
+
+        if (signatureNonSauvegardee) {
+          this.messageErreur =
+            'La signature n\'a pas pu être sauvegardée. Veuillez réessayer.';
+        } else {
+          this.messageSucces = 'Profil mis à jour avec succès.';
+          setTimeout(() => (this.messageSucces = null), 3000);
+        }
       },
       error: (err) => {
         this.messageErreur = this.extraireMessageErreur(err, 'Erreur lors de la mise à jour.');
@@ -356,8 +422,7 @@ export class ProfileManagementComponent implements OnInit {
       ENCADRANT_ACADEMIQUE: ['grade', 'specialite'],
       ENCADRANT_PROFESSIONNEL: ['poste', 'service'],
       RESPONSABLE_ENTREPRISE: ['poste', 'service'],
-      RESPONSABLE_SERVICE_STAGES: ['service'],
-      RESPONSABLE_UNIVERSITAIRE_STAGES: []
+      RESPONSABLE_STAGE: []
     };
     return [...communs, ...(specifiques[role] ?? [])];
   }

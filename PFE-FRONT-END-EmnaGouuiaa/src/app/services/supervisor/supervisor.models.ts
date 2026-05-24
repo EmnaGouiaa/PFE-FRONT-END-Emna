@@ -51,8 +51,8 @@ export interface SupervisorMeeting {
   typeEncadrantCreateur: string;
   nomEncadrantCreateur: string;
   participantIds: number[];
+  participantNames?: string[];
   note: number | null;
-  urlFormEvaluation: string;
   urlFormSatisfaction: string;
 }
 
@@ -65,6 +65,8 @@ export interface SupervisorMeetingPayload {
   compteRendu?: string;
   stageId: number;
   participantIds?: number[];
+  /** Toujours "HEBDOMADAIRE" — requis par le backend. */
+  typeReunion?: string;
 }
 
 export interface SupervisorAgreement {
@@ -72,6 +74,7 @@ export interface SupervisorAgreement {
   numConv: number | null;
   dateDebut: string;
   dateFin: string;
+  anneeUniversitaire: string;
   signeeEncAca: boolean;
   signeeEncPro: boolean;
   signeeEntreprise: boolean;
@@ -96,10 +99,26 @@ export interface SupervisorLogbook {
   stageTitre: string;
 }
 
+export interface EvaluationNoteDto {
+  ficheEvaluationId?: number | null;
+  critereEvaluationId?: number | null;
+  poids: number;
+  bareme: number;
+  note: number | null;
+  commentaire?: string;
+  critereLibelle?: string;
+  scorePondere?: number | null;
+  evaluee?: boolean;
+}
+
 export interface SupervisorEvaluation {
   id: number;
   stageId: number;
   stageTitre: string;
+  stagiaireNomComplet?: string;
+  sectionStagiaire?: string;
+  entrepriseNom?: string;
+  reunionFinaleNumero?: string;
   reunionFinaleId: number | null;
   pointFortEncadrantPro: string;
   axeAmeliorationEncadrantPro: string;
@@ -114,6 +133,7 @@ export interface SupervisorEvaluation {
   signaturesCompletes: boolean;
   complete: boolean;
   verrouillee: boolean;
+  notesAttribuees: EvaluationNoteDto[];
 }
 
 export interface SupervisorStageDocumentStatus {

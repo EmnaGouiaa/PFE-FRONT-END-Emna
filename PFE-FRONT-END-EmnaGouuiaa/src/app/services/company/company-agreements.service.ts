@@ -8,6 +8,7 @@ import { CompanyAgreement } from './company.models';
 @Injectable({ providedIn: 'root' })
 export class CompanyAgreementsService {
   private readonly apiUrl = `${API_BASE_URL}/conventions-stage`;
+  private readonly stagesUrl = `${API_BASE_URL}/stages`;
 
   constructor(private http: HttpClient) {}
 
@@ -17,6 +18,10 @@ export class CompanyAgreementsService {
       .pipe(map((item) => this.normalizeAgreement(item)));
   }
 
+  downloadDocument(stageId: number, type: 'convention' | 'fiche-evaluation' | 'cahier-stage'): Observable<Blob> {
+    return this.http.get(`${this.stagesUrl}/${stageId}/documents/${type}/pdf`, { responseType: 'blob' });
+  }
+
   signByEntreprise(id: number): Observable<CompanyAgreement> {
     return this.http
       .put<any>(`${this.apiUrl}/${id}/signer-entreprise`, {})
@@ -24,11 +29,13 @@ export class CompanyAgreementsService {
   }
 
   private normalizeAgreement(raw: any): CompanyAgreement {
+    const dateDebut = String(raw?.dateDebut ?? '');
     return {
       id: Number(raw?.id ?? 0),
       numConv: raw?.numConv ?? null,
-      dateDebut: String(raw?.dateDebut ?? ''),
+      dateDebut,
       dateFin: String(raw?.dateFin ?? ''),
+      anneeUniversitaire: this.computeAnneeUniversitaire(dateDebut),
       signeeEncAca: Boolean(raw?.signeeEncAca),
       signeeEncPro: Boolean(raw?.signeeEncPro),
       signeeEntreprise: Boolean(raw?.signeeEntreprise),
@@ -39,5 +46,14 @@ export class CompanyAgreementsService {
       stageTitre: String(raw?.stageTitre ?? ''),
       demandeStageId: raw?.demandeStageId ?? null
     };
+  }
+
+  private computeAnneeUniversitaire(dateDebut: string): string {
+    if (!dateDebut) return '';
+    const d = new Date(dateDebut);
+    if (isNaN(d.getTime())) return '';
+    const year = d.getFullYear();
+    const month = d.getMonth() + 1;
+    return month >= 9 ? `${year}/${year + 1}` : `${year - 1}/${year}`;
   }
 }

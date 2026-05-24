@@ -182,19 +182,19 @@
                 <tbody>
                   <tr *ngFor="let stage of stages">
                     <td>
-                      <div class="cell-title">{{ stage.titre || ('Stage #' + stage.id) }}</div>
+                      <div class="cell-title">{{ getStageTitre(stage) }}</div>
                       <div class="cell-sub">Ref #{{ stage.id }}</div>
                     </td>
                     <td>
                       <div class="cell-title">{{ getStagiaireNom(stage) }}</div>
-                      <div class="cell-sub">{{ stage.stagiaire?.email || '-' }}</div>
+                      <div class="cell-sub">{{ getStagiaireEmail(stage) }}</div>
                     </td>
                     <td>
-                      <div class="cell-title">{{ stage.entreprise?.nom || '-' }}</div>
+                      <div class="cell-title">{{ getEntrepriseNom(stage) }}</div>
                     </td>
                     <td>{{ formatPeriod(stage) }}</td>
                     <td>
-                      <div class="subject-text">{{ stage.sujet || 'Sujet non renseigne' }}</div>
+                      <div class="subject-text">{{ getStageSujet(stage) }}</div>
                     </td>
                     <td>
                       <div class="status-stack">

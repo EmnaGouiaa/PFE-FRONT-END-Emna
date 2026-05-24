@@ -8,11 +8,12 @@ import {
   CreateResponsableEntrepriseRequest,
   UpdateResponsableEntrepriseRequest
 } from '../../services/responsables-entreprise.service';
+import { PhoneInputComponent } from '../../components/phone-input/phone-input.component';
 
 @Component({
   selector: 'app-admin-representants',
   standalone: true,
-  imports: [CommonModule, FormsModule, ReactiveFormsModule],
+  imports: [CommonModule, FormsModule, ReactiveFormsModule, PhoneInputComponent],
   templateUrl: './admin-representants.component.html',
   styleUrls: ['./admin-representants.component.css']
 })

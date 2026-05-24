@@ -112,10 +112,10 @@ import { FacultyAgreement, FacultyEvaluation, FacultyReport } from '../../servic
             </div>
 
             <div class="detail-card">
-              <div class="info-title">Détails de l’évaluation</div>
+              <div class="info-title">Détails de l'évaluation</div>
               <div class="info-meta" *ngIf="selectedEvaluation">Note finale : {{ selectedEvaluation.noteFinale ?? 'N/D' }}</div>
               <div class="info-meta" *ngIf="selectedEvaluation">Commentaire encadrant pro : {{ selectedEvaluation.pointFortEncadrantPro || 'Aucun' }}</div>
-              <div class="info-meta" *ngIf="!selectedEvaluation">Aucune fiche d’évaluation accessible pour ce stage.</div>
+              <div class="info-meta" *ngIf="!selectedEvaluation">Aucune fiche d'évaluation accessible pour ce stage.</div>
             </div>
 
             <div class="detail-card">
@@ -163,7 +163,7 @@ export class FacultyEvaluationsReportsPageComponent implements OnInit {
       agreements: this.facultyPortalService.listAgreements().pipe(catchError(() => of([] as FacultyAgreement[]))),
       evaluations: this.facultyPortalService.listEvaluations().pipe(catchError((error) => {
         if (error?.status === 403) {
-          this.warningMessage = 'Accès restreint : le backend refuse la liste des fiches d’évaluation pour ce rôle.';
+          this.warningMessage = "Accès restreint : le backend refuse la liste des fiches d'évaluation pour ce rôle.";
         }
         return of([] as FacultyEvaluation[]);
       }))

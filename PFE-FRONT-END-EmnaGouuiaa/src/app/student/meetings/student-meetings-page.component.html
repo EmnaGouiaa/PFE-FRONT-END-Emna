@@ -16,7 +16,7 @@
       </div>
     </div>
 
-    <select class="select stage-selector" [ngModel]="selectedStageId" (ngModelChange)="onStageChange($event)">
+    <select *ngIf="internships.length > 1" class="select stage-selector" [ngModel]="selectedStageId" (ngModelChange)="onStageChange($event)">
       <option *ngFor="let internship of internships" [ngValue]="internship.id">
         {{ internship.titre || internship.sujet || ('Stage #' + internship.id) }}
       </option>
@@ -145,10 +145,6 @@
           <div class="detail-item full-width">
             <span class="label">Compte rendu</span>
             <span class="value">{{ selectedMeeting.compteRendu || 'Aucun compte rendu disponible.' }}</span>
-          </div>
-          <div class="detail-item" *ngIf="selectedMeeting.source === 'FINALE'">
-            <span class="label">Formulaire d'évaluation</span>
-            <span class="value">{{ selectedMeeting.urlFormEvaluation || 'Aucun lien défini' }}</span>
           </div>
         </div>
 

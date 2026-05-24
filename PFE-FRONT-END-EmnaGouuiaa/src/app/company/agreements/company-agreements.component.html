@@ -3,7 +3,7 @@
     <div>
       <h1>Conventions de stage</h1>
       <p>
-        Suivez les conventions de stage et l’état des signatures. Un aperçu imprimable est disponible pour chaque convention.
+        Suivez les conventions de stage et l'état des signatures. Un aperçu imprimable est disponible pour chaque convention.
       </p>
     </div>
     <div class="hero-actions">
@@ -98,11 +98,11 @@
           <button
             type="button"
             class="btn btn-primary"
-            *ngIf="!selectedAgreement.signeeEntreprise"
+            [disabled]="isSigning || selectedAgreement.signeeEntreprise"
             (click)="signAgreement(selectedAgreement)"
-            [disabled]="isSigning"
+            [title]="selectedAgreement.signeeEntreprise ? 'Vous avez déjà signé cette convention' : 'Signer côté entreprise'"
           >
-            {{ isSigning ? 'Signature…' : 'Signer côté entreprise' }}
+            {{ selectedAgreement.signeeEntreprise ? 'Déjà signé' : (isSigning ? 'Signature…' : 'Signer côté entreprise') }}
           </button>
         </div>
       </div>

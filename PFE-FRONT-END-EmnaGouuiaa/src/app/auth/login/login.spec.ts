@@ -73,7 +73,7 @@ export class Login implements OnInit {
       case RoleUtilisateur.ENCADRANT_ACADEMIQUE:
         this.router.navigate(['/enseignant/tableau-de-bord']);
         break;
-      case RoleUtilisateur.RESPONSABLE_SERVICE_STAGES:
+      case RoleUtilisateur.RESPONSABLE_STAGE:
         this.router.navigate(['/responsable/tableau-de-bord']);
         break;
       case RoleUtilisateur.RESPONSABLE_ENTREPRISE:

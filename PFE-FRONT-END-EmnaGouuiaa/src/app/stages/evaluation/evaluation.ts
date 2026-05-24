@@ -17,6 +17,7 @@ export class Evaluation implements OnInit {
   evaluation: any | null = null;
   chargement = true;
   messageErreur = '';
+  telechargementEnCours = false;
 
   constructor(
     private route: ActivatedRoute,
@@ -40,6 +41,34 @@ export class Evaluation implements OnInit {
     this.chargerEvaluation();
   }
 
+  telechargerPdf(): void {
+    if (!this.stageId || this.telechargementEnCours) return;
+
+    this.telechargementEnCours = true;
+
+    this.http
+      .get(`${API_BASE_URL}/fiches-evaluation/stage/${this.stageId}/pdf`, {
+        responseType: 'blob',
+      })
+      .pipe(
+        catchError(() => {
+          this.telechargementEnCours = false;
+          return of(null);
+        })
+      )
+      .subscribe((blob) => {
+        this.telechargementEnCours = false;
+        if (!blob) return;
+
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `fiche-evaluation-stage-${this.stageId}.pdf`;
+        a.click();
+        URL.revokeObjectURL(url);
+      });
+  }
+
   private chargerEvaluation(): void {
     if (!this.stageId) return;
 
@@ -49,11 +78,10 @@ export class Evaluation implements OnInit {
 
     this.http.get<any>(`${API_BASE_URL}/fiches-evaluation/stage/${this.stageId}`).pipe(
       catchError((error) => {
-        // 400 = souvent "introuvable" côté backend
         if (error?.status === 400) {
           return of(null);
         }
-        this.messageErreur = error?.error?.message ?? 'Impossible de charger la fiche d’évaluation.';
+        this.messageErreur = error?.error?.message ?? "Impossible de charger la fiche d'évaluation.";
         return of(null);
       })
     ).subscribe((evaluation) => {
@@ -67,5 +95,12 @@ export class Evaluation implements OnInit {
     const date = new Date(value);
     if (Number.isNaN(date.getTime())) return String(value);
     return date.toLocaleString('fr-FR');
+  }
+
+  formatDate(value: any): string {
+    if (!value) return '—';
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return String(value);
+    return date.toLocaleDateString('fr-FR');
   }
 }

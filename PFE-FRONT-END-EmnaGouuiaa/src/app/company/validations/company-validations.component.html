@@ -2,66 +2,248 @@
   <header class="page-hero">
     <div>
       <h1>Documents de stage</h1>
-      <p>
-        Retrouvez ici uniquement les documents de stage qui attendent une signature côté entreprise.
-      </p>
-      <div class="hero-badges">
-        <span class="hero-badge">{{ pendingItems.length }} en attente</span>
-        <span class="hero-badge">{{ validatedCount }} validés</span>
-        <span class="hero-badge">{{ refusedCount }} refusés</span>
-      </div>
+      <p>Signez les conventions et fiches d'évaluation depuis les mini-cards ci-dessous.</p>
     </div>
-
     <div class="hero-actions">
-      <button type="button" class="btn btn-secondary" (click)="loadItems()" [disabled]="isLoading || isActing">
-        Actualiser
-      </button>
+      <button type="button" class="btn btn-secondary" (click)="loadAll()" [disabled]="isLoading || isActing || isSigning">Actualiser</button>
     </div>
   </header>
 
   <div *ngIf="successMessage" class="alert alert-success">{{ successMessage }}</div>
   <div *ngIf="errorMessage" class="alert alert-error">{{ errorMessage }}</div>
 
-  <section class="stats-grid">
-    <article class="stat-card">
-      <div class="stat-label">En attente</div>
-      <span class="stat-value">{{ pendingItems.length }}</span>
-      <div class="stat-subtitle">Éléments à traiter</div>
-    </article>
-
-    <article class="stat-card">
-      <div class="stat-label">Validés</div>
-      <span class="stat-value">{{ validatedCount }}</span>
-      <div class="stat-subtitle">Décisions positives</div>
-    </article>
-
-    <article class="stat-card">
-      <div class="stat-label">Refusés</div>
-      <span class="stat-value">{{ refusedCount }}</span>
-      <div class="stat-subtitle">Décisions négatives</div>
-    </article>
-  </section>
+  <div *ngIf="showEvaluationLink" class="alert alert-info evaluation-nudge">
+    <span>Le cahier de stage a été approuvé. La section d'évaluation est maintenant accessible.</span>
+    <a routerLink="/entreprise/evaluation" class="btn btn-primary btn-small">Accéder aux évaluations →</a>
+  </div>
 
   <div *ngIf="isLoading" class="loading">Chargement des documents...</div>
 
-  <section class="validation-layout" *ngIf="!isLoading">
-    <article class="panel">
-      <div class="panel-header">
+  <!-- ── Mini-cards par stage ────────────────────────────────────────────────── -->
+  <section class="recent-users-section" *ngIf="!isLoading">
+    <div class="section-header">
+      <h2>Documents de stage</h2>
+      <span class="pill">{{ internships.length }} stage(s)</span>
+    </div>
+
+    <div class="empty-card" *ngIf="internships.length === 0">
+      Aucun stage rattaché à votre entreprise pour le moment.
+    </div>
+
+    <div class="doc-internship-group" *ngFor="let internship of internships">
+      <div class="doc-internship-header">
+        <div class="doc-student-avatar">
+          {{ (internship.stagiaireNom || 'ST').slice(0, 2).toUpperCase() }}
+        </div>
         <div>
-          <h2>Documents à signer</h2>
-          <div class="panel-subtitle">Convention et cahier de stage rattachés à votre entreprise.</div>
+          <div class="doc-internship-name">{{ internship.stagiaireNom || 'Stagiaire' }}</div>
+          <div class="doc-internship-sub">{{ internship.titre || 'Stage sans titre' }}</div>
         </div>
       </div>
 
-      <div class="empty-card" *ngIf="items.length === 0">
-        Aucun document à signer pour le moment.
+      <div class="doc-cards-row">
+
+        <!-- Convention -->
+        <div class="doc-mini-card">
+          <div class="doc-card-eyebrow">Convention</div>
+          <ng-container *ngIf="getAgreement(internship.id) as agreement">
+            <div class="doc-card-top">
+              <div class="doc-card-title">Convention n° {{ agreement.numConv || agreement.id }}</div>
+              <span class="status-pill" [class.active]="isConventionSignedByCompany(agreement)">
+                {{ getConventionStatusLabel(agreement) }}
+              </span>
+            </div>
+            <div class="doc-card-short-status">
+              {{ isConventionSignedByCompany(agreement) ? 'Vous avez signé cette convention' : 'En attente de votre signature' }}
+            </div>
+            <div class="doc-card-meta">
+              <div class="doc-card-meta-item">
+                <span class="label">Statut</span>
+                <strong>{{ getConventionStatusLabel(agreement) }}</strong>
+              </div>
+              <div class="doc-card-meta-item">
+                <span class="label">Année univ.</span>
+                <strong>{{ agreement.anneeUniversitaire || '—' }}</strong>
+              </div>
+              <div class="doc-card-meta-item">
+                <span class="label">Accès PDF</span>
+                <strong>{{ canAccessPdf(internship.id, 'convention') ? 'Autorisé' : 'En attente' }}</strong>
+              </div>
+            </div>
+            <div class="doc-card-actions">
+              <button
+                type="button"
+                class="btn btn-secondary btn-sm"
+                (click)="openConventionDetails(internship.id)"
+                title="Consulter les informations de la convention"
+              >Détails</button>
+              <button
+                type="button"
+                class="btn btn-secondary btn-sm"
+                [disabled]="!canAccessPdf(internship.id, 'convention')"
+                (click)="downloadPdf(internship.id, 'convention')"
+                [title]="canAccessPdf(internship.id, 'convention') ? 'Télécharger la convention' : 'Toutes les signatures sont nécessaires'"
+              >PDF</button>
+              <button
+                type="button"
+                class="btn btn-sm"
+                [class.btn-primary]="!isConventionSignedByCompany(agreement)"
+                [class.btn-secondary]="isConventionSignedByCompany(agreement)"
+                [disabled]="isSigning || isConventionSignedByCompany(agreement)"
+                (click)="signConvention(agreement)"
+                [title]="isConventionSignedByCompany(agreement) ? 'Vous avez déjà signé cette convention' : 'Signer côté entreprise'"
+              >{{ isConventionSignedByCompany(agreement) ? '✓ Signé' : 'Signer' }}</button>
+            </div>
+          </ng-container>
+          <ng-container *ngIf="!getAgreement(internship.id)">
+            <div class="doc-card-top">
+              <div class="doc-card-title">Non générée</div>
+              <span class="status-pill status-neutral">En attente</span>
+            </div>
+            <div class="doc-card-short-status">En attente de génération par l'administration</div>
+          </ng-container>
+        </div>
+
+        <!-- Fiche d'évaluation -->
+        <div class="doc-mini-card">
+          <div class="doc-card-eyebrow">Fiche d'évaluation</div>
+          <ng-container *ngIf="getEvaluation(internship.id) as evaluation">
+            <div class="doc-card-top">
+              <div class="doc-card-title">Fiche d'évaluation</div>
+              <span [ngClass]="getEvaluationStatusClass(evaluation)">
+                {{ getEvaluationStatusLabel(evaluation) }}
+              </span>
+            </div>
+            <div class="doc-card-short-status">{{ getEvaluationStatusLabel(evaluation) }}</div>
+            <div class="doc-card-meta">
+              <div class="doc-card-meta-item">
+                <span class="label">Complétée</span>
+                <strong>{{ evaluation.donneesCompletes ? 'Oui' : 'Non' }}</strong>
+              </div>
+              <div class="doc-card-meta-item">
+                <span class="label">Accès PDF</span>
+                <strong>{{ canAccessPdf(internship.id, 'fiche-evaluation') ? 'Autorisé' : 'En attente' }}</strong>
+              </div>
+            </div>
+            <div class="doc-card-actions">
+              <button
+                type="button"
+                class="btn btn-secondary btn-sm"
+                (click)="openEvaluationDetails(internship.id)"
+                title="Consulter la fiche d'évaluation"
+              >Détails</button>
+              <button
+                type="button"
+                class="btn btn-secondary btn-sm"
+                [disabled]="!canAccessPdf(internship.id, 'fiche-evaluation')"
+                (click)="downloadPdf(internship.id, 'fiche-evaluation')"
+                [title]="canAccessPdf(internship.id, 'fiche-evaluation') ? 'Voir la fiche en PDF' : 'Toutes les signatures et la fin du stage sont nécessaires'"
+              >PDF</button>
+              <a
+                class="btn btn-secondary btn-sm"
+                routerLink="/entreprise/evaluation"
+                title="Remplir ma partie dans la section Évaluation"
+              >Remplir</a>
+              <button
+                type="button"
+                class="btn btn-sm"
+                [class.btn-primary]="!isEvaluationSignedByCompany(evaluation)"
+                [class.btn-secondary]="isEvaluationSignedByCompany(evaluation)"
+                [disabled]="isSigning || isEvaluationSignedByCompany(evaluation) || !evaluation.donneesCompletes"
+                (click)="signEvaluation(evaluation)"
+                [title]="isEvaluationSignedByCompany(evaluation) ? 'Vous avez déjà signé cette fiche' : (!evaluation.donneesCompletes ? 'Remplissez votre partie avant de signer' : 'Signer la fiche')"
+              >{{ isEvaluationSignedByCompany(evaluation) ? '✓ Signé' : 'Signer' }}</button>
+            </div>
+          </ng-container>
+          <ng-container *ngIf="!getEvaluation(internship.id)">
+            <div class="doc-card-top">
+              <div class="doc-card-title">Fiche d'évaluation</div>
+              <span class="status-pill status-neutral">Non générée</span>
+            </div>
+            <div class="doc-card-short-status">En attente de génération</div>
+          </ng-container>
+        </div>
+
+        <!-- Cahier de stage (via validations) -->
+        <div class="doc-mini-card">
+          <div class="doc-card-eyebrow">Cahier de stage</div>
+          <ng-container *ngIf="getCahierItem(internship.id) as cahierItem; else noCahier">
+            <div class="doc-card-top">
+              <div class="doc-card-title">Cahier de stage</div>
+              <span class="status-pill" [ngClass]="'status-' + cahierItem.status">
+                {{ statusLabel(cahierItem.status) }}
+              </span>
+            </div>
+            <div class="doc-card-short-status">
+              {{ cahierItem.status === 'VALIDEE' ? 'Validé par l\'entreprise' : (cahierItem.pending ? 'En attente de validation' : statusLabel(cahierItem.status)) }}
+            </div>
+            <div class="doc-card-meta">
+              <div class="doc-card-meta-item">
+                <span class="label">Statut</span>
+                <strong>{{ statusLabel(cahierItem.status) }}</strong>
+              </div>
+              <div class="doc-card-meta-item">
+                <span class="label">Accès PDF</span>
+                <strong>{{ canAccessPdf(internship.id, 'cahier-stage') ? 'Autorisé' : 'En attente' }}</strong>
+              </div>
+            </div>
+            <div class="doc-card-actions">
+              <button
+                type="button"
+                class="btn btn-secondary btn-sm"
+                (click)="openCahierDetails(internship.id)"
+                title="Consulter les informations du cahier de stage"
+              >Détails</button>
+              <button
+                type="button"
+                class="btn btn-secondary btn-sm"
+                [disabled]="!canAccessPdf(internship.id, 'cahier-stage')"
+                (click)="downloadPdf(internship.id, 'cahier-stage')"
+                [title]="canAccessPdf(internship.id, 'cahier-stage') ? 'Télécharger le cahier de stage' : 'Le cahier doit être validé et le stage terminé'"
+              >PDF</button>
+              <button
+                type="button"
+                class="btn btn-sm"
+                [class.btn-primary]="cahierItem.pending"
+                [class.btn-secondary]="!cahierItem.pending"
+                [disabled]="isActing || !cahierItem.pending"
+                (click)="approveSelected(cahierItem)"
+                [title]="!cahierItem.pending ? 'Vous avez déjà signé ce cahier' : 'Signer le cahier de stage'"
+              >{{ cahierItem.pending ? 'Signer' : '✓ Signé' }}</button>
+            </div>
+          </ng-container>
+          <ng-template #noCahier>
+            <div class="doc-card-top">
+              <div class="doc-card-title">Cahier de stage</div>
+              <span class="status-pill" [ngClass]="isStageEnded(internship) ? 'status-warning' : 'status-neutral'">
+                {{ isStageEnded(internship) ? 'Stage terminé' : 'En attente' }}
+              </span>
+            </div>
+            <div class="doc-card-short-status">
+              {{ isStageEnded(internship) ? 'Stage terminé — le cahier est en cours de préparation' : 'En attente de la fin du stage' }}
+            </div>
+          </ng-template>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Validations en attente (refus) ─────────────────────────────────────── -->
+  <section class="validation-layout" *ngIf="!isLoading && pendingItems.length > 0">
+    <article class="panel">
+      <div class="panel-header">
+        <div>
+          <h2>Éléments en attente de décision</h2>
+          <div class="panel-subtitle">{{ pendingItems.length }} élément(s) à traiter.</div>
+        </div>
       </div>
 
-      <div class="table-wrap" *ngIf="items.length > 0">
+      <div class="table-wrap">
         <table class="table">
           <thead>
             <tr>
-              <th>Élément</th>
+              <th>Document</th>
               <th>Stage</th>
               <th>Stagiaire</th>
               <th>Statut</th>
@@ -69,7 +251,7 @@
             </tr>
           </thead>
           <tbody>
-            <tr *ngFor="let item of items" [class.active-row]="item.key === selectedItem?.key">
+            <tr *ngFor="let item of pendingItems" [class.active-row]="item.key === selectedItem?.key">
               <td>
                 <div class="cell-title">{{ item.title }}</div>
                 <div class="cell-sub">{{ item.description }}</div>
@@ -81,9 +263,8 @@
               </td>
               <td>
                 <div class="table-actions">
-                  <button type="button" class="btn btn-secondary" (click)="selectItem(item)">Voir détails</button>
-                  <button type="button" class="btn btn-primary" (click)="approveSelected(item)" [disabled]="isActing || !item.pending">Valider</button>
-                  <button type="button" class="btn btn-danger" (click)="selectItem(item)" [disabled]="isActing || !item.pending">Refuser</button>
+                  <button type="button" class="btn btn-secondary" (click)="selectItem(item)">Détails</button>
+                  <button type="button" class="btn btn-danger btn-sm" (click)="selectItem(item)" [disabled]="isActing">Refuser</button>
                 </div>
               </td>
             </tr>
@@ -92,28 +273,16 @@
       </div>
     </article>
 
-    <article class="panel">
+    <article class="panel" *ngIf="selectedItem">
       <div class="panel-header">
         <div>
-          <h2>Détails</h2>
-          <div class="panel-subtitle">Consultez l’élément puis validez ou refusez avec un commentaire.</div>
+          <h2>Détails — {{ selectedItem.title }}</h2>
+          <div class="panel-subtitle">Refus avec motif obligatoire.</div>
         </div>
       </div>
 
-      <div class="empty-card" *ngIf="!selectedItem">
-        Sélectionnez une validation pour afficher ses détails.
-      </div>
-
-      <div class="detail-copy" *ngIf="selectedItem">
+      <div class="detail-copy">
         <div class="detail-grid">
-          <div class="detail-item">
-            <span class="label">Type</span>
-            <span class="value">{{ selectedItem.title }}</span>
-          </div>
-          <div class="detail-item">
-            <span class="label">Statut</span>
-            <span class="value">{{ statusLabel(selectedItem.status) }}</span>
-          </div>
           <div class="detail-item">
             <span class="label">Stage</span>
             <span class="value">{{ selectedItem.stageTitle || '-' }}</span>
@@ -147,14 +316,11 @@
         ></textarea>
 
         <div class="detail-actions">
-          <button type="button" class="btn btn-primary" (click)="approveSelected()" [disabled]="isActing || !selectedItem.pending">
-            {{ isActing ? 'Traitement...' : 'Valider' }}
-          </button>
           <button type="button" class="btn btn-danger" (click)="rejectSelected()" [disabled]="isActing || !selectedItem.pending">
-            {{ isActing ? 'Traitement...' : 'Refuser' }}
+            {{ isActing ? 'Traitement...' : 'Confirmer le refus' }}
           </button>
           <a *ngIf="selectedItem.stageId" class="btn btn-secondary" [routerLink]="['/entreprise/stages']">
-            Voir détails
+            Voir le stage
           </a>
         </div>
       </div>

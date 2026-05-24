@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, ElementRef, OnInit, ViewChild, inject } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { switchMap } from 'rxjs/operators';
@@ -7,16 +7,19 @@ import { AuthentificationService } from '../../services/authentification.service
 import { ServiceProfilService } from '../../services/service-profil.service';
 import { StudentProfile, StudentProfileUpdateRequest } from '../../services/student/student.models';
 import { StudentPortalService } from '../../services/student/student-portal.service';
+import { PhoneInputComponent } from '../../components/phone-input/phone-input.component';
 
 @Component({
   selector: 'app-student-profile-page',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, RouterModule],
+  imports: [CommonModule, ReactiveFormsModule, RouterModule, PhoneInputComponent],
   templateUrl: './student-profile-page.component.html',
   styleUrls: ['../../admin/dashboard/admin-dashboard.css', '../../company/company-shared.css', '../student-shared.css', './student-profile-page.component.css']
 })
 export class StudentProfilePageComponent implements OnInit {
   private readonly fb = inject(FormBuilder);
+
+  @ViewChild('signatureFileInput') signatureFileInput!: ElementRef<HTMLInputElement>;
 
   isLoading = true;
   isSaving = false;
@@ -29,6 +32,9 @@ export class StudentProfilePageComponent implements OnInit {
   profile: StudentProfile | null = null;
   private studentId: number | null = null;
 
+  /** Aperçu local de la signature (data-URI) affiché pendant l'édition. */
+  signatureApercuLocal: string | null = null;
+
   readonly profileForm = this.fb.nonNullable.group({
     email: ['', [Validators.required, Validators.email, Validators.maxLength(150)]],
     nom: ['', [Validators.required, Validators.maxLength(100)]],
@@ -37,7 +43,8 @@ export class StudentProfilePageComponent implements OnInit {
     adresse: ['', [Validators.maxLength(255)]],
     matricule: ['', [Validators.maxLength(100)]],
     dateNaiss: [''],
-    nomFichierSignature: ['', [Validators.maxLength(255)]]
+    // Pas de limite de longueur : la valeur est une image encodée en Base-64.
+    nomFichierSignature: ['']
   });
 
   readonly emailConfirmationForm = this.fb.nonNullable.group({
@@ -156,7 +163,7 @@ export class StudentProfilePageComponent implements OnInit {
     this.loadProfile();
   }
 
-  isInvalid(controlName: 'email' | 'nom' | 'prenom' | 'telephone' | 'adresse' | 'matricule' | 'dateNaiss' | 'nomFichierSignature'): boolean {
+  isInvalid(controlName: 'email' | 'nom' | 'prenom' | 'telephone' | 'adresse' | 'matricule' | 'dateNaiss'): boolean {
     const control = this.profileForm.controls[controlName];
     return control.invalid && (control.touched || control.dirty);
   }
@@ -170,8 +177,45 @@ export class StudentProfilePageComponent implements OnInit {
     return Boolean(this.profile?.nomFichierSignature?.trim());
   }
 
-  isLink(value: string | null | undefined): boolean {
-    return /^https?:\/\//i.test(String(value ?? '').trim());
+  // ── Gestion de l'import de signature (image uniquement) ────────────────────
+
+  ouvrirSelecteurFichier(): void {
+    this.signatureFileInput?.nativeElement.click();
+  }
+
+  onSignatureSelectionnee(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const fichier = input.files?.[0];
+    if (!fichier) return;
+
+    const typesAcceptes = ['image/png', 'image/jpeg', 'image/jpg', 'image/gif', 'image/webp'];
+    if (!typesAcceptes.includes(fichier.type)) {
+      this.errorMessage = 'Format non supporté. Utilisez PNG, JPG ou WEBP.';
+      return;
+    }
+
+    const tailleMaxKo = 1024; // 1 Mo
+    if (fichier.size > tailleMaxKo * 1024) {
+      this.errorMessage = `L'image ne doit pas dépasser ${tailleMaxKo} Ko.`;
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const dataUri = e.target?.result as string;
+      this.signatureApercuLocal = dataUri;
+      this.profileForm.controls.nomFichierSignature.setValue(dataUri);
+      this.errorMessage = '';
+    };
+    reader.readAsDataURL(fichier);
+
+    // Remet l'input à zéro pour permettre de re-sélectionner le même fichier.
+    input.value = '';
+  }
+
+  supprimerSignature(): void {
+    this.signatureApercuLocal = null;
+    this.profileForm.controls.nomFichierSignature.setValue('');
   }
 
   formatDate(value: string): string {
@@ -236,6 +280,9 @@ export class StudentProfilePageComponent implements OnInit {
       dateNaiss: profile.dateNaiss || '',
       nomFichierSignature: profile.nomFichierSignature || ''
     });
+
+    // Synchronise l'aperçu de signature avec les données du profil.
+    this.signatureApercuLocal = profile.nomFichierSignature?.trim() || null;
 
     this.emailConfirmationForm.reset();
   }

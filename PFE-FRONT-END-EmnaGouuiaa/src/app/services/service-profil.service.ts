@@ -97,7 +97,12 @@ export class ServiceProfilService {
       matricule: this.normalizeOptionalString(donnees.matricule),
       dateNaiss: this.normalizeOptionalString(donnees.dateNaiss),
       niveau: donnees.niveau ?? undefined,
-      nomFichierSignature: this.normalizeOptionalString(donnees.nomFichierSignature)
+      // Use the raw trimmed value so that an empty string explicitly clears the
+      // signature on the backend.  normalizeOptionalString would return undefined
+      // for '', which would omit the field from JSON and leave the old value intact.
+      urlSignature: typeof donnees.nomFichierSignature === 'string'
+        ? donnees.nomFichierSignature.trim()
+        : undefined
     };
 
     return this.http.patch<any>(`${this.API_URL}/me/profile`, requestBody).pipe(
@@ -137,11 +142,10 @@ export class ServiceProfilService {
     const mapRole: { [key: string]: string } = {
       STAGIAIRE: 'Étudiant',
       ADMINISTRATEUR: 'Administrateur',
-      RESPONSABLE_ENTREPRISE: 'Représentant de l’entreprise',
+      RESPONSABLE_ENTREPRISE: "Représentant de l'entreprise",
       ENCADRANT_PROFESSIONNEL: 'Encadrant professionnel',
       ENCADRANT_ACADEMIQUE: 'Encadrant académique',
-      RESPONSABLE_SERVICE_STAGES: 'Responsable des stages',
-      RESPONSABLE_UNIVERSITAIRE_STAGES: 'Responsable universitaire des stages'
+      RESPONSABLE_STAGE: 'Responsable des stages'
     };
     return mapRole[role] || role;
   }
@@ -178,9 +182,14 @@ export class ServiceProfilService {
     const profile = raw && typeof raw === 'object' && 'data' in raw ? raw.data : raw;
     const current = this.authService.getUtilisateurActuel();
     const id = Number(profile?.id ?? profile?.userId ?? current?.userId ?? 0);
-    const signature = String(profile?.nomFichierSignature ?? this.getCachedSignature(id) ?? '');
+    // Backend returns the field as "urlSignature" (Java naming convention).
+    // "nomFichierSignature" is kept as a fallback for cached or legacy responses.
+    const signature = String(profile?.urlSignature ?? profile?.nomFichierSignature ?? this.getCachedSignature(id) ?? '');
     const role = String(profile?.role ?? current?.role ?? '');
-    const champsProfilAutorises = this.normalizeStringList(profile?.champsProfilAutorises);
+    // The backend includes "urlSignature" in champsProfilAutorises, but all client-side
+    // visibility checks use "nomFichierSignature". Map the backend name to the client name.
+    const champsProfilAutorises = this.normalizeStringList(profile?.champsProfilAutorises)
+      .map((f) => (f === 'urlSignature' ? 'nomFichierSignature' : f));
     this.cacheSignature(id, signature);
 
     return {
@@ -254,8 +263,7 @@ export class ServiceProfilService {
       ENCADRANT_ACADEMIQUE: ['grade', 'specialite'],
       ENCADRANT_PROFESSIONNEL: ['poste', 'service'],
       RESPONSABLE_ENTREPRISE: ['poste', 'service'],
-      RESPONSABLE_SERVICE_STAGES: ['service'],
-      RESPONSABLE_UNIVERSITAIRE_STAGES: []
+      RESPONSABLE_STAGE: []
     };
     return [...common, ...(specific[role] ?? [])];
   }

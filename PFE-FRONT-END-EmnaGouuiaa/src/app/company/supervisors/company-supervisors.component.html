@@ -124,7 +124,7 @@
 
           <div class="form-field">
             <label>Telephone *</label>
-            <input class="input" formControlName="telephone" />
+            <app-phone-input formControlName="telephone"></app-phone-input>
             <div class="field-error" *ngIf="getFieldError('telephone')">{{ getFieldError('telephone') }}</div>
           </div>
 

@@ -1,7 +1,8 @@
 .content-grid {
   display: grid;
-  grid-template-columns: minmax(280px, 0.9fr) minmax(360px, 1.1fr);
+  grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
   gap: 1.25rem;
+  align-items: start;
 }
 
 .evaluations-panel,
@@ -28,6 +29,18 @@
   background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
   cursor: pointer;
   text-align: left;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.evaluation-item:hover {
+  border-color: rgba(99, 102, 241, 0.35);
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.08);
+}
+
+.evaluation-item.selected-item {
+  border-color: rgba(99, 102, 241, 0.55);
+  background: linear-gradient(180deg, #f5f3ff 0%, #ede9fe 100%);
+  box-shadow: 0 4px 16px rgba(99, 102, 241, 0.12);
 }
 
 .evaluation-item__title {
@@ -89,8 +102,154 @@
   color: #475569;
 }
 
-@media (max-width: 920px) {
+@media (max-width: 1100px) {
   .content-grid {
     grid-template-columns: 1fr;
   }
+
+  .evaluations-panel {
+    max-height: 420px;
+    overflow-y: auto;
+  }
+}
+
+@media (max-width: 640px) {
+  .evaluation-item {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.6rem;
+  }
+
+  .section-card__grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ── Ponctualité card ───────────────────────────────────────────────── */
+.ponctualite-card {
+  border-left: 4px solid #1a3a6e;
+  background: linear-gradient(180deg, #ebf5ff 0%, #f8fbff 100%);
+}
+
+.ponct-badge {
+  display: inline-block;
+  margin-left: 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  background: #1a3a6e;
+  color: #fff;
+  border-radius: 20px;
+  padding: 0.15rem 0.65rem;
+}
+
+.ponct-hint {
+  font-size: 0.82rem;
+  color: #64748b;
+  margin: 0;
+}
+
+.ponct-row {
+  display: flex;
+  gap: 1.5rem;
+  align-items: flex-end;
+  flex-wrap: wrap;
+}
+
+.ponct-field { display: flex; flex-direction: column; gap: 0.3rem; }
+
+.ponct-label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #1a3a6e;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.ponct-bareme { font-weight: 400; color: #64748b; }
+
+.ponct-input-group {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.ponct-input {
+  width: 70px;
+  padding: 0.45rem 0.6rem;
+  border: 1.5px solid #2980b9;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 700;
+  color: #1a3a6e;
+  text-align: center;
+  background: #fff;
+}
+.ponct-input:focus { outline: none; border-color: #1a3a6e; box-shadow: 0 0 0 3px rgba(26,58,110,0.12); }
+.ponct-input:disabled { background: #f1f5f9; color: #94a3b8; border-color: #cbd5e1; }
+
+.ponct-bareme-label { font-size: 0.9rem; color: #64748b; }
+
+.ponct-score {
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: #2980b9;
+  min-width: 60px;
+  text-align: center;
+  background: #fff;
+  border: 1.5px solid #d6e5f5;
+  border-radius: 8px;
+  padding: 0.4rem 0.8rem;
+}
+
+.ponct-commentaire {
+  width: 100%;
+  padding: 0.45rem 0.75rem;
+  border: 1.5px solid #d6e5f5;
+  border-radius: 8px;
+  font-size: 0.88rem;
+  color: #334155;
+  background: #fff;
+}
+.ponct-commentaire:focus { outline: none; border-color: #2980b9; }
+.ponct-commentaire:disabled { background: #f1f5f9; color: #94a3b8; }
+
+.ponct-saved {
+  margin-top: 0.5rem;
+  font-size: 0.82rem;
+  color: #16a34a;
+  font-weight: 600;
+}
+
+/* États de chargement / erreurs de champ — alignés sur le design partagé entreprise */
+.loading-card {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.spinner {
+  width: 18px;
+  height: 18px;
+  border: 2px solid rgba(15, 23, 42, 0.15);
+  border-top-color: #1a3a6e;
+  border-radius: 50%;
+  animation: company-eval-spin 0.8s linear infinite;
+  flex-shrink: 0;
+}
+
+@keyframes company-eval-spin {
+  to { transform: rotate(360deg); }
+}
+
+.field-error {
+  display: block;
+  margin: -0.35rem 0 0.5rem;
+  color: #dc2626;
+  font-size: 0.82rem;
+}
+
+.readonly-signature {
+  font-size: 0.85rem;
+  color: #16a34a;
+  margin-top: 4px;
 }

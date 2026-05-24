@@ -732,13 +732,6 @@ export class FacultyDashboardPageComponent implements OnInit {
         badge: `${this.stats.totalInternships} stage(s)`,
         tone: 'green'
       },
-      {
-        title: 'Enquête de satisfaction',
-        subtitle: 'Configurer l’enquête générale de satisfaction.',
-        route: '/responsable/enquete-satisfaction',
-        badge: 'accès direct',
-        tone: 'slate'
-      }
     ];
   }
 

@@ -24,13 +24,13 @@
       <div class="panel-header">
         <div>
           <h2>Liste des réunions</h2>
-          <div class="panel-subtitle">Les réunions affichées proviennent directement de l’API entreprise.</div>
+          <div class="panel-subtitle">Les réunions affichées proviennent directement de l'API entreprise.</div>
         </div>
         <span class="status-pill status-neutral">{{ meetings.length }} réunion(s)</span>
       </div>
 
       <div class="empty-card" *ngIf="meetings.length === 0 && !errorMessage">
-        Aucune réunion n’est actuellement retournée pour cette entreprise.
+        Aucune réunion n'est actuellement retournée pour cette entreprise.
       </div>
 
       <div class="info-list" *ngIf="meetings.length > 0">
@@ -118,10 +118,6 @@
           <div class="detail-item" *ngIf="selectedMeeting.source === 'FINALE'">
             <span class="label">Note</span>
             <span class="value">{{ selectedMeeting.note ?? '-' }}</span>
-          </div>
-          <div class="detail-item" *ngIf="selectedMeeting.source === 'FINALE'">
-            <span class="label">Formulaire d’évaluation</span>
-            <span class="value">{{ selectedMeeting.urlFormEvaluation || '-' }}</span>
           </div>
         </div>
 
