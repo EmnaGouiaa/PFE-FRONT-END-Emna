@@ -109,7 +109,11 @@
               Visualisez l'avancement des tâches du stage et accédez rapidement au board Trello associé.
             </p>
           </div>
-          <span class="pill soft">{{ hasTrelloBoard ? 'Board disponible' : 'Board à créer' }}</span>
+          <span class="pill soft">{{ isStageFinished ? 'Trello indisponible' : (hasTrelloBoard ? 'Board disponible' : 'Board à créer') }}</span>
+        </div>
+
+        <div class="message-warning" *ngIf="isStageFinished" style="margin: 0 0 12px; padding: 10px 14px; border-radius: 8px; background: #fff7ed; border: 1px solid #fed7aa; color: #9a3412; font-size: 0.92rem">
+          Trello indisponible : stage terminé.
         </div>
 
         <div class="trello-overview">
@@ -128,20 +132,28 @@
 
           <div class="trello-board-actions">
             <a
-              *ngIf="hasTrelloBoard"
+              *ngIf="hasTrelloBoard && !isStageFinished"
               class="btn btn-primary trello-primary-button"
-              [href]="selectedInternship.trelloBoardUrl"
+              [href]="trelloBoardHref"
               target="_blank"
               rel="noopener"
             >
               Ouvrir le board Trello
             </a>
             <button
+              *ngIf="hasTrelloBoard && isStageFinished"
+              type="button"
+              class="btn btn-primary trello-primary-button"
+              disabled
+            >
+              Ouvrir le board Trello
+            </button>
+            <button
               *ngIf="!hasTrelloBoard"
               type="button"
               class="btn btn-primary trello-primary-button"
               (click)="openTrelloBoard()"
-              [disabled]="isOpeningTrello"
+              [disabled]="isOpeningTrello || isStageFinished"
             >
               {{ isOpeningTrello ? 'Création...' : 'Créer automatiquement le board' }}
             </button>
@@ -150,7 +162,7 @@
               type="button"
               class="btn btn-secondary"
               (click)="openTrelloBoard()"
-              [disabled]="isOpeningTrello"
+              [disabled]="isOpeningTrello || isStageFinished"
             >
               {{ isOpeningTrello ? 'Ouverture...' : 'Actualiser et ouvrir' }}
             </button>

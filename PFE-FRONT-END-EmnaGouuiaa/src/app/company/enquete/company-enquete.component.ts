@@ -1,9 +1,10 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { forkJoin, of } from 'rxjs';
-import { catchError, timeout } from 'rxjs/operators';
+import { catchError, switchMap, timeout } from 'rxjs/operators';
 
-import { EnqueteSatisfaction, EnqueteService } from '../../services/enquete.service';
+import { EnqueteStageDto, EnqueteService } from '../../services/enquete.service';
+import { StagePeriodService } from '../../services/stage-period.service';
 import { CompanyMeetingsService } from '../../services/company/company-meetings.service';
 import { CompanyMeeting } from '../../services/company/company.models';
 
@@ -71,15 +72,39 @@ interface StageGroup {
     <section class="recent-users-section" *ngIf="enquete">
       <div class="section-header">
         <h2>Enquête générale</h2>
-        <span class="pill" [class.pill-active]="enquete.active && urlValide"
-                            [class.pill-inactive]="!enquete.active">
-          {{ enquete.active && urlValide ? 'Ouverte' : (enquete.active ? 'Active (lien absent)' : 'Inactive') }}
+        <span class="pill"
+              [class.pill-active]="urlValide"
+              [class.pill-inactive]="isExpired"
+              [class.pill-neutral]="!urlValide && !isExpired">
+          {{ isExpired ? 'Expirée' : (urlValide ? 'Ouverte' : enquete.statut) }}
         </span>
       </div>
 
-      <!-- Carte d'enquête globale -->
-      <div class="enq-global-card" [class.enq-card-open]="enquete.active && urlValide"
-                                    [class.enq-card-closed]="!enquete.active || !urlValide">
+      <!-- ── Cas : fenêtre expirée ──────────────────────────────────────── -->
+      <div class="enq-global-card enq-card-expired" *ngIf="isExpired">
+        <div class="enq-global-card__header">
+          <div class="enq-global-icon enq-icon-expired" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" width="24" height="24">
+              <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+              <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+            </svg>
+          </div>
+          <div>
+            <div class="enq-global-title">{{ enquete.titre }}</div>
+            <div class="enq-global-desc enq-expired-text">
+              <strong>La période de réponse à l'enquête est expirée.</strong>
+            </div>
+            <div class="enq-global-desc" *ngIf="enquete.message" style="margin-top:6px;font-size:0.84rem">
+              {{ enquete.message }}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Cas : normal (ouvert, en attente, inactif) ─────────────────── -->
+      <div class="enq-global-card" *ngIf="!isExpired"
+           [class.enq-card-open]="urlValide"
+           [class.enq-card-closed]="!urlValide">
         <div class="enq-global-card__header">
           <div class="enq-global-icon" aria-hidden="true">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" width="24" height="24">
@@ -91,11 +116,14 @@ interface StageGroup {
           <div>
             <div class="enq-global-title">{{ enquete.titre }}</div>
             <div class="enq-global-desc">{{ enquete.description }}</div>
+            <div class="enq-global-desc" *ngIf="enquete.message" style="margin-top:6px;font-size:0.84rem;font-weight:600">
+              {{ enquete.message }}
+            </div>
           </div>
         </div>
 
-        <!-- CTA si enquête active et URL valide -->
-        <div class="enq-global-card__footer" *ngIf="enquete.active && urlValide">
+        <!-- CTA si section ouverte -->
+        <div class="enq-global-card__footer" *ngIf="urlValide">
           <button type="button" class="btn btn-primary" (click)="ouvrirEnqueteGlobale()">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" width="16" height="16" aria-hidden="true">
               <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
@@ -115,13 +143,15 @@ interface StageGroup {
         </div>
 
         <!-- Notice enquête inactive -->
-        <div class="enq-notice enq-notice--neutral" *ngIf="!enquete.active">
+        <div class="enq-notice enq-notice--neutral" *ngIf="enquete.statut === 'Désactivée'">
           L'enquête de satisfaction est temporairement désactivée. Elle sera disponible prochainement.
         </div>
 
-        <!-- Notice URL absente (E1) -->
-        <div class="enq-notice enq-notice--warn" *ngIf="enquete.active && !urlValide">
-          E1 — Le formulaire externe n'est pas encore configuré. Contactez le responsable des stages.
+        <!-- Notice URL absente ou section pas encore ouverte -->
+        <div class="enq-notice enq-notice--warn" *ngIf="!urlValide && enquete.statut !== 'Désactivée' && enquete.statut !== 'Fermée'">
+          {{ enquete.statut === 'En attente'
+            ? "L'enquête sera accessible à partir de la date de fin de votre stage."
+            : "E1 — Le formulaire externe n'est pas encore configuré. Contactez le responsable des stages." }}
         </div>
       </div>
     </section>
@@ -352,13 +382,31 @@ interface StageGroup {
     }
 
     /* ── Pill couleur ────────────────────────────────────────────────── */
-    .pill-active  { background: rgba(14, 116, 144, 0.12); color: #0e7490; }
-    .pill-inactive { background: rgba(220, 38, 38, 0.1);  color: #dc2626; }
+    .pill-active   { background: rgba(14, 116, 144, 0.12); color: #0e7490; }
+    .pill-inactive { background: rgba(220, 38, 38, 0.1);   color: #dc2626; }
+    .pill-neutral  { background: rgba(15, 23, 42, 0.07);   color: #64748b; }
+
+    /* ── Carte enquête expirée ───────────────────────────────────────── */
+    .enq-card-expired {
+      background: linear-gradient(135deg, rgba(220, 38, 38, 0.06) 0%, rgba(255, 255, 255, 0.98) 100%);
+      border-color: rgba(220, 38, 38, 0.24);
+    }
+
+    .enq-icon-expired {
+      background: rgba(220, 38, 38, 0.1);
+      color: #b91c1c;
+    }
+
+    .enq-expired-text {
+      color: #9f1239;
+      font-weight: 700;
+      font-size: 0.9rem;
+    }
   `]
 })
 export class CompanyEnquetePageComponent implements OnInit {
 
-  enquete: EnqueteSatisfaction | null = null;
+  enquete: EnqueteStageDto | null = null;
   stageGroups: StageGroup[] = [];
 
   isLoading = false;
@@ -367,6 +415,7 @@ export class CompanyEnquetePageComponent implements OnInit {
 
   constructor(
     private enqueteService: EnqueteService,
+    private stagePeriodService: StagePeriodService,
     private companyMeetingsService: CompanyMeetingsService
   ) {}
 
@@ -376,8 +425,14 @@ export class CompanyEnquetePageComponent implements OnInit {
 
   // ── Computed ─────────────────────────────────────────────────────────────
 
+  /** true si la fenêtre de 7 jours est expirée pour ce stage. */
+  get isExpired(): boolean {
+    return this.enquete?.statut === 'Fermée';
+  }
+
+  /** true si l'URL fournie par le backend est valide ET que la section est ouverte. */
   get urlValide(): boolean {
-    if (!this.enquete?.active) return false;
+    if (!this.enquete?.sectionEnqueteOuverte) return false;
     const url = (this.enquete.urlFormulaire ?? '').trim();
     if (!url) return false;
     try {
@@ -398,14 +453,31 @@ export class CompanyEnquetePageComponent implements OnInit {
     this.isLoading = true;
     this.errorMessage = '';
     this.globalFormOpened = false;
+    this.enquete = null;
 
-    forkJoin({
-      enquete: this.enqueteService.getEnqueteActeur().pipe(catchError(() => of(null))),
-      allMeetings: this.companyMeetingsService.listForCurrentCompany().pipe(
-        timeout(15000),
-        catchError(() => of([] as CompanyMeeting[]))
-      )
-    }).subscribe({
+    // Résoudre d'abord le stageId pour utiliser l'endpoint avec contrôle de la fenêtre
+    this.stagePeriodService.getRelevantStageIdForEnquete().pipe(
+      switchMap((stageId) => {
+        const enquete$ = stageId
+          ? this.enqueteService.getEnqueteParStage(stageId).pipe(catchError(() => of(null as EnqueteStageDto | null)))
+          : of(null as EnqueteStageDto | null);
+
+        return forkJoin({
+          enquete: enquete$,
+          allMeetings: this.companyMeetingsService.listForCurrentCompany().pipe(
+            timeout(15000),
+            catchError(() => of([] as CompanyMeeting[]))
+          )
+        });
+      }),
+      catchError(() => forkJoin({
+        enquete: of(null as EnqueteStageDto | null),
+        allMeetings: this.companyMeetingsService.listForCurrentCompany().pipe(
+          timeout(15000),
+          catchError(() => of([] as CompanyMeeting[]))
+        )
+      }))
+    ).subscribe({
       next: ({ enquete, allMeetings }) => {
         this.enquete = enquete;
         this.buildStageGroups(allMeetings);

@@ -254,6 +254,67 @@
   font-weight: 600;
 }
 
+/* ── Signature image zone ─────────────────────────────────────── */
+.sig-img-zone {
+  margin-top: 14px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 80px;
+  padding: 8px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.7);
+  border: 1px dashed rgba(15, 76, 129, 0.2);
+}
+
+.sig-img {
+  max-width: 100%;
+  max-height: 90px;
+  object-fit: contain;
+  border-radius: 6px;
+}
+
+.sig-placeholder {
+  margin-top: 14px;
+}
+
+.sig-line {
+  height: 2px;
+  width: 100%;
+  border-bottom: 2px solid rgba(15, 131, 109, 0.5);
+  margin-bottom: 6px;
+}
+
+.sig-label-below {
+  font-size: 0.78rem;
+  color: #64748b;
+  text-align: center;
+  font-style: italic;
+}
+
+/* ── Signature status badges ─────────────────────────────────── */
+.badge-signed {
+  color: #15836d;
+  font-weight: 800;
+}
+
+.badge-pending {
+  color: #b45309;
+  font-weight: 700;
+}
+
+/* ── Stage info grid (2 columns inside the stage card) ─────── */
+.stage-info-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0 20px;
+}
+
+.stage-info-grid .kv:nth-child(1),
+.stage-info-grid .kv:nth-child(2) {
+  grid-column: 1 / -1;
+}
+
 .muted {
   color: #64748b;
 }
@@ -263,6 +324,23 @@
   font-size: 0.92rem;
 }
 
+/* ── Hero: PDF locked notice (displayed in the hero actions bar) ── */
+.conv-pdf-hero-notice {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 0.45rem 1rem;
+  border-radius: 8px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  background: rgba(255, 255, 255, 0.12);
+  color: rgba(255, 255, 255, 0.78);
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  cursor: default;
+  user-select: none;
+}
+
+/* keep old class as alias so nothing breaks if referenced elsewhere */
 .btn-convention-locked {
   display: inline-flex;
   align-items: center;
@@ -276,6 +354,130 @@
   border: 1px solid rgba(255, 255, 255, 0.2);
   cursor: not-allowed;
   user-select: none;
+}
+
+/* ── Section 4 — Document PDF available ────────────────────────── */
+.conv-pdf-available {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  flex-wrap: wrap;
+  padding: 22px 24px;
+  border-radius: 20px;
+  background: linear-gradient(135deg, rgba(21, 131, 109, 0.08), rgba(255, 255, 255, 0.98));
+  border: 1px solid rgba(21, 131, 109, 0.18);
+  box-shadow: 0 6px 18px rgba(21, 131, 109, 0.07);
+}
+
+.conv-pdf-available__icon {
+  flex-shrink: 0;
+  width: 58px;
+  height: 58px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 18px;
+  background: linear-gradient(135deg, rgba(21, 131, 109, 0.14), rgba(21, 131, 109, 0.08));
+  color: #15836d;
+}
+
+.conv-pdf-available__body {
+  flex: 1;
+  min-width: 0;
+}
+
+.conv-pdf-available__title {
+  font-size: 1rem;
+  font-weight: 800;
+  color: #0f4c81;
+  margin-bottom: 4px;
+}
+
+.conv-pdf-available__desc {
+  margin: 0;
+  font-size: 0.88rem;
+  color: #475569;
+  line-height: 1.55;
+}
+
+.conv-pdf-available__btn {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* ── Section 4 — Document PDF locked ───────────────────────────── */
+.conv-pdf-locked-section {
+  display: flex;
+  align-items: flex-start;
+  gap: 22px;
+  padding: 24px 26px;
+  border-radius: 20px;
+  background: linear-gradient(135deg, rgba(234, 179, 8, 0.07), rgba(255, 255, 255, 0.98));
+  border: 1px solid rgba(234, 179, 8, 0.28);
+  box-shadow: 0 6px 18px rgba(234, 179, 8, 0.06);
+}
+
+.conv-pdf-locked-section__icon {
+  flex-shrink: 0;
+  width: 64px;
+  height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 18px;
+  background: rgba(234, 179, 8, 0.12);
+  color: #92400e;
+}
+
+.conv-pdf-locked-section__body {
+  flex: 1;
+  min-width: 0;
+}
+
+.conv-pdf-locked-section__title {
+  font-size: 1.05rem;
+  font-weight: 900;
+  color: #713f12;
+  margin-bottom: 8px;
+}
+
+.conv-pdf-locked-section__msg {
+  margin: 0 0 16px;
+  font-size: 0.92rem;
+  font-weight: 600;
+  color: #854d0e;
+  line-height: 1.6;
+}
+
+/* ── Signature status chips (in locked PDF section) ─────────── */
+.conv-pdf-locked-section__siglist {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.sig-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 12px;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.sig-chip--done {
+  background: rgba(21, 131, 109, 0.1);
+  border: 1px solid rgba(21, 131, 109, 0.22);
+  color: #15836d;
+}
+
+.sig-chip--wait {
+  background: rgba(234, 179, 8, 0.1);
+  border: 1px solid rgba(234, 179, 8, 0.25);
+  color: #92400e;
 }
 
 @media (max-width: 1000px) {
@@ -335,5 +537,15 @@
   .card,
   .signature-card {
     box-shadow: none;
+  }
+
+  .sig-img {
+    max-height: 70px;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .sig-img-zone {
+    border: 1px solid #cbd5e1;
   }
 }

@@ -1,23 +1,29 @@
 <div class="company-page student-page">
+
   <section class="page-hero">
     <div>
       <h1>Convention de stage</h1>
-      <p>Consultez la convention générée par le backend et suivez l'état des signatures.</p>
+      <p>Consultez la convention générée pour votre stage et suivez l'état des signatures.</p>
+    </div>
+    <div class="hero-actions" *ngIf="agreement">
+      <a [routerLink]="['/stages/convention', agreement.id]" class="btn btn-primary">
+        Voir la convention complète
+      </a>
     </div>
   </section>
 
   <div class="message-success" *ngIf="successMessage">{{ successMessage }}</div>
   <div class="message-error" *ngIf="errorMessage">{{ errorMessage }}</div>
 
-  <section class="panel" *ngIf="internships.length">
+  <!-- Sélecteur de stage (si plusieurs) -->
+  <section class="panel" *ngIf="internships.length > 1">
     <div class="panel-header">
       <div>
         <h2>Choix du stage</h2>
         <p class="panel-subtitle">Une convention est liée au stage sélectionné.</p>
       </div>
     </div>
-
-    <select *ngIf="internships.length > 1" class="select stage-selector" [ngModel]="selectedStageId" (ngModelChange)="onStageChange($event)">
+    <select class="select stage-selector" [ngModel]="selectedStageId" (ngModelChange)="onStageChange($event)">
       <option *ngFor="let internship of internships" [ngValue]="internship.id">
         {{ internship.titre || internship.sujet || ('Stage #' + internship.id) }}
       </option>
@@ -25,48 +31,66 @@
   </section>
 
   <div class="empty-card" *ngIf="isLoadingInternships">Chargement des stages...</div>
-  <div class="empty-card" *ngIf="!isLoadingInternships && !internships.length">Aucun stage disponible pour afficher une convention.</div>
+  <div class="empty-card" *ngIf="!isLoadingInternships && !internships.length">
+    Aucun stage disponible — une convention sera générée automatiquement lorsqu'un stage vous sera affecté.
+  </div>
 
-  <div class="content-grid" *ngIf="selectedInternship">
-    <section class="panel">
+  <div class="empty-card" *ngIf="selectedInternship && isLoadingData">Chargement de la convention...</div>
+  <div class="empty-card" *ngIf="selectedInternship && !isLoadingData && !agreement">
+    Aucune convention disponible pour ce stage.
+  </div>
+
+  <!-- Contenu principal -->
+  <div class="content-grid" *ngIf="agreement">
+
+    <!-- Carte résumé de la convention -->
+    <section class="panel conv-summary-panel">
       <div class="panel-header">
         <div>
-          <h2>Détail de la convention</h2>
-          <p class="panel-subtitle">Informations générées automatiquement par le backend.</p>
+          <h2>{{ agreement.stageTitre || ('Stage #' + agreement.stageId) }}</h2>
+          <p class="panel-subtitle">Référence convention : #{{ agreement.numConv || agreement.id }}</p>
         </div>
+        <span class="status-pill" [ngClass]="agreement.statutSignatures ? 'status-positive' : 'status-warning'">
+          {{ agreement.statutSignatures ? 'Signatures complètes' : 'En cours de signature' }}
+        </span>
       </div>
 
-      <div class="empty-card" *ngIf="isLoadingData">Chargement de la convention...</div>
-      <div class="empty-card" *ngIf="!isLoadingData && !agreement">Aucune convention disponible pour ce stage.</div>
-
-      <div class="detail-grid" *ngIf="agreement">
+      <div class="detail-grid">
         <div class="detail-item">
           <span class="label">Numéro</span>
           <span class="value">{{ agreement.numConv || 'Non renseigné' }}</span>
         </div>
         <div class="detail-item">
-          <span class="label">Période</span>
-          <span class="value">{{ formatDate(agreement.dateDebut) }} -> {{ formatDate(agreement.dateFin) }}</span>
+          <span class="label">Date de début</span>
+          <span class="value">{{ formatDate(agreement.dateDebut) }}</span>
         </div>
         <div class="detail-item">
-          <span class="label">Stage</span>
-          <span class="value">{{ agreement.stageTitre || selectedInternship.titre || 'Non renseigné' }}</span>
+          <span class="label">Date de fin</span>
+          <span class="value">{{ formatDate(agreement.dateFin) }}</span>
         </div>
         <div class="detail-item">
-          <span class="label">Statut global</span>
-          <span class="value">{{ agreement.statutSignatures ? 'Signatures complètes' : 'En cours de signature' }}</span>
+          <span class="label">Année universitaire</span>
+          <span class="value">{{ agreement.anneeUniversitaire || '-' }}</span>
         </div>
       </div>
 
-      <div class="button-row" style="margin-top: 16px;" *ngIf="agreement">
-        <button type="button" class="btn btn-primary" [disabled]="agreement.signeeStagiaire || isSigning" (click)="signAgreement()">
-          {{ isSigning ? 'Signature...' : 'Signer la convention' }}
+      <div class="button-row" style="margin-top: 20px;">
+        <button
+          type="button"
+          class="btn btn-primary"
+          [disabled]="agreement.signeeStagiaire || isSigning"
+          (click)="signAgreement()"
+        >
+          {{ agreement.signeeStagiaire ? 'Vous avez déjà signé' : (isSigning ? 'Signature...' : 'Signer la convention') }}
         </button>
-        <a [routerLink]="['/stages/convention', agreement.id]" class="btn btn-secondary">Voir la convention détaillée</a>
+        <a [routerLink]="['/stages/convention', agreement.id]" class="btn btn-secondary">
+          Voir la convention détaillée
+        </a>
       </div>
     </section>
 
-    <section class="panel" *ngIf="agreement">
+    <!-- État des signatures -->
+    <section class="panel">
       <div class="panel-header">
         <div>
           <h2>État des signatures</h2>
@@ -74,28 +98,48 @@
         </div>
       </div>
 
-      <div class="status-grid">
-        <div class="status-card">
-          <h4>Stagiaire</h4>
-          <p>{{ agreement.signeeStagiaire ? 'Signée' : 'En attente' }}</p>
+      <div class="sig-status-list">
+        <div class="sig-status-item" [ngClass]="agreement.signeeStagiaire ? 'sig-ok' : 'sig-wait'">
+          <span class="sig-dot"></span>
+          <div>
+            <div class="sig-role-label">Stagiaire</div>
+            <div class="sig-state-label">{{ agreement.signeeStagiaire ? 'Signée' : 'En attente' }}</div>
+          </div>
         </div>
-        <div class="status-card">
-          <h4>Encadrant académique</h4>
-          <p>{{ agreement.signeeEncAca ? 'Signée' : 'En attente' }}</p>
+        <div class="sig-status-item" [ngClass]="agreement.signeeEncAca ? 'sig-ok' : 'sig-wait'">
+          <span class="sig-dot"></span>
+          <div>
+            <div class="sig-role-label">Encadrant académique</div>
+            <div class="sig-state-label">{{ agreement.signeeEncAca ? 'Signée' : 'En attente' }}</div>
+          </div>
         </div>
-        <div class="status-card">
-          <h4>Encadrant professionnel</h4>
-          <p>{{ agreement.signeeEncPro ? 'Signée' : 'En attente' }}</p>
+        <div class="sig-status-item" [ngClass]="agreement.signeeEncPro ? 'sig-ok' : 'sig-wait'">
+          <span class="sig-dot"></span>
+          <div>
+            <div class="sig-role-label">Encadrant professionnel</div>
+            <div class="sig-state-label">{{ agreement.signeeEncPro ? 'Signée' : 'En attente' }}</div>
+          </div>
         </div>
-        <div class="status-card">
-          <h4>Entreprise</h4>
-          <p>{{ agreement.signeeEntreprise ? 'Signée' : 'En attente' }}</p>
+        <div class="sig-status-item" [ngClass]="agreement.signeeEntreprise ? 'sig-ok' : 'sig-wait'">
+          <span class="sig-dot"></span>
+          <div>
+            <div class="sig-role-label">Représentant entreprise</div>
+            <div class="sig-state-label">{{ agreement.signeeEntreprise ? 'Signée' : 'En attente' }}</div>
+          </div>
         </div>
-        <div class="status-card">
-          <h4>Responsable universitaire</h4>
-          <p>{{ agreement.signeeResp ? 'Signée' : 'En attente' }}</p>
+        <div class="sig-status-item" [ngClass]="agreement.signeeResp ? 'sig-ok' : 'sig-wait'">
+          <span class="sig-dot"></span>
+          <div>
+            <div class="sig-role-label">Responsable universitaire</div>
+            <div class="sig-state-label">{{ agreement.signeeResp ? 'Signée' : 'En attente' }}</div>
+          </div>
         </div>
       </div>
+
+      <div class="info-banner" *ngIf="agreement.statutSignatures">
+        Toutes les signatures sont recueillies. Vous pouvez consulter et imprimer la convention complète.
+      </div>
     </section>
+
   </div>
 </div>

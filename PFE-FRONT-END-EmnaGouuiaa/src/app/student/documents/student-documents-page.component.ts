@@ -653,9 +653,14 @@ ${trelloSection}
     this.errorMessage = '';
     this.studentPortalService.getEvaluationByStage(stageId).subscribe({
       next: (ev) => {
+        this.isActing = false;
+        if (!ev) {
+          win.close();
+          this.errorMessage = "Aucune fiche d'évaluation n'est disponible pour ce stage.";
+          return;
+        }
         this.evaluationsByStageId.set(stageId, ev);
         this.renderEvaluationPdf(ev, stageId, win);
-        this.isActing = false;
       },
       error: (error) => {
         win.close();

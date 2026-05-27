@@ -77,6 +77,26 @@ export class CompanyProfilePageComponent implements OnInit {
     return Boolean(String(this.profileForm?.get('nomFichierSignature')?.value ?? '').trim());
   }
 
+  /**
+   * Vrai si la signature a déjà été enregistrée côté serveur.
+   * Basé sur `signatureChargee` (valeur serveur) et non sur l'aperçu local
+   * du formulaire, afin que la sélection en cours d'édition reste possible
+   * jusqu'au premier enregistrement.
+   */
+  get signatureVerrouillee(): boolean {
+    return Boolean(this.signatureChargee?.trim());
+  }
+
+  /** Avertissement affiché AVANT le premier enregistrement. */
+  readonly avertissementSignature =
+    "Attention : après l'ajout de votre signature, celle-ci ne pourra plus être modifiée "
+    + "ni supprimée. Veuillez vérifier attentivement avant validation.";
+
+  /** Message informatif affiché quand la signature est déjà verrouillée. */
+  readonly remarqueSignatureDefinitive =
+    "La signature est définitive et ne peut pas être modifiée ou supprimée. "
+    + "Elle est utilisée dans les documents officiels générés par le système.";
+
   loadContext(preserveSuccessMessage = false): void {
     this.isLoading = true;
     this.isEditingProfile = false;
@@ -157,6 +177,16 @@ export class CompanyProfilePageComponent implements OnInit {
   // ── Gestion de l'import de signature ───────────────────────────────────────
 
   ouvrirSelecteurFichier(): void {
+    // Blocage strict si la signature est déjà enregistrée (règle métier).
+    if (this.signatureVerrouillee) {
+      this.errorMessage = this.remarqueSignatureDefinitive;
+      return;
+    }
+    // 1er enregistrement : avertissement obligatoire avant ouverture du sélecteur.
+    const confirmation = window.confirm(this.avertissementSignature);
+    if (!confirmation) {
+      return;
+    }
     this.signatureFileInput?.nativeElement.click();
   }
 
@@ -164,6 +194,13 @@ export class CompanyProfilePageComponent implements OnInit {
     const input = event.target as HTMLInputElement;
     const fichier = input.files?.[0];
     if (!fichier) return;
+
+    // Re-garde-fou : si la signature a été enregistrée entre temps, on bloque.
+    if (this.signatureVerrouillee) {
+      this.errorMessage = this.remarqueSignatureDefinitive;
+      input.value = '';
+      return;
+    }
 
     const typesAcceptes = ['image/png', 'image/jpeg', 'image/jpg', 'image/gif', 'image/webp'];
     if (!typesAcceptes.includes(fichier.type)) {
@@ -191,6 +228,12 @@ export class CompanyProfilePageComponent implements OnInit {
   }
 
   supprimerSignature(): void {
+    // Suppression INTERDITE une fois la signature enregistrée (règle métier).
+    if (this.signatureVerrouillee) {
+      this.errorMessage = this.remarqueSignatureDefinitive;
+      return;
+    }
+    // Avant le 1er enregistrement : on autorise à retirer l'aperçu local.
     this.signatureApercuLocal = null;
     this.profileForm.get('nomFichierSignature')?.setValue('');
   }

@@ -96,6 +96,57 @@ export class AgreementDetailComponent implements OnInit {
     return this.convention?.nomResponsableUniversitaireSignataire || 'Responsable universitaire des stages';
   }
 
+  // ── Données stagiaire enrichies ───────────────────────────────────────────
+
+  get filiereNom(): string {
+    return this.stage?.stagiaire?.filiere?.nom || '-';
+  }
+
+  get niveauStagiaire(): string {
+    const n = this.stage?.stagiaire?.niveau;
+    return n != null ? `${n}` : '-';
+  }
+
+  get matriculeStagiaire(): string {
+    return this.stage?.stagiaire?.matricule || '-';
+  }
+
+  get emailStagiaire(): string {
+    return this.stage?.stagiaire?.email || '-';
+  }
+
+  get telephoneStagiaire(): string {
+    return this.stage?.stagiaire?.telephone || '-';
+  }
+
+  // ── Signatures images ────────────────────────────────────────────────────
+
+  get urlSignatureStagiaire(): string | null {
+    return this.stage?.stagiaire?.urlSignature || null;
+  }
+
+  get urlSignatureEncAca(): string | null {
+    return this.stage?.encadrantAcademique?.urlSignature || null;
+  }
+
+  get urlSignatureEncPro(): string | null {
+    return this.stage?.encadrantProfessionnel?.urlSignature || null;
+  }
+
+  get urlSignatureTuteurEntreprise(): string | null {
+    return this.stage?.tuteurEntreprise?.urlSignature || null;
+  }
+
+  // ── Données encadrement ───────────────────────────────────────────────────
+
+  get emailEncadrantAcademique(): string {
+    return this.stage?.encadrantAcademique?.email || '-';
+  }
+
+  get emailEncadrantProfessionnel(): string {
+    return this.stage?.encadrantProfessionnel?.email || '-';
+  }
+
   // ── Actions ───────────────────────────────────────────────────────────────
 
   imprimer(): void {

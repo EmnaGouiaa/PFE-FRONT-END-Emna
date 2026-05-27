@@ -1,6 +1,5 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, HostListener, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { forkJoin, of } from 'rxjs';
 import { catchError, map, timeout } from 'rxjs/operators';
@@ -19,7 +18,7 @@ import { HttpClient } from '@angular/common/http';
 @Component({
   selector: 'app-company-validations-page',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule],
+  imports: [CommonModule, RouterModule],
   templateUrl: './company-validations.component.html',
   styleUrls: ['../company-shared.css'],
   styles: [`
@@ -62,21 +61,6 @@ import { HttpClient } from '@angular/common/http';
       font-weight: 600;
     }
     /* doc-mini-card styles définis dans company-shared.css */
-    .validation-layout {
-      display: grid;
-      grid-template-columns: minmax(0, 1.5fr) minmax(320px, 1fr);
-      gap: 24px;
-      align-items: start;
-    }
-    .table-actions {
-      display: flex;
-      gap: 8px;
-      flex-wrap: wrap;
-    }
-    .detail-copy {
-      display: grid;
-      gap: 14px;
-    }
     .detail-grid {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
@@ -98,15 +82,6 @@ import { HttpClient } from '@angular/common/http';
       font-weight: 700;
       color: #0f172a;
     }
-    .detail-actions {
-      display: flex;
-      gap: 10px;
-      flex-wrap: wrap;
-    }
-    .comment-box {
-      min-height: 120px;
-      resize: vertical;
-    }
     .alert-info {
       color: #0369a1;
       background: rgba(3, 105, 161, 0.08);
@@ -124,9 +99,6 @@ import { HttpClient } from '@angular/common/http';
       font-size: 0.85rem;
       border-radius: 10px;
     }
-    @media (max-width: 1100px) {
-      .validation-layout { grid-template-columns: 1fr; }
-    }
     @media (max-width: 640px) {
       .doc-cards-row { flex-direction: column; }
       .doc-mini-card { max-width: 100%; }
@@ -140,8 +112,6 @@ export class CompanyValidationsPageComponent implements OnInit {
   evaluationsByStageId = new Map<number, CompanyEvaluation>();
 
   items: CompanyValidationItem[] = [];
-  selectedItem: CompanyValidationItem | null = null;
-  refusalComment = '';
 
   isLoading = false;
   isActing = false;
@@ -149,6 +119,11 @@ export class CompanyValidationsPageComponent implements OnInit {
   errorMessage = '';
   successMessage = '';
   showEvaluationLink = false;
+
+  // ── Modale de détails document ─────────────────────────────────────────
+  showDocModal = false;
+  selectedDocStageId: number | null = null;
+  selectedDocType: 'convention' | 'fiche-evaluation' | 'cahier-stage' | null = null;
 
   constructor(
     private companyContextService: CompanyContextService,
@@ -189,8 +164,6 @@ export class CompanyValidationsPageComponent implements OnInit {
           next: ({ internships, validationItems }) => {
             this.internships = internships;
             this.items = validationItems;
-            this.selectedItem = this.pickNextSelection(validationItems);
-            this.refusalComment = '';
             this.loadDocumentData(internships);
           },
           error: (error) => {
@@ -322,26 +295,7 @@ export class CompanyValidationsPageComponent implements OnInit {
     return 'status-pill status-neutral';
   }
 
-  get pendingItems(): CompanyValidationItem[] {
-    return this.items.filter((item) => item.pending);
-  }
-
-  get validatedCount(): number {
-    return this.items.filter((item) => item.status === 'VALIDEE').length;
-  }
-
-  get refusedCount(): number {
-    return this.items.filter((item) => item.status === 'REFUSEE').length;
-  }
-
-  selectItem(item: CompanyValidationItem): void {
-    this.selectedItem = item;
-    this.refusalComment = '';
-    this.successMessage = '';
-    this.errorMessage = '';
-  }
-
-  approveSelected(item: CompanyValidationItem | null = this.selectedItem): void {
+  approveSelected(item: CompanyValidationItem): void {
     if (!item) return;
     this.isActing = true;
     this.errorMessage = '';
@@ -350,38 +304,12 @@ export class CompanyValidationsPageComponent implements OnInit {
     this.companyValidationsService.approve(item).subscribe({
       next: (updated) => {
         this.upsertItem(updated);
-        this.selectedItem = updated;
         this.successMessage = `${updated.title} validé avec succès.`;
         this.showEvaluationLink = updated.type === 'CAHIER_STAGE';
         this.isActing = false;
       },
       error: (error) => {
         this.errorMessage = this.extractErrorMessage(error, 'Impossible de valider cet élément.');
-        this.isActing = false;
-      }
-    });
-  }
-
-  rejectSelected(item: CompanyValidationItem | null = this.selectedItem): void {
-    if (!item) return;
-    if (!this.refusalComment.trim()) {
-      this.errorMessage = 'Le motif du refus est obligatoire.';
-      return;
-    }
-    this.isActing = true;
-    this.errorMessage = '';
-    this.successMessage = '';
-
-    this.companyValidationsService.reject(item, this.refusalComment).subscribe({
-      next: (updated) => {
-        this.upsertItem(updated);
-        this.selectedItem = updated;
-        this.successMessage = `${updated.title} refusé avec succès.`;
-        this.refusalComment = '';
-        this.isActing = false;
-      },
-      error: (error) => {
-        this.errorMessage = this.extractErrorMessage(error, 'Impossible de refuser cet élément.');
         this.isActing = false;
       }
     });
@@ -421,6 +349,11 @@ export class CompanyValidationsPageComponent implements OnInit {
   }
 
   downloadPdf(stageId: number, type: 'convention' | 'fiche-evaluation' | 'cahier-stage'): void {
+    // Garde systématique : bloquer l'accès PDF si les signatures ne sont pas complètes.
+    if (!this.canAccessPdf(stageId, type)) {
+      this.errorMessage = 'Le document n\'est pas encore disponible. Il sera généré et consultable après la signature de tous les signataires requis.';
+      return;
+    }
     if (type === 'fiche-evaluation') {
       this.openEvaluationPdf(stageId);
       return;
@@ -429,24 +362,11 @@ export class CompanyValidationsPageComponent implements OnInit {
       this.openConventionPdf(stageId);
       return;
     }
-    // cahier-stage : vérification de la règle métier avant d'ouvrir le PDF.
-    if (!this.canAccessPdf(stageId, 'cahier-stage')) {
-      const internship = this.internships.find((i) => i.id === stageId);
-      const cahier = this.getCahierItem(stageId);
-      if (!cahier || cahier.status !== 'VALIDEE') {
-        this.errorMessage = 'Le cahier de stage nécessite toutes les signatures obligatoires (encadrant professionnel, encadrant académique, responsable entreprise, stagiaire).';
-      } else {
-        const dateFin = internship?.dateFin;
-        this.errorMessage = dateFin
-          ? `Ce document sera accessible après la fin du stage le ${new Date(dateFin).toLocaleDateString('fr-FR')}.`
-          : 'Ce document sera accessible après la fin du stage.';
-      }
-      return;
-    }
+    // cahier-stage
     this.openCahierPdf(stageId);
   }
 
-  private openConventionPdf(stageId: number): void {
+  private openConventionPdf(stageId: number, detailsMode = false): void {
     const agreement = this.getAgreement(stageId);
     const internship = this.internships.find((i) => i.id === stageId);
     if (!agreement || !internship) {
@@ -458,41 +378,70 @@ export class CompanyValidationsPageComponent implements OnInit {
       this.errorMessage = "Impossible d'ouvrir une nouvelle fenêtre. Vérifiez les paramètres de votre navigateur.";
       return;
     }
+    let html = this.buildConventionHtml(agreement, internship);
+    if (detailsMode) { html = this.injectPdfNotice(html, this.canAccessPdf(stageId, 'convention')); }
     win.document.open();
-    win.document.write(this.buildConventionHtml(agreement, internship));
+    win.document.write(html);
     win.document.close();
     win.focus();
-    setTimeout(() => { try { win.print(); } catch (_) {} }, 600);
+    if (!detailsMode) { setTimeout(() => { try { win.print(); } catch (_) {} }, 600); }
   }
 
-  openCahierDetails(stageId: number): void {
-    const cahier = this.getCahierItem(stageId);
-    if (!cahier) {
-      this.errorMessage = 'Données du cahier de stage introuvables.';
-      return;
-    }
-    this.openCahierPdf(stageId);
-  }
-
-  /** Aperçu détaillé (imprimable) de la convention — cohérent avec le bouton Détails du cahier. */
+  /** Ouvre la modale de détails pour la convention. */
   openConventionDetails(stageId: number): void {
     if (!this.getAgreement(stageId)) {
       this.errorMessage = 'Convention introuvable pour ce stage.';
       return;
     }
-    this.openConventionPdf(stageId);
+    this.selectedDocStageId = stageId;
+    this.selectedDocType = 'convention';
+    this.showDocModal = true;
   }
 
-  /** Aperçu détaillé (imprimable) de la fiche d'évaluation. */
+  /** Ouvre la modale de détails pour la fiche d'évaluation. */
   openEvaluationDetails(stageId: number): void {
     if (!this.getEvaluation(stageId)) {
       this.errorMessage = "Fiche d'évaluation introuvable pour ce stage.";
       return;
     }
-    this.openEvaluationPdf(stageId);
+    this.selectedDocStageId = stageId;
+    this.selectedDocType = 'fiche-evaluation';
+    this.showDocModal = true;
   }
 
-  private openCahierPdf(stageId: number): void {
+  /** Ouvre la modale de détails pour le cahier de stage. */
+  openCahierDetails(stageId: number): void {
+    if (!this.getCahierItem(stageId)) {
+      this.errorMessage = 'Données du cahier de stage introuvables.';
+      return;
+    }
+    this.selectedDocStageId = stageId;
+    this.selectedDocType = 'cahier-stage';
+    this.showDocModal = true;
+  }
+
+  closeDocDetails(): void {
+    this.showDocModal = false;
+    this.selectedDocStageId = null;
+    this.selectedDocType = null;
+  }
+
+  @HostListener('document:keydown.escape')
+  handleEscape(): void {
+    if (this.showDocModal) this.closeDocDetails();
+  }
+
+  getSelectedInternship(): CompanyInternship | null {
+    if (!this.selectedDocStageId) return null;
+    return this.internships.find((i) => i.id === this.selectedDocStageId) ?? null;
+  }
+
+  isSelectedStageEnded(): boolean {
+    const internship = this.getSelectedInternship();
+    return internship ? this.isStageEnded(internship) : false;
+  }
+
+  private openCahierPdf(stageId: number, detailsMode = false): void {
     const cahier = this.getCahierItem(stageId);
     const internship = this.internships.find((i) => i.id === stageId);
     if (!cahier || !internship) {
@@ -516,22 +465,24 @@ export class CompanyValidationsPageComponent implements OnInit {
       absences:      this.companyAbsencesService.listByStage(stageId).pipe(catchError(() => of([]))),
       trello:        this.http.get<any>(`${API_BASE_URL}/stages/${stageId}/resume-trello`).pipe(catchError(() => of(null))),
       sigStagiaire:  internship.stagiaireId
-        ? this.http.get<any>(`${API_BASE_URL}/utilisateurs/${internship.stagiaireId}`).pipe(map((r) => String(r?.urlSignature ?? r?.nomFichierSignature ?? '')), catchError(() => of('')))
+        ? this.http.get<{ urlSignature?: string }>(`${API_BASE_URL}/utilisateurs/${internship.stagiaireId}/signature-collaborateur`).pipe(map((r) => String(r?.urlSignature ?? '')), catchError(() => of('')))
         : of(''),
       sigEncPro:     internship.encadrantProfessionnelId
-        ? this.http.get<any>(`${API_BASE_URL}/utilisateurs/${internship.encadrantProfessionnelId}`).pipe(map((r) => String(r?.urlSignature ?? r?.nomFichierSignature ?? '')), catchError(() => of('')))
+        ? this.http.get<{ urlSignature?: string }>(`${API_BASE_URL}/utilisateurs/${internship.encadrantProfessionnelId}/signature-collaborateur`).pipe(map((r) => String(r?.urlSignature ?? '')), catchError(() => of('')))
         : of('')
     }).pipe(timeout(20000)).subscribe({
       next: ({ meetings, absences, trello, sigStagiaire, sigEncPro }) => {
         this.isActing = false;
-        win.document.open();
-        win.document.write(this.buildCahierHtml(cahier, internship, meetings, absences, trello, {
+        let html = this.buildCahierHtml(cahier, internship, meetings, absences, trello, {
           stagiaire: sigStagiaire,
           encadrantProfessionnel: sigEncPro
-        }));
+        });
+        if (detailsMode) { html = this.injectPdfNotice(html, this.canAccessPdf(stageId, 'cahier-stage')); }
+        win.document.open();
+        win.document.write(html);
         win.document.close();
         win.focus();
-        setTimeout(() => { try { win.print(); } catch (_) {} }, 700);
+        if (!detailsMode) { setTimeout(() => { try { win.print(); } catch (_) {} }, 700); }
       },
       error: () => {
         this.isActing = false;
@@ -796,7 +747,7 @@ ${trelloSection}
 </html>`;
   }
 
-  private openEvaluationPdf(stageId: number): void {
+  private openEvaluationPdf(stageId: number, detailsMode = false): void {
     const evaluation = this.getEvaluation(stageId);
     const internship = this.internships.find((i) => i.id === stageId);
     if (!evaluation || !internship) {
@@ -808,11 +759,22 @@ ${trelloSection}
       this.errorMessage = "Impossible d'ouvrir une nouvelle fenêtre. Vérifiez les paramètres de votre navigateur.";
       return;
     }
+    let html = this.buildEvaluationHtml(evaluation, internship);
+    if (detailsMode) { html = this.injectPdfNotice(html, this.canAccessPdf(stageId, 'fiche-evaluation')); }
     viewerWindow.document.open();
-    viewerWindow.document.write(this.buildEvaluationHtml(evaluation, internship));
+    viewerWindow.document.write(html);
     viewerWindow.document.close();
     viewerWindow.focus();
-    setTimeout(() => { try { viewerWindow.print(); } catch (_) {} }, 600);
+    if (!detailsMode) { setTimeout(() => { try { viewerWindow.print(); } catch (_) {} }, 600); }
+  }
+
+  /** Injecte un bandeau PDF (disponible ou non) en bas du document HTML généré. */
+  private injectPdfNotice(html: string, canPrint: boolean): string {
+    const printStyle = '<style>@media print{.no-print{display:none!important}}</style>';
+    const notice = canPrint
+      ? `<div class="no-print" style="margin:24px 0 0;padding:14px 18px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;font-size:10.5pt;color:#166534;display:flex;align-items:center;justify-content:space-between;gap:16px"><span>✓ Toutes les signatures sont complètes. Ce document est disponible en PDF.</span><button onclick="window.print()" style="flex-shrink:0;padding:8px 20px;background:#15803d;color:#fff;border:none;border-radius:6px;cursor:pointer;font-weight:700;font-size:10pt">Imprimer / Télécharger PDF</button></div>`
+      : `<div class="no-print" style="margin:24px 0 0;padding:14px 18px;background:#fff7ed;border:1px solid #fed7aa;border-radius:8px;font-size:10.5pt;color:#9a3412"><strong>⚠ Document non disponible au format PDF.</strong> Il sera généré et consultable après la signature de tous les signataires requis.</div>`;
+    return html.replace('</head>', printStyle + '\n</head>').replace('</body>', notice + '\n</body>');
   }
 
   private buildEvaluationHtml(ev: CompanyEvaluation, stage: CompanyInternship): string {
@@ -950,14 +912,6 @@ ${trelloSection}
     } else {
       this.items = [updated, ...this.items];
     }
-  }
-
-  private pickNextSelection(items: CompanyValidationItem[]): CompanyValidationItem | null {
-    const currentKey = this.selectedItem?.key;
-    return items.find((item) => item.key === currentKey)
-      ?? items.find((item) => item.pending)
-      ?? items[0]
-      ?? null;
   }
 
   private extractErrorMessage(error: any, fallback: string): string {

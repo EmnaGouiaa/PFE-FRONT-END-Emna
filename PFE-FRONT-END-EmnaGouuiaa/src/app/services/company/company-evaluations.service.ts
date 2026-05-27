@@ -4,6 +4,7 @@ import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 import { API_BASE_URL } from '../api.config';
 import { CompanyEvaluation, CompanyEvaluationPayload, EvaluationNoteDto } from './company.models';
+import { getJsonOptional$ } from '../http-optional-body';
 
 @Injectable({ providedIn: 'root' })
 export class CompanyEvaluationsService {
@@ -11,10 +12,10 @@ export class CompanyEvaluationsService {
 
   constructor(private http: HttpClient) {}
 
-  getByStageId(stageId: number): Observable<CompanyEvaluation> {
-    return this.http
-      .get<any>(`${this.apiUrl}/stage/${stageId}`)
-      .pipe(map((item) => this.normalizeEvaluation(item)));
+  getByStageId(stageId: number): Observable<CompanyEvaluation | null> {
+    return getJsonOptional$<any>(this.http, `${this.apiUrl}/stage/${stageId}`).pipe(
+      map((item) => (item ? this.normalizeEvaluation(item) : null))
+    );
   }
 
   create(payload: CompanyEvaluationPayload): Observable<CompanyEvaluation> {

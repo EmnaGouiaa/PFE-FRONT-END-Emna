@@ -18,6 +18,33 @@ export interface UpdateEnqueteRequest {
   urlFormulaire?: string | null;
 }
 
+/**
+ * Réponse de GET /api/enquete/stage/{stageId}.
+ * Contient l'état calculé de l'enquête pour un stage précis,
+ * en appliquant la règle des 7 jours (dateFin … dateFin + 6).
+ *
+ * Valeurs possibles de `statut` :
+ *   "Non configurée" | "Désactivée" | "En attente" | "Ouverte" | "Fermée"
+ */
+export interface EnqueteStageDto {
+  stageId?: number | null;
+  stageTitre?: string;
+  titre: string;
+  description: string;
+  /** Vide ("") quand la section n'est pas ouverte — jamais exposé hors fenêtre. */
+  urlFormulaire?: string | null;
+  /** Statut calculé par le backend selon la fenêtre de 7 jours. */
+  statut: 'Non configurée' | 'Désactivée' | 'En attente' | 'Ouverte' | 'Fermée' | string;
+  /** true uniquement si la fenêtre est active ET active ET URL configurée. */
+  sectionEnqueteOuverte?: boolean;
+  disponible?: boolean;
+  dateAtteinte?: boolean;
+  /** Message contextuel expliquant le statut. */
+  message?: string;
+  active?: boolean;
+  dateModification?: string;
+}
+
 @Injectable({ providedIn: 'root' })
 export class EnqueteService {
   private readonly baseUrl = `${API_BASE_URL}/enquete`;
@@ -46,5 +73,17 @@ export class EnqueteService {
   /** PATCH /api/enquete/toggle — active ou désactive l'enquête (RESPONSABLE_STAGE uniquement). */
   toggleEnquete(): Observable<EnqueteSatisfaction> {
     return this.http.patch<EnqueteSatisfaction>(`${this.baseUrl}/toggle`, {});
+  }
+
+  /**
+   * GET /api/enquete/stage/{stageId} — état calculé de l'enquête pour un stage précis.
+   *
+   * Applique la règle des 7 jours côté backend :
+   *   - statut "Ouverte"   + urlFormulaire renseignée → dans la fenêtre
+   *   - statut "Fermée"    + urlFormulaire vide        → fenêtre expirée
+   *   - statut "En attente"                            → stage pas encore terminé
+   */
+  getEnqueteParStage(stageId: number): Observable<EnqueteStageDto> {
+    return this.http.get<EnqueteStageDto>(`${this.baseUrl}/stage/${stageId}`);
   }
 }

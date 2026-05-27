@@ -3,6 +3,7 @@ import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { forkJoin, Observable, of, throwError } from 'rxjs';
 import { catchError, map, switchMap } from 'rxjs/operators';
 import { API_BASE_URL } from '../api.config';
+import { getJsonOptional$ } from '../http-optional-body';
 import {
   StatutDocument,
   StudentAgreement,
@@ -239,10 +240,11 @@ export class StudentPortalService {
       );
   }
 
-  getAgreementByStage(stageId: number): Observable<StudentAgreement> {
-    return this.http
-      .get<any>(`${this.agreementsUrl}/stage/${stageId}`)
-      .pipe(map((item) => this.normalizeAgreement(item)), catchError((error) => this.handleError(error)));
+  getAgreementByStage(stageId: number): Observable<StudentAgreement | null> {
+    return getJsonOptional$<any>(this.http, `${this.agreementsUrl}/stage/${stageId}`).pipe(
+      map((item) => (item ? this.normalizeAgreement(item) : null)),
+      catchError((error) => this.handleError(error))
+    );
   }
 
   signAgreementAsStudent(agreementId: number): Observable<StudentAgreement> {
@@ -281,18 +283,18 @@ export class StudentPortalService {
       .pipe(catchError((error) => this.handleError(error)));
   }
 
-  getEvaluationByStage(stageId: number): Observable<StudentEvaluation> {
-    return this.http
-      .get<any>(`${this.evaluationsUrl}/stage/${stageId}`)
-      .pipe(map((item) => this.normalizeEvaluation(item)), catchError((error) => this.handleError(error)));
+  getEvaluationByStage(stageId: number): Observable<StudentEvaluation | null> {
+    return getJsonOptional$<any>(this.http, `${this.evaluationsUrl}/stage/${stageId}`).pipe(
+      map((item) => (item ? this.normalizeEvaluation(item) : null)),
+      catchError((error) => this.handleError(error))
+    );
   }
 
-  /** Fetches the data-URI signature stored in a user profile.
-   *  Returns an empty string on any error (graceful degradation). */
+  /** Signature d'un collaborateur (même stage) — pas GET /utilisateurs/{id} admin. */
   getUserSignature(userId: number | null): Observable<string> {
     if (!userId) return of('');
-    return this.http.get<any>(`${this.usersUrl}/${userId}`).pipe(
-      map((raw) => String(raw?.urlSignature ?? raw?.nomFichierSignature ?? '')),
+    return this.http.get<{ urlSignature?: string }>(`${API_BASE_URL}/utilisateurs/${userId}/signature-collaborateur`).pipe(
+      map((raw) => String(raw?.urlSignature ?? '')),
       catchError(() => of(''))
     );
   }
@@ -434,6 +436,7 @@ export class StudentPortalService {
       niveauSouhaite: String(raw?.niveauSouhaite ?? ''),
       statut: String(raw?.statut ?? ''),
       statutSujet: String(raw?.statutSujet ?? ''),
+      trelloBoardId: String(raw?.trelloBoardId ?? ''),
       trelloBoardUrl: String(raw?.trelloBoardUrl ?? ''),
       conventionId: this.normalizeId(raw?.conventionDeStage?.id),
       ficheEvaluationId: this.normalizeId(raw?.ficheEvaluation?.id),

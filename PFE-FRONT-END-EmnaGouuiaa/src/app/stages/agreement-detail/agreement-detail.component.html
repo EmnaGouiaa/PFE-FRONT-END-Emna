@@ -8,7 +8,13 @@
       </p>
     </div>
     <div class="hero-actions" *ngIf="!chargement && convention">
-      <!-- PDF uniquement disponible après signature complète -->
+      <div class="conv-pdf-hero-notice" *ngIf="!conventionSignee" role="status">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15" aria-hidden="true">
+          <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+          <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+        </svg>
+        PDF indisponible — signatures en attente
+      </div>
       <button
         type="button"
         class="btn btn-secondary"
@@ -17,13 +23,6 @@
       >
         Imprimer / enregistrer en PDF
       </button>
-      <span
-        class="btn-convention-locked"
-        *ngIf="!conventionSignee"
-        title="Le PDF sera disponible une fois toutes les signatures recueillies."
-      >
-        🔒 PDF indisponible — signatures en attente
-      </span>
       <button
         type="button"
         class="btn btn-primary"
@@ -41,6 +40,8 @@
   <div *ngIf="chargement" class="loading">Chargement de la convention...</div>
 
   <section *ngIf="!chargement && convention" class="document">
+
+    <!-- ── En-tête du document ─────────────────────────────────────────── -->
     <div class="document-header">
       <div class="document-brand">
         <div class="brand-badge">FSEGS</div>
@@ -59,6 +60,7 @@
       </div>
     </div>
 
+    <!-- ── Chips de synthèse ───────────────────────────────────────────── -->
     <div class="summary-strip">
       <div class="summary-chip">
         <span class="chip-label">Entreprise</span>
@@ -74,19 +76,32 @@
       </div>
     </div>
 
+    <!-- ══ Section 1 — Parties concernées ══════════════════════════════ -->
     <div class="document-section">
       <h2>1. Parties concernées</h2>
+
       <div class="grid-2">
+        <!-- Établissement universitaire -->
         <div class="card highlight-card">
           <div class="card-title">Établissement universitaire</div>
           <div class="kv"><span>Organisme</span><span>FSEGS — Gestion des stages</span></div>
           <div class="kv"><span>Responsable</span><span>{{ nomResponsableUniversitaire }}</span></div>
-          <div class="kv"><span>État signature</span><span>{{ convention.signeeResp ? 'Signée' : 'En attente' }}</span></div>
+          <div class="kv"><span>État signature</span>
+            <span [ngClass]="convention.signeeResp ? 'badge-signed' : 'badge-pending'">
+              {{ convention.signeeResp ? '✔ Signée' : '⏳ En attente' }}
+            </span>
+          </div>
+          <div class="kv" *ngIf="convention.dateSignatureResponsableUniversitaire">
+            <span>Date signature</span>
+            <span>{{ convention.dateSignatureResponsableUniversitaire }}</span>
+          </div>
         </div>
 
+        <!-- Entreprise d'accueil -->
         <div class="card" *ngIf="stage?.entreprise; else missingCompany">
           <div class="card-title">Entreprise d'accueil</div>
           <div class="kv"><span>Nom</span><span>{{ stage?.entreprise?.nom || '-' }}</span></div>
+          <div class="kv"><span>Secteur</span><span>{{ stage?.entreprise?.secteurActivite || '-' }}</span></div>
           <div class="kv"><span>Adresse</span><span>{{ stage?.entreprise?.adresse || '-' }}</span></div>
           <div class="kv"><span>E-mail</span><span>{{ stage?.entreprise?.email || '-' }}</span></div>
           <div class="kv"><span>Téléphone</span><span>{{ stage?.entreprise?.telephone || '-' }}</span></div>
@@ -100,12 +115,15 @@
       </div>
 
       <div class="grid-2">
+        <!-- Stagiaire -->
         <div class="card" *ngIf="stage?.stagiaire; else missingStudent">
           <div class="card-title">Stagiaire</div>
           <div class="kv"><span>Nom complet</span><span>{{ nomStagiaire }}</span></div>
-          <div class="kv"><span>E-mail</span><span>{{ stage?.stagiaire?.email || '-' }}</span></div>
-          <div class="kv"><span>Téléphone</span><span>{{ stage?.stagiaire?.telephone || '-' }}</span></div>
-          <div class="kv"><span>Matricule</span><span>{{ stage?.stagiaire?.matricule || '-' }}</span></div>
+          <div class="kv"><span>Matricule</span><span>{{ matriculeStagiaire }}</span></div>
+          <div class="kv"><span>Filière</span><span>{{ filiereNom }}</span></div>
+          <div class="kv"><span>Niveau</span><span>{{ niveauStagiaire }}</span></div>
+          <div class="kv"><span>E-mail</span><span>{{ emailStagiaire }}</span></div>
+          <div class="kv"><span>Téléphone</span><span>{{ telephoneStagiaire }}</span></div>
         </div>
         <ng-template #missingStudent>
           <div class="card">
@@ -114,67 +132,186 @@
           </div>
         </ng-template>
 
+        <!-- Encadrement -->
         <div class="card">
           <div class="card-title">Encadrement</div>
           <div class="kv"><span>Encadrant académique</span><span>{{ nomEncadrantAcademique }}</span></div>
+          <div class="kv" *ngIf="emailEncadrantAcademique !== '-'">
+            <span>E-mail enc. acad.</span><span>{{ emailEncadrantAcademique }}</span>
+          </div>
           <div class="kv"><span>Encadrant professionnel</span><span>{{ nomEncadrantProfessionnel }}</span></div>
+          <div class="kv" *ngIf="emailEncadrantProfessionnel !== '-'">
+            <span>E-mail enc. pro.</span><span>{{ emailEncadrantProfessionnel }}</span>
+          </div>
           <div class="kv"><span>Représentant entreprise</span><span>{{ nomTuteurEntreprise }}</span></div>
         </div>
       </div>
     </div>
 
+    <!-- ══ Section 2 — Informations du stage ══════════════════════════ -->
     <div class="document-section">
       <h2>2. Informations du stage</h2>
       <div class="card stage-card">
-        <div class="kv"><span>Titre</span><span>{{ titreConvention }}</span></div>
-        <div class="kv"><span>Sujet / mission</span><span>{{ stage?.sujet || '-' }}</span></div>
-        <div class="kv"><span>Date de début</span><span>{{ stage?.dateDebut || convention.dateDebut || '-' }}</span></div>
-        <div class="kv"><span>Date de fin</span><span>{{ stage?.dateFin || convention.dateFin || '-' }}</span></div>
-        <div class="kv"><span>Durée</span><span>{{ stage?.duree ?? '-' }} mois</span></div>
-        <div class="kv"><span>Nombre de semaines</span><span>{{ stage?.nbSemaine ?? '-' }}</span></div>
+        <div class="stage-info-grid">
+          <div class="kv"><span>Titre</span><span>{{ titreConvention }}</span></div>
+          <div class="kv"><span>Sujet / mission</span><span>{{ stage?.sujet || '-' }}</span></div>
+          <div class="kv"><span>Date de début</span><span>{{ stage?.dateDebut || convention.dateDebut || '-' }}</span></div>
+          <div class="kv"><span>Date de fin</span><span>{{ stage?.dateFin || convention.dateFin || '-' }}</span></div>
+          <div class="kv"><span>Durée</span><span>{{ stage?.duree ?? '-' }} mois</span></div>
+          <div class="kv"><span>Nombre de semaines</span><span>{{ stage?.nbSemaine ?? '-' }}</span></div>
+          <div class="kv"><span>Niveau requis</span><span>{{ stage?.niveauSouhaite || '-' }}</span></div>
+          <div class="kv"><span>Statut du stage</span><span>{{ stage?.statut || '-' }}</span></div>
+        </div>
       </div>
     </div>
 
+    <!-- ══ Section 3 — Signatures ══════════════════════════════════════ -->
     <div class="document-section">
       <h2>3. Signatures</h2>
+
       <div class="signature-grid">
+
+        <!-- Stagiaire -->
         <article class="signature-card" [ngClass]="convention.signeeStagiaire ? 'signed' : 'pending'">
           <div class="signature-role">Stagiaire</div>
           <div class="signature-name">{{ nomStagiaire }}</div>
-          <div class="signature-state">{{ convention.signeeStagiaire ? 'Signée' : 'En attente' }}</div>
+          <div class="signature-state">{{ convention.signeeStagiaire ? '✔ Signée' : '⏳ En attente' }}</div>
+          <div class="sig-img-zone" *ngIf="convention.signeeStagiaire && urlSignatureStagiaire">
+            <img class="sig-img" [src]="urlSignatureStagiaire" alt="Signature du stagiaire" />
+          </div>
+          <div class="sig-placeholder" *ngIf="convention.signeeStagiaire && !urlSignatureStagiaire">
+            <div class="sig-line"></div>
+            <div class="sig-label-below">Signé électroniquement</div>
+          </div>
         </article>
+
+        <!-- Encadrant académique -->
         <article class="signature-card" [ngClass]="convention.signeeEncAca ? 'signed' : 'pending'">
           <div class="signature-role">Encadrant académique</div>
           <div class="signature-name">{{ nomEncadrantAcademique }}</div>
-          <div class="signature-state">{{ convention.signeeEncAca ? 'Signée' : 'En attente' }}</div>
+          <div class="signature-state">{{ convention.signeeEncAca ? '✔ Signée' : '⏳ En attente' }}</div>
+          <div class="sig-img-zone" *ngIf="convention.signeeEncAca && urlSignatureEncAca">
+            <img class="sig-img" [src]="urlSignatureEncAca" alt="Signature encadrant académique" />
+          </div>
+          <div class="sig-placeholder" *ngIf="convention.signeeEncAca && !urlSignatureEncAca">
+            <div class="sig-line"></div>
+            <div class="sig-label-below">Signé électroniquement</div>
+          </div>
         </article>
+
+        <!-- Encadrant professionnel -->
         <article class="signature-card" [ngClass]="convention.signeeEncPro ? 'signed' : 'pending'">
           <div class="signature-role">Encadrant professionnel</div>
           <div class="signature-name">{{ nomEncadrantProfessionnel }}</div>
-          <div class="signature-state">{{ convention.signeeEncPro ? 'Signée' : 'En attente' }}</div>
+          <div class="signature-state">{{ convention.signeeEncPro ? '✔ Signée' : '⏳ En attente' }}</div>
+          <div class="sig-img-zone" *ngIf="convention.signeeEncPro && urlSignatureEncPro">
+            <img class="sig-img" [src]="urlSignatureEncPro" alt="Signature encadrant professionnel" />
+          </div>
+          <div class="sig-placeholder" *ngIf="convention.signeeEncPro && !urlSignatureEncPro">
+            <div class="sig-line"></div>
+            <div class="sig-label-below">Signé électroniquement</div>
+          </div>
         </article>
+
+        <!-- Représentant entreprise -->
         <article class="signature-card" [ngClass]="convention.signeeEntreprise ? 'signed' : 'pending'">
           <div class="signature-role">Représentant de l'entreprise</div>
           <div class="signature-name">{{ nomTuteurEntreprise }}</div>
-          <div class="signature-state">{{ convention.signeeEntreprise ? 'Signée' : 'En attente' }}</div>
+          <div class="signature-state">{{ convention.signeeEntreprise ? '✔ Signée' : '⏳ En attente' }}</div>
+          <div class="sig-img-zone" *ngIf="convention.signeeEntreprise && urlSignatureTuteurEntreprise">
+            <img class="sig-img" [src]="urlSignatureTuteurEntreprise" alt="Signature représentant entreprise" />
+          </div>
+          <div class="sig-placeholder" *ngIf="convention.signeeEntreprise && !urlSignatureTuteurEntreprise">
+            <div class="sig-line"></div>
+            <div class="sig-label-below">Signé électroniquement</div>
+          </div>
         </article>
+
+        <!-- Responsable universitaire -->
         <article class="signature-card" [ngClass]="convention.signeeResp ? 'signed' : 'pending'">
           <div class="signature-role">Responsable universitaire</div>
           <div class="signature-name">{{ nomResponsableUniversitaire }}</div>
-          <div class="signature-state">{{ convention.signeeResp ? 'Signée' : 'En attente' }}</div>
+          <div class="signature-state">{{ convention.signeeResp ? '✔ Signée' : '⏳ En attente' }}</div>
           <div class="signature-date" *ngIf="convention.dateSignatureResponsableUniversitaire">
             Le {{ convention.dateSignatureResponsableUniversitaire }}
           </div>
+          <div class="sig-placeholder" *ngIf="convention.signeeResp">
+            <div class="sig-line"></div>
+            <div class="sig-label-below">Signé électroniquement</div>
+          </div>
         </article>
+
       </div>
 
       <div class="muted note" *ngIf="conventionSignee">
         Utilisez « Imprimer / enregistrer en PDF » pour obtenir une version officielle de cette convention.
       </div>
-      <div class="support-banner" *ngIf="!conventionSignee">
-        <strong>Signatures manquantes.</strong> Le document PDF ne sera généré qu'une fois toutes les parties signataires ayant apposé leur signature électronique.
+    </div>
+
+    <!-- ══ Section 4 — Document PDF ════════════════════════════════════════ -->
+    <div class="document-section">
+      <h2>4. Document PDF</h2>
+
+      <!-- ── Toutes les signatures recueillies → PDF disponible ── -->
+      <div class="conv-pdf-available" *ngIf="conventionSignee">
+        <div class="conv-pdf-available__icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="28" height="28">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+            <polyline points="14 2 14 8 20 8"/>
+            <path d="M9 15l2 2 4-4"/>
+          </svg>
+        </div>
+        <div class="conv-pdf-available__body">
+          <div class="conv-pdf-available__title">Document disponible</div>
+          <p class="conv-pdf-available__desc">
+            Toutes les signatures ont été recueillies. La convention est finalisée et peut être imprimée ou enregistrée au format PDF.
+          </p>
+        </div>
+        <button type="button" class="btn btn-primary conv-pdf-available__btn" (click)="imprimer()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" width="16" height="16" aria-hidden="true">
+            <polyline points="6 9 6 2 18 2 18 9"/>
+            <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/>
+            <rect x="6" y="14" width="12" height="8"/>
+          </svg>
+          Imprimer / enregistrer en PDF
+        </button>
+      </div>
+
+      <!-- ── Signatures manquantes → document non disponible ── -->
+      <div class="conv-pdf-locked-section" *ngIf="!conventionSignee" role="status">
+        <div class="conv-pdf-locked-section__icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" width="36" height="36">
+            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+            <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+            <circle cx="12" cy="16" r="1" fill="currentColor"/>
+          </svg>
+        </div>
+        <div class="conv-pdf-locked-section__body">
+          <div class="conv-pdf-locked-section__title">Document non disponible</div>
+          <p class="conv-pdf-locked-section__msg">
+            Le document n'est pas encore disponible. Il sera généré et consultable après la signature de tous les signataires requis.
+          </p>
+          <div class="conv-pdf-locked-section__siglist">
+            <span [ngClass]="convention.signeeStagiaire ? 'sig-chip sig-chip--done' : 'sig-chip sig-chip--wait'">
+              {{ convention.signeeStagiaire ? '✔' : '⏳' }} Stagiaire
+            </span>
+            <span [ngClass]="convention.signeeEncAca ? 'sig-chip sig-chip--done' : 'sig-chip sig-chip--wait'">
+              {{ convention.signeeEncAca ? '✔' : '⏳' }} Enc. académique
+            </span>
+            <span [ngClass]="convention.signeeEncPro ? 'sig-chip sig-chip--done' : 'sig-chip sig-chip--wait'">
+              {{ convention.signeeEncPro ? '✔' : '⏳' }} Enc. professionnel
+            </span>
+            <span [ngClass]="convention.signeeEntreprise ? 'sig-chip sig-chip--done' : 'sig-chip sig-chip--wait'">
+              {{ convention.signeeEntreprise ? '✔' : '⏳' }} Représentant entreprise
+            </span>
+            <span [ngClass]="convention.signeeResp ? 'sig-chip sig-chip--done' : 'sig-chip sig-chip--wait'">
+              {{ convention.signeeResp ? '✔' : '⏳' }} Responsable universitaire
+            </span>
+          </div>
+        </div>
       </div>
     </div>
+
   </section>
 
   <div *ngIf="!chargement && !convention && !messageErreur" class="empty-card">

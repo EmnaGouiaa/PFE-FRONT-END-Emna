@@ -32,6 +32,12 @@ export class StudentProfilePageComponent implements OnInit {
   profile: StudentProfile | null = null;
   private studentId: number | null = null;
 
+  // ── Changement de mot de passe ────────────────────────────────────────────
+  showPasswordSection = false;
+  isSavingPassword = false;
+  passwordErrorMessage = '';
+  passwordSuccessMessage = '';
+
   /** Aperçu local de la signature (data-URI) affiché pendant l'édition. */
   signatureApercuLocal: string | null = null;
 
@@ -49,6 +55,12 @@ export class StudentProfilePageComponent implements OnInit {
 
   readonly emailConfirmationForm = this.fb.nonNullable.group({
     motDePasse: ['', Validators.required]
+  });
+
+  readonly passwordForm = this.fb.nonNullable.group({
+    motDePasseActuel:       ['', Validators.required],
+    nouveauMotDePasse:      ['', [Validators.required, Validators.minLength(8)]],
+    confirmationMotDePasse: ['', Validators.required]
   });
 
   constructor(
@@ -177,9 +189,38 @@ export class StudentProfilePageComponent implements OnInit {
     return Boolean(this.profile?.nomFichierSignature?.trim());
   }
 
+  /**
+   * Vrai si la signature a déjà été enregistrée côté serveur.
+   * Une signature enregistrée est définitive : elle ne peut être
+   * ni modifiée, ni supprimée, ni remplacée (règle métier globale).
+   */
+  get signatureVerrouillee(): boolean {
+    return Boolean(this.profile?.nomFichierSignature?.trim());
+  }
+
+  /** Avertissement affiché AVANT le premier enregistrement. */
+  readonly avertissementSignature =
+    "Attention : après l'ajout de votre signature, celle-ci ne pourra plus être modifiée "
+    + "ni supprimée. Veuillez vérifier attentivement avant validation.";
+
+  /** Message informatif affiché quand la signature est déjà verrouillée. */
+  readonly remarqueSignatureDefinitive =
+    "La signature est définitive et ne peut pas être modifiée ou supprimée. "
+    + "Elle est utilisée dans les documents officiels générés par le système.";
+
   // ── Gestion de l'import de signature (image uniquement) ────────────────────
 
   ouvrirSelecteurFichier(): void {
+    // Blocage strict si la signature est déjà enregistrée (règle métier).
+    if (this.signatureVerrouillee) {
+      this.errorMessage = this.remarqueSignatureDefinitive;
+      return;
+    }
+    // 1er enregistrement : avertissement obligatoire avant ouverture du sélecteur.
+    const confirmation = window.confirm(this.avertissementSignature);
+    if (!confirmation) {
+      return;
+    }
     this.signatureFileInput?.nativeElement.click();
   }
 
@@ -187,6 +228,13 @@ export class StudentProfilePageComponent implements OnInit {
     const input = event.target as HTMLInputElement;
     const fichier = input.files?.[0];
     if (!fichier) return;
+
+    // Re-garde-fou : si la signature a été enregistrée entre temps, on bloque.
+    if (this.signatureVerrouillee) {
+      this.errorMessage = this.remarqueSignatureDefinitive;
+      input.value = '';
+      return;
+    }
 
     const typesAcceptes = ['image/png', 'image/jpeg', 'image/jpg', 'image/gif', 'image/webp'];
     if (!typesAcceptes.includes(fichier.type)) {
@@ -214,6 +262,12 @@ export class StudentProfilePageComponent implements OnInit {
   }
 
   supprimerSignature(): void {
+    // Suppression INTERDITE une fois la signature enregistrée (règle métier).
+    if (this.signatureVerrouillee) {
+      this.errorMessage = this.remarqueSignatureDefinitive;
+      return;
+    }
+    // Avant le 1er enregistrement : on autorise à retirer l'aperçu local.
     this.signatureApercuLocal = null;
     this.profileForm.controls.nomFichierSignature.setValue('');
   }
@@ -223,6 +277,63 @@ export class StudentProfilePageComponent implements OnInit {
     const date = new Date(value);
     if (Number.isNaN(date.getTime())) return value;
     return date.toLocaleDateString('fr-FR');
+  }
+
+  // ── Méthodes de gestion du mot de passe ───────────────────────────────────
+
+  togglePasswordSection(): void {
+    this.showPasswordSection = !this.showPasswordSection;
+    if (!this.showPasswordSection) {
+      this.passwordForm.reset();
+      this.passwordErrorMessage = '';
+      this.passwordSuccessMessage = '';
+    }
+  }
+
+  changerMotDePasse(): void {
+    if (this.passwordForm.invalid) {
+      this.passwordForm.markAllAsTouched();
+      return;
+    }
+
+    const values = this.passwordForm.getRawValue();
+
+    if (values.nouveauMotDePasse !== values.confirmationMotDePasse) {
+      this.passwordErrorMessage = 'Le nouveau mot de passe et sa confirmation ne correspondent pas.';
+      return;
+    }
+
+    const validation = this.serviceProfil.validerMotDePasse(values.nouveauMotDePasse);
+    if (!validation.estValide) {
+      this.passwordErrorMessage = validation.erreurs[0];
+      return;
+    }
+
+    this.isSavingPassword = true;
+    this.passwordErrorMessage = '';
+    this.passwordSuccessMessage = '';
+
+    this.serviceProfil.mettreAJourMotDePasse({
+      motDePasseActuel:       values.motDePasseActuel,
+      nouveauMotDePasse:      values.nouveauMotDePasse,
+      confirmationMotDePasse: values.confirmationMotDePasse
+    }).subscribe({
+      next: () => {
+        this.isSavingPassword = false;
+        this.passwordSuccessMessage = 'Mot de passe modifié avec succès.';
+        this.passwordForm.reset();
+        this.showPasswordSection = false;
+      },
+      error: (error) => {
+        this.isSavingPassword = false;
+        this.passwordErrorMessage = this.describeError(error, 'Impossible de modifier le mot de passe.');
+      }
+    });
+  }
+
+  isPasswordFieldInvalid(field: 'motDePasseActuel' | 'nouveauMotDePasse' | 'confirmationMotDePasse'): boolean {
+    const control = this.passwordForm.controls[field];
+    return control.invalid && (control.touched || control.dirty);
   }
 
   private loadProfile(): void {

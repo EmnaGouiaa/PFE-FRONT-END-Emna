@@ -81,8 +81,11 @@
                 type="button"
                 class="btn btn-secondary btn-sm"
                 [disabled]="!canAccessPdf(internship.id, 'convention')"
+                [style.pointerEvents]="!canAccessPdf(internship.id, 'convention') ? 'none' : 'auto'"
+                [style.opacity]="!canAccessPdf(internship.id, 'convention') ? '0.38' : '1'"
+                [style.cursor]="!canAccessPdf(internship.id, 'convention') ? 'not-allowed' : 'pointer'"
                 (click)="downloadPdf(internship.id, 'convention')"
-                [title]="canAccessPdf(internship.id, 'convention') ? 'Télécharger la convention' : 'Toutes les signatures sont nécessaires'"
+                [title]="canAccessPdf(internship.id, 'convention') ? 'Télécharger la convention' : 'PDF disponible uniquement après toutes les signatures'"
               >PDF</button>
               <button
                 type="button"
@@ -136,8 +139,11 @@
                 type="button"
                 class="btn btn-secondary btn-sm"
                 [disabled]="!canAccessPdf(internship.id, 'fiche-evaluation')"
+                [style.pointerEvents]="!canAccessPdf(internship.id, 'fiche-evaluation') ? 'none' : 'auto'"
+                [style.opacity]="!canAccessPdf(internship.id, 'fiche-evaluation') ? '0.38' : '1'"
+                [style.cursor]="!canAccessPdf(internship.id, 'fiche-evaluation') ? 'not-allowed' : 'pointer'"
                 (click)="downloadPdf(internship.id, 'fiche-evaluation')"
-                [title]="canAccessPdf(internship.id, 'fiche-evaluation') ? 'Voir la fiche en PDF' : 'Toutes les signatures et la fin du stage sont nécessaires'"
+                [title]="canAccessPdf(internship.id, 'fiche-evaluation') ? 'Voir la fiche en PDF' : 'PDF disponible uniquement après toutes les signatures et la fin du stage'"
               >PDF</button>
               <a
                 class="btn btn-secondary btn-sm"
@@ -198,8 +204,11 @@
                 type="button"
                 class="btn btn-secondary btn-sm"
                 [disabled]="!canAccessPdf(internship.id, 'cahier-stage')"
+                [style.pointerEvents]="!canAccessPdf(internship.id, 'cahier-stage') ? 'none' : 'auto'"
+                [style.opacity]="!canAccessPdf(internship.id, 'cahier-stage') ? '0.38' : '1'"
+                [style.cursor]="!canAccessPdf(internship.id, 'cahier-stage') ? 'not-allowed' : 'pointer'"
                 (click)="downloadPdf(internship.id, 'cahier-stage')"
-                [title]="canAccessPdf(internship.id, 'cahier-stage') ? 'Télécharger le cahier de stage' : 'Le cahier doit être validé et le stage terminé'"
+                [title]="canAccessPdf(internship.id, 'cahier-stage') ? 'Télécharger le cahier de stage' : 'PDF disponible uniquement après validation et fin du stage'"
               >PDF</button>
               <button
                 type="button"
@@ -229,101 +238,227 @@
     </div>
   </section>
 
-  <!-- ── Validations en attente (refus) ─────────────────────────────────────── -->
-  <section class="validation-layout" *ngIf="!isLoading && pendingItems.length > 0">
-    <article class="panel">
-      <div class="panel-header">
-        <div>
-          <h2>Éléments en attente de décision</h2>
-          <div class="panel-subtitle">{{ pendingItems.length }} élément(s) à traiter.</div>
-        </div>
-      </div>
+  <!-- ── Modale de détails document ───────────────────────────────────────────────── -->
+  <div class="modal-overlay" *ngIf="showDocModal && selectedDocStageId !== null && selectedDocType" (click)="closeDocDetails()">
+    <div class="modal" (click)="$event.stopPropagation()">
 
-      <div class="table-wrap">
-        <table class="table">
-          <thead>
-            <tr>
-              <th>Document</th>
-              <th>Stage</th>
-              <th>Stagiaire</th>
-              <th>Statut</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr *ngFor="let item of pendingItems" [class.active-row]="item.key === selectedItem?.key">
-              <td>
-                <div class="cell-title">{{ item.title }}</div>
-                <div class="cell-sub">{{ item.description }}</div>
-              </td>
-              <td>{{ item.stageTitle || '-' }}</td>
-              <td>{{ item.studentName || '-' }}</td>
-              <td>
-                <span class="status-pill" [ngClass]="'status-' + item.status">{{ statusLabel(item.status) }}</span>
-              </td>
-              <td>
-                <div class="table-actions">
-                  <button type="button" class="btn btn-secondary" (click)="selectItem(item)">Détails</button>
-                  <button type="button" class="btn btn-danger btn-sm" (click)="selectItem(item)" [disabled]="isActing">Refuser</button>
+      <!-- ═══ Convention ════════════════════════════════════════════════════════════ -->
+      <ng-container *ngIf="selectedDocType === 'convention'">
+        <ng-container *ngIf="getAgreement(selectedDocStageId!) as ag">
+          <div class="modal-header">
+            <div>
+              <h2 style="margin:0;font-size:1.15rem">Convention de stage</h2>
+              <p style="margin:4px 0 0;color:var(--text-muted,#64748b);font-size:0.9rem">
+                N° {{ ag.numConv || ag.id }} · {{ ag.anneeUniversitaire || '—' }}
+              </p>
+            </div>
+            <button type="button" class="btn-close" (click)="closeDocDetails()">✕</button>
+          </div>
+          <div class="form">
+            <div class="detail-grid">
+              <div class="detail-item">
+                <span class="label">Statut</span>
+                <span class="value">
+                  <span class="status-pill" [class.active]="ag.statutSignatures">{{ getConventionStatusLabel(ag) }}</span>
+                </span>
+              </div>
+              <div class="detail-item">
+                <span class="label">Stagiaire</span>
+                <span class="value">{{ getSelectedInternship()?.stagiaireNom || '—' }}</span>
+              </div>
+              <div class="detail-item">
+                <span class="label">Période</span>
+                <span class="value">{{ ag.dateDebut | date:'dd/MM/yyyy' }} → {{ ag.dateFin | date:'dd/MM/yyyy' }}</span>
+              </div>
+              <div class="detail-item">
+                <span class="label">Accès PDF</span>
+                <span class="value">{{ canAccessPdf(selectedDocStageId!, 'convention') ? 'Autorisé' : 'En attente des signatures' }}</span>
+              </div>
+            </div>
+
+            <div style="margin-top:14px">
+              <div style="font-size:0.78rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#64748b;margin-bottom:8px">État des signatures</div>
+              <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:8px">
+                <div *ngFor="let sig of [
+                  {label:'Stagiaire',            done: ag.signeeStagiaire},
+                  {label:'Enc. académique',       done: ag.signeeEncAca},
+                  {label:'Enc. professionnel',    done: ag.signeeEncPro},
+                  {label:'Resp. entreprise',      done: ag.signeeEntreprise},
+                  {label:'Resp. universitaire',   done: ag.signeeResp}
+                ]" style="padding:8px 10px;border-radius:8px;background:#f8fafc;border:1px solid rgba(15,23,42,0.08)">
+                  <div style="font-size:0.73rem;color:#64748b;margin-bottom:3px">{{ sig.label }}</div>
+                  <span [style.color]="sig.done ? '#16a34a' : '#b45309'" style="font-weight:700;font-size:0.8rem">
+                    {{ sig.done ? '✓ Signé' : '⏳ En attente' }}
+                  </span>
                 </div>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-    </article>
+              </div>
+            </div>
 
-    <article class="panel" *ngIf="selectedItem">
-      <div class="panel-header">
-        <div>
-          <h2>Détails — {{ selectedItem.title }}</h2>
-          <div class="panel-subtitle">Refus avec motif obligatoire.</div>
-        </div>
-      </div>
+            <div *ngIf="canAccessPdf(selectedDocStageId!, 'convention')"
+                 style="margin-top:14px;padding:12px 16px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
+              <span style="color:#166534;font-size:0.9rem;font-weight:600">✓ Toutes les signatures sont complètes. Ce document est disponible en PDF.</span>
+              <button type="button" class="btn btn-primary btn-sm"
+                      (click)="downloadPdf(selectedDocStageId!, 'convention'); closeDocDetails()">Voir PDF</button>
+            </div>
+            <div *ngIf="!canAccessPdf(selectedDocStageId!, 'convention')"
+                 style="margin-top:14px;padding:12px 16px;background:#fff7ed;border:1px solid #fed7aa;border-radius:8px;color:#9a3412;font-size:0.9rem">
+              <strong>⚠ Document non disponible au format PDF.</strong>
+              Il sera généré et consultable après la signature de tous les signataires requis.
+            </div>
 
-      <div class="detail-copy">
-        <div class="detail-grid">
-          <div class="detail-item">
-            <span class="label">Stage</span>
-            <span class="value">{{ selectedItem.stageTitle || '-' }}</span>
+            <div class="inline-actions">
+              <button type="button" class="btn btn-secondary" (click)="closeDocDetails()">Fermer</button>
+              <button *ngIf="!isConventionSignedByCompany(ag)" type="button" class="btn btn-primary"
+                      [disabled]="isSigning" (click)="signConvention(ag)">
+                Signer la convention
+              </button>
+            </div>
           </div>
-          <div class="detail-item">
-            <span class="label">Stagiaire</span>
-            <span class="value">{{ selectedItem.studentName || '-' }}</span>
-          </div>
-          <div class="detail-item">
-            <span class="label">Début</span>
-            <span class="value">{{ selectedItem.dateDebut || '-' }}</span>
-          </div>
-          <div class="detail-item">
-            <span class="label">Fin</span>
-            <span class="value">{{ selectedItem.dateFin || '-' }}</span>
-          </div>
-        </div>
+        </ng-container>
+      </ng-container>
 
-        <div class="detail-card">
-          <div class="info-title">Description</div>
-          <div class="info-meta">{{ selectedItem.description }}</div>
-        </div>
+      <!-- ═══ Fiche d'évaluation ════════════════════════════════════════════════════ -->
+      <ng-container *ngIf="selectedDocType === 'fiche-evaluation'">
+        <ng-container *ngIf="getEvaluation(selectedDocStageId!) as ev">
+          <div class="modal-header">
+            <div>
+              <h2 style="margin:0;font-size:1.15rem">Fiche d'évaluation de stage</h2>
+              <p style="margin:4px 0 0;color:var(--text-muted,#64748b);font-size:0.9rem">
+                {{ getSelectedInternship()?.stagiaireNom || '—' }}
+              </p>
+            </div>
+            <button type="button" class="btn-close" (click)="closeDocDetails()">✕</button>
+          </div>
+          <div class="form">
+            <div class="detail-grid">
+              <div class="detail-item">
+                <span class="label">Statut</span>
+                <span class="value">
+                  <span [ngClass]="getEvaluationStatusClass(ev)">{{ getEvaluationStatusLabel(ev) }}</span>
+                </span>
+              </div>
+              <div class="detail-item">
+                <span class="label">Données complètes</span>
+                <span class="value">{{ ev.donneesCompletes ? 'Oui' : 'Non' }}</span>
+              </div>
+              <div class="detail-item">
+                <span class="label">Note finale</span>
+                <span class="value">{{ ev.noteFinale != null ? (ev.noteFinale | number:'1.2-2') + ' / 20' : '—' }}</span>
+              </div>
+              <div class="detail-item">
+                <span class="label">Stage terminé</span>
+                <span class="value">{{ isSelectedStageEnded() ? 'Oui' : 'Non' }}</span>
+              </div>
+            </div>
 
-        <label for="refusalComment">Motif du refus</label>
-        <textarea
-          id="refusalComment"
-          class="input comment-box"
-          [(ngModel)]="refusalComment"
-          [disabled]="isActing || !selectedItem.pending"
-          placeholder="Expliquez la raison du refus si vous ne validez pas cet élément."
-        ></textarea>
+            <div style="margin-top:14px">
+              <div style="font-size:0.78rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#64748b;margin-bottom:8px">État des signatures</div>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+                <div style="padding:10px 12px;border-radius:8px;background:#f8fafc;border:1px solid rgba(15,23,42,0.08)">
+                  <div style="font-size:0.73rem;color:#64748b;margin-bottom:3px">Encadrant professionnel</div>
+                  <span [style.color]="ev.dateSignatureEncadrantProfessionnel ? '#16a34a' : '#b45309'" style="font-weight:700;font-size:0.8rem">
+                    {{ ev.dateSignatureEncadrantProfessionnel ? '✓ Signé' : '⏳ En attente' }}
+                  </span>
+                  <div *ngIf="ev.dateSignatureEncadrantProfessionnel" style="font-size:0.73rem;color:#64748b;margin-top:2px">
+                    le {{ ev.dateSignatureEncadrantProfessionnel | date:'dd/MM/yyyy' }}
+                  </div>
+                </div>
+                <div style="padding:10px 12px;border-radius:8px;background:#f8fafc;border:1px solid rgba(15,23,42,0.08)">
+                  <div style="font-size:0.73rem;color:#64748b;margin-bottom:3px">Représentant entreprise</div>
+                  <span [style.color]="ev.dateSignatureRepresentantEntreprise ? '#16a34a' : '#b45309'" style="font-weight:700;font-size:0.8rem">
+                    {{ ev.dateSignatureRepresentantEntreprise ? '✓ Signé' : '⏳ En attente' }}
+                  </span>
+                  <div *ngIf="ev.dateSignatureRepresentantEntreprise" style="font-size:0.73rem;color:#64748b;margin-top:2px">
+                    le {{ ev.dateSignatureRepresentantEntreprise | date:'dd/MM/yyyy' }}
+                  </div>
+                </div>
+              </div>
+            </div>
 
-        <div class="detail-actions">
-          <button type="button" class="btn btn-danger" (click)="rejectSelected()" [disabled]="isActing || !selectedItem.pending">
-            {{ isActing ? 'Traitement...' : 'Confirmer le refus' }}
-          </button>
-          <a *ngIf="selectedItem.stageId" class="btn btn-secondary" [routerLink]="['/entreprise/stages']">
-            Voir le stage
-          </a>
-        </div>
-      </div>
-    </article>
-  </section>
+            <div *ngIf="canAccessPdf(selectedDocStageId!, 'fiche-evaluation')"
+                 style="margin-top:14px;padding:12px 16px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
+              <span style="color:#166534;font-size:0.9rem;font-weight:600">✓ Toutes les signatures sont complètes. Ce document est disponible en PDF.</span>
+              <button type="button" class="btn btn-primary btn-sm"
+                      (click)="downloadPdf(selectedDocStageId!, 'fiche-evaluation'); closeDocDetails()">Voir PDF</button>
+            </div>
+            <div *ngIf="!canAccessPdf(selectedDocStageId!, 'fiche-evaluation')"
+                 style="margin-top:14px;padding:12px 16px;background:#fff7ed;border:1px solid #fed7aa;border-radius:8px;color:#9a3412;font-size:0.9rem">
+              <strong>⚠ Document non disponible au format PDF.</strong>
+              Il sera généré et consultable après la signature de tous les signataires requis et la fin du stage.
+            </div>
+
+            <div class="inline-actions">
+              <button type="button" class="btn btn-secondary" (click)="closeDocDetails()">Fermer</button>
+              <button *ngIf="!isEvaluationSignedByCompany(ev)" type="button" class="btn btn-primary"
+                      [disabled]="isSigning || !ev.donneesCompletes"
+                      [title]="!ev.donneesCompletes ? 'Remplissez votre partie avant de signer' : 'Signer la fiche'"
+                      (click)="signEvaluation(ev)">
+                Signer la fiche
+              </button>
+            </div>
+          </div>
+        </ng-container>
+      </ng-container>
+
+      <!-- ═══ Cahier de stage ═══════════════════════════════════════════════════════ -->
+      <ng-container *ngIf="selectedDocType === 'cahier-stage'">
+        <ng-container *ngIf="getCahierItem(selectedDocStageId!) as cahier">
+          <div class="modal-header">
+            <div>
+              <h2 style="margin:0;font-size:1.15rem">Cahier de stage</h2>
+              <p style="margin:4px 0 0;color:var(--text-muted,#64748b);font-size:0.9rem">
+                {{ getSelectedInternship()?.stagiaireNom || '—' }}
+              </p>
+            </div>
+            <button type="button" class="btn-close" (click)="closeDocDetails()">✕</button>
+          </div>
+          <div class="form">
+            <div class="detail-grid">
+              <div class="detail-item">
+                <span class="label">Statut</span>
+                <span class="value">
+                  <span class="status-pill" [ngClass]="'status-' + cahier.status">{{ statusLabel(cahier.status) }}</span>
+                </span>
+              </div>
+              <div class="detail-item">
+                <span class="label">Stage terminé</span>
+                <span class="value">{{ isSelectedStageEnded() ? 'Oui' : 'Non' }}</span>
+              </div>
+              <div class="detail-item">
+                <span class="label">Accès PDF</span>
+                <span class="value">{{ canAccessPdf(selectedDocStageId!, 'cahier-stage') ? 'Autorisé' : 'En attente' }}</span>
+              </div>
+              <div class="detail-item" *ngIf="cahier.description">
+                <span class="label">Description</span>
+                <span class="value">{{ cahier.description }}</span>
+              </div>
+            </div>
+
+            <div *ngIf="canAccessPdf(selectedDocStageId!, 'cahier-stage')"
+                 style="margin-top:14px;padding:12px 16px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
+              <span style="color:#166534;font-size:0.9rem;font-weight:600">✓ Le cahier est validé et le stage est terminé. Ce document est disponible en PDF.</span>
+              <button type="button" class="btn btn-primary btn-sm"
+                      (click)="downloadPdf(selectedDocStageId!, 'cahier-stage'); closeDocDetails()">Voir PDF</button>
+            </div>
+            <div *ngIf="!canAccessPdf(selectedDocStageId!, 'cahier-stage')"
+                 style="margin-top:14px;padding:12px 16px;background:#fff7ed;border:1px solid #fed7aa;border-radius:8px;color:#9a3412;font-size:0.9rem">
+              <strong>⚠ Document non disponible au format PDF.</strong>
+              Il sera généré et consultable après la validation du cahier et la fin du stage.
+            </div>
+
+            <div class="inline-actions">
+              <button type="button" class="btn btn-secondary" (click)="closeDocDetails()">Fermer</button>
+              <button *ngIf="cahier.pending" type="button" class="btn btn-primary"
+                      [disabled]="isActing"
+                      (click)="approveSelected(cahier); closeDocDetails()">
+                Valider / Signer
+              </button>
+            </div>
+          </div>
+        </ng-container>
+      </ng-container>
+
+    </div>
+  </div>
+
 </div>

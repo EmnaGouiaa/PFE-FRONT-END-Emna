@@ -81,7 +81,28 @@
             <!-- Input caché pour la valeur du formulaire réactif -->
             <input type="hidden" formControlName="nomFichierSignature" />
 
-            <div class="sig-upload-zone" (click)="ouvrirSelecteurFichier()">
+            <!-- Bannière de verrouillage — signature définitive -->
+            <div *ngIf="signatureVerrouillee"
+                 style="margin-bottom:10px;padding:10px 14px;
+                        background:#fff7ed;border:1px solid #fed7aa;
+                        border-radius:8px;color:#9a3412;
+                        font-size:0.82rem;line-height:1.5">
+              🔒 {{ remarqueSignatureDefinitive }}
+            </div>
+
+            <!-- Avertissement — avant le 1er enregistrement -->
+            <div *ngIf="!signatureVerrouillee"
+                 style="margin-bottom:10px;padding:10px 14px;
+                        background:rgba(234,179,8,0.08);
+                        border-left:3px solid #eab308;border-radius:6px;
+                        color:#92400e;font-size:0.82rem;line-height:1.45">
+              ⚠ {{ avertissementSignature }}
+            </div>
+
+            <div class="sig-upload-zone"
+                 [style.cursor]="signatureVerrouillee ? 'not-allowed' : 'pointer'"
+                 [style.opacity]="signatureVerrouillee ? '0.65' : '1'"
+                 (click)="ouvrirSelecteurFichier()">
               <img
                 *ngIf="signatureApercuLocal"
                 [src]="signatureApercuLocal"
@@ -95,8 +116,9 @@
               </div>
             </div>
 
+            <!-- Bouton suppression masqué si signature verrouillée -->
             <button
-              *ngIf="signatureApercuLocal"
+              *ngIf="signatureApercuLocal && !signatureVerrouillee"
               type="button"
               class="btn btn-secondary sig-remove-btn"
               (click)="supprimerSignature(); $event.stopPropagation()"
@@ -105,7 +127,9 @@
             </button>
           </ng-container>
 
-          <div class="panel-subtitle">Cette signature sera utilisée pour les conventions et évaluations à signer.</div>
+          <div class="panel-subtitle" *ngIf="!isEditingProfile || !signatureVerrouillee">
+            Cette signature sera utilisée pour les conventions et évaluations à signer.
+          </div>
         </div>
       </form>
 

@@ -2,6 +2,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { forkJoin, Observable, of } from 'rxjs';
 import { catchError, map } from 'rxjs/operators';
+import { getJsonOptional$ } from '../http-optional-body';
 import { API_BASE_URL } from '../api.config';
 import { RoleUtilisateur } from '../authentification.service';
 import {
@@ -159,8 +160,10 @@ export class SupervisorPortalService {
     return this.http.delete<void>(`${this.meetingsUrl}/${meetingId}`);
   }
 
-  getAgreementByStage(stageId: number): Observable<SupervisorAgreement> {
-    return this.http.get<any>(`${this.agreementsUrl}/stage/${stageId}`).pipe(map((item) => this.normalizeAgreement(item)));
+  getAgreementByStage(stageId: number): Observable<SupervisorAgreement | null> {
+    return getJsonOptional$<any>(this.http, `${this.agreementsUrl}/stage/${stageId}`).pipe(
+      map((item) => (item ? this.normalizeAgreement(item) : null))
+    );
   }
 
   signAgreement(role: SupervisorRole, agreementId: number): Observable<SupervisorAgreement> {
@@ -168,8 +171,10 @@ export class SupervisorPortalService {
     return this.http.put<any>(`${this.agreementsUrl}/${agreementId}/${endpoint}`, {}).pipe(map((item) => this.normalizeAgreement(item)));
   }
 
-  getLogbookByStage(stageId: number): Observable<SupervisorLogbook> {
-    return this.http.get<any>(`${this.logbooksUrl}/stage/${stageId}`).pipe(map((item) => this.normalizeLogbook(item)));
+  getLogbookByStage(stageId: number): Observable<SupervisorLogbook | null> {
+    return getJsonOptional$<any>(this.http, `${this.logbooksUrl}/stage/${stageId}`).pipe(
+      map((item) => (item ? this.normalizeLogbook(item) : null))
+    );
   }
 
   signLogbook(role: SupervisorRole, logbookId: number, signatureImage: string): Observable<SupervisorLogbook> {
@@ -179,8 +184,10 @@ export class SupervisorPortalService {
       .pipe(map((item) => this.normalizeLogbook(item)));
   }
 
-  getEvaluationByStage(stageId: number): Observable<SupervisorEvaluation> {
-    return this.http.get<any>(`${this.evaluationsUrl}/stage/${stageId}`).pipe(map((item) => this.normalizeEvaluation(item)));
+  getEvaluationByStage(stageId: number): Observable<SupervisorEvaluation | null> {
+    return getJsonOptional$<any>(this.http, `${this.evaluationsUrl}/stage/${stageId}`).pipe(
+      map((item) => (item ? this.normalizeEvaluation(item) : null))
+    );
   }
 
   fillProfessionalEvaluation(id: number, userId: number, payload: Partial<SupervisorEvaluation>): Observable<SupervisorEvaluation> {
@@ -233,8 +240,8 @@ export class SupervisorPortalService {
 
   getUserSignature(userId: number | null): Observable<string> {
     if (!userId) return of('');
-    return this.http.get<any>(`${API_BASE_URL}/utilisateurs/${userId}`).pipe(
-      map((raw) => String(raw?.urlSignature ?? raw?.nomFichierSignature ?? '')),
+    return this.http.get<{ urlSignature?: string }>(`${API_BASE_URL}/utilisateurs/${userId}/signature-collaborateur`).pipe(
+      map((raw) => String(raw?.urlSignature ?? '')),
       catchError(() => of(''))
     );
   }

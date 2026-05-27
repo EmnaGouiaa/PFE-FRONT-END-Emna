@@ -185,7 +185,12 @@
                   <div class="actions">
                     <button type="button" class="btn btn-primary" (click)="openFollowUpModal(internship)">Suivi</button>
                     <button type="button" class="btn btn-secondary" (click)="openStageModal(internship)">Détail</button>
-                    <button *ngIf="role === 'ENCADRANT_ACADEMIQUE' && internship.statutSujet === 'EN_ATTENTE'" type="button" class="btn btn-primary" (click)="validateSubject(internship)">Valider</button>
+                    <button *ngIf="role === 'ENCADRANT_ACADEMIQUE' && internship.statutSujet === 'EN_ATTENTE'"
+                            type="button" class="btn btn-primary"
+                            (click)="validateSubject(internship)"
+                            title="Valider officiellement le sujet de stage">Valider le sujet</button>
+                    <span *ngIf="role === 'ENCADRANT_ACADEMIQUE' && internship.statutSujet === 'VALIDEE'"
+                          class="status-pill status-positive" title="Sujet validé">✓ Sujet validé</span>
                   </div>
                 </div>
               </div>
@@ -301,9 +306,18 @@
                     <td class="actions">
                       <button type="button" class="btn btn-primary" (click)="openFollowUpModal(internship)">Suivi</button>
                       <button type="button" class="btn btn-secondary" (click)="openStageModal(internship)">Détail</button>
-                      <button type="button" class="btn btn-secondary" (click)="loadTrello(internship)">Trello</button>
-                      <button *ngIf="role === 'ENCADRANT_ACADEMIQUE' && internship.statutSujet === 'EN_ATTENTE'" type="button" class="btn btn-primary" (click)="validateSubject(internship)">Valider</button>
-                      <button *ngIf="role === 'ENCADRANT_ACADEMIQUE' && internship.statutSujet === 'EN_ATTENTE'" type="button" class="btn btn-danger" (click)="rejectSubject(internship)">Refuser</button>
+                      <button type="button" class="btn btn-secondary"
+                              [disabled]="isInternshipStageFinished(internship)"
+                              (click)="loadTrello(internship)"
+                              title="{{ isInternshipStageFinished(internship) ? 'Trello indisponible : stage terminé.' : '' }}">
+                        Trello
+                      </button>
+                      <button *ngIf="role === 'ENCADRANT_ACADEMIQUE' && internship.statutSujet === 'EN_ATTENTE'"
+                              type="button" class="btn btn-primary"
+                              (click)="validateSubject(internship)"
+                              title="Valider officiellement le sujet de stage">Valider le sujet</button>
+                      <span *ngIf="role === 'ENCADRANT_ACADEMIQUE' && internship.statutSujet === 'VALIDEE'"
+                            class="status-pill status-positive" title="Sujet validé">✓ Sujet validé</span>
                     </td>
                   </tr>
                 </tbody>
@@ -462,7 +476,7 @@
                         </div>
                       </div>
                       <div class="doc-card-actions">
-                        <button type="button" class="btn btn-secondary btn-sm" (click)="openDocDetails('Convention de stage', getConventionStatus(internship.id))">Détails</button>
+                        <a class="btn btn-secondary btn-sm" [routerLink]="['/stages/convention', agreement.id]">Voir</a>
                         <button type="button" class="btn btn-secondary btn-sm" (click)="download(internship.id, 'convention')" [disabled]="!getConventionStatus(internship.id)?.disponible" [title]="getConventionStatus(internship.id)?.raisonAbsence || 'Voir le PDF'">PDF</button>
                         <button type="button" class="btn btn-sm" [class.btn-primary]="!isAgreementSignedByMe(agreement)" [class.btn-secondary]="isAgreementSignedByMe(agreement)" (click)="signAgreement(agreement)" [disabled]="isAgreementSignedByMe(agreement)">
                           {{ isAgreementSignedByMe(agreement) ? '✓ Signée' : 'Signer' }}
@@ -831,7 +845,7 @@
             </td>
             <td class="actions">
               <ng-container *ngIf="type === 'conventions' && agreementsByStage.get(internship.id) as agreement">
-                <button type="button" class="btn btn-secondary" (click)="openDocDetails('Convention de stage', getConventionStatus(internship.id))">Détails</button>
+                <a class="btn btn-secondary" [routerLink]="['/stages/convention', agreement.id]">Voir</a>
                 <button type="button" class="btn btn-secondary" (click)="download(internship.id, 'convention')" [disabled]="!getConventionStatus(internship.id)?.disponible" [title]="getConventionStatus(internship.id)?.raisonAbsence || 'Ouvrir le PDF'">PDF</button>
                 <button type="button" class="btn btn-primary" (click)="signAgreement(agreement)" [disabled]="isAgreementSignedByMe(agreement)" [title]="isAgreementSignedByMe(agreement) ? 'Vous avez déjà signé cette convention' : 'Signer la convention'">{{ isAgreementSignedByMe(agreement) ? '✓ Signé' : 'Signer' }}</button>
               </ng-container>
@@ -901,10 +915,31 @@
       </div>
       <div class="form-grid">
         <div class="detail-item"><span class="label">Stagiaire</span><span class="value">{{ stageModal.student.fullName || '-' }}</span></div>
+        <div class="detail-item"><span class="label">Email</span><span class="value">{{ stageModal.student.email || '-' }}</span></div>
         <div class="detail-item"><span class="label">Entreprise</span><span class="value">{{ stageModal.company.nom || '-' }}</span></div>
         <div class="detail-item"><span class="label">Dates</span><span class="value">{{ stageModal.dateDebut || '-' }} - {{ stageModal.dateFin || '-' }}</span></div>
-        <div class="detail-item"><span class="label">Statut</span><span class="value">{{ stageModal.statut || '-' }}</span></div>
-        <div class="detail-item full-width"><span class="label">Sujet</span><span class="value">{{ stageModal.sujet || '-' }}</span></div>
+        <div class="detail-item"><span class="label">Statut du stage</span><span class="value">{{ stageModal.statut || '-' }}</span></div>
+        <div class="detail-item">
+          <span class="label">Validation du sujet</span>
+          <span class="value">
+            <span *ngIf="stageModal.statutSujet === 'VALIDEE'" class="status-pill status-positive" title="Validé">✓ Sujet validé</span>
+            <span *ngIf="stageModal.statutSujet !== 'VALIDEE'" class="status-pill status-warning">Pas encore validé</span>
+          </span>
+        </div>
+        <div class="detail-item full-width"><span class="label">Sujet</span><span class="value" style="white-space:pre-wrap;line-height:1.5">{{ stageModal.sujet || 'Aucun sujet renseigné.' }}</span></div>
+      </div>
+
+      <!-- Action de validation reservee a l'encadrant academique ; aucun bouton de refus -->
+      <div class="form-actions" *ngIf="role === 'ENCADRANT_ACADEMIQUE'">
+        <button
+          type="button"
+          class="btn btn-primary"
+          (click)="validateSubject(stageModal)"
+          [disabled]="stageModal.statutSujet === 'VALIDEE' || !stageModal.sujet"
+          [title]="validateSubjectTooltip(stageModal)"
+        >
+          {{ stageModal.statutSujet === 'VALIDEE' ? '✓ Sujet validé' : 'Valider le sujet' }}
+        </button>
       </div>
     </div>
   </article>
@@ -962,13 +997,13 @@
       <section class="follow-up-block">
         <div class="card-header">
           <h2>Suivi du stage (Trello)</h2>
-          <span class="pill soft">{{ followUpHasTrelloBoard ? 'Board disponible' : 'Board à créer' }}</span>
+          <span class="pill soft">{{ followUpStageFinished ? 'Trello indisponible' : (followUpHasTrelloBoard ? 'Board disponible' : 'Board à créer') }}</span>
         </div>
         <p class="trello-section-copy">
           Un aperçu clair du board permet de comprendre en un coup d'oeil où en est le stage.
         </p>
         <div class="empty-inline" *ngIf="isLoadingFollowUp">Synchronisation Trello...</div>
-        <div class="alert alert-error" *ngIf="followUpInfoMessage">{{ followUpInfoMessage }}</div>
+        <div class="alert" *ngIf="followUpInfoMessage" [ngClass]="followUpStageFinished ? 'alert-warning' : 'alert-error'">{{ followUpInfoMessage }}</div>
         <div class="trello-progress-head">
           <span class="trello-progress-label">Progression globale</span>
           <strong class="trello-progress-value">{{ followUpProgressPercent }}% completed</strong>
@@ -1000,7 +1035,7 @@
         </div>
         <div class="trello-board-actions">
           <a
-            *ngIf="followUpHasTrelloBoard"
+            *ngIf="followUpHasTrelloBoard && !followUpStageFinished"
             class="btn btn-primary trello-primary-button"
             [href]="followUpModal.trelloBoardUrl"
             target="_blank"
@@ -1009,11 +1044,19 @@
             Ouvrir le board Trello
           </a>
           <button
+            *ngIf="followUpHasTrelloBoard && followUpStageFinished"
+            type="button"
+            class="btn btn-primary trello-primary-button"
+            disabled
+          >
+            Ouvrir le board Trello
+          </button>
+          <button
             *ngIf="!followUpHasTrelloBoard"
             type="button"
             class="btn btn-primary trello-primary-button"
             (click)="openTrelloBoard(followUpModal)"
-            [disabled]="openingTrelloStageId === followUpModal.id"
+            [disabled]="openingTrelloStageId === followUpModal.id || followUpStageFinished"
           >
             {{ openingTrelloStageId === followUpModal.id ? 'Création...' : 'Créer automatiquement le board' }}
           </button>
@@ -1022,7 +1065,7 @@
             type="button"
             class="btn btn-secondary"
             (click)="openTrelloBoard(followUpModal)"
-            [disabled]="openingTrelloStageId === followUpModal.id"
+            [disabled]="openingTrelloStageId === followUpModal.id || followUpStageFinished"
           >
             {{ openingTrelloStageId === followUpModal.id ? 'Ouverture...' : 'Actualiser et ouvrir' }}
           </button>
@@ -1102,7 +1145,19 @@
         <div class="mini-kpi"><span class="mini-label">En cours</span><span class="mini-value">{{ trelloModal.nombreTachesEnCours }}</span></div>
         <div class="mini-kpi"><span class="mini-label">Terminées</span><span class="mini-value">{{ trelloModal.nombreTachesTerminees }}</span></div>
       </div>
-      <a *ngIf="trelloModal.trelloBoardUrl" class="btn btn-primary" [href]="trelloModal.trelloBoardUrl" target="_blank" rel="noreferrer">Ouvrir Trello</a>
+      <a *ngIf="trelloModal.trelloBoardUrl && trelloModalInternship && !isInternshipStageFinished(trelloModalInternship)"
+         class="btn btn-primary"
+         [href]="trelloModal.trelloBoardUrl"
+         target="_blank"
+         rel="noreferrer">Ouvrir Trello</a>
+      <button *ngIf="trelloModal.trelloBoardUrl && trelloModalInternship && isInternshipStageFinished(trelloModalInternship)"
+              type="button"
+              class="btn btn-primary"
+              disabled>Ouvrir Trello</button>
+      <p *ngIf="trelloModalInternship && isInternshipStageFinished(trelloModalInternship)"
+         style="margin-top:12px;color:#92400e;font-size:0.9rem;">
+        Trello indisponible : stage terminé.
+      </p>
     </div>
   </article>
 </div>

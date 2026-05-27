@@ -63,6 +63,8 @@
           type="button"
           class="btn btn-primary btn-declarer"
           (click)="openModal(internship.id)"
+          [disabled]="isStageFinished(internship)"
+          title="{{ isStageFinished(internship) ? 'Impossible de déclarer une absence : le stage est terminé.' : '' }}"
         >
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="16" height="16">
             <path d="M12 5v14M5 12h14"/>
@@ -70,6 +72,10 @@
           Déclarer une absence
         </button>
       </div>
+
+      <p *ngIf="isStageFinished(internship)" class="alert alert-warning" style="margin: 0 0 12px;">
+        Absences : le stage est terminé — déclaration et modification désactivées.
+      </p>
 
       <!-- Tableau des absences -->
       <div class="absence-table-wrap" *ngIf="getAbsences(internship.id).length > 0">
@@ -104,6 +110,7 @@
                   class="btn-icon btn-icon--edit"
                   (click)="openModal(internship.id, absence)"
                   title="Modifier cette absence"
+                  [disabled]="isStageFinished(internship)"
                 >
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15">
                     <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
@@ -115,6 +122,7 @@
                   class="btn-icon btn-icon--delete"
                   (click)="deleteAbsence(internship.id, absence)"
                   title="Supprimer cette absence"
+                  [disabled]="isStageFinished(internship)"
                 >
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15">
                     <polyline points="3 6 5 6 21 6"/>

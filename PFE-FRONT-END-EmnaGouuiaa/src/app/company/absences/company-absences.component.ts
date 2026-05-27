@@ -12,6 +12,7 @@ import {
   CompanyAbsence,
   CompanyAbsencePayload
 } from '../../services/company/company.models';
+import { isStageFinishedByCalendarEndDate } from '../../utils/stage-fin.util';
 
 @Component({
   selector: 'app-company-absences-page',
@@ -124,6 +125,11 @@ export class CompanyAbsencesPageComponent implements OnInit {
     return this.absencesByStage[stageId] ?? [];
   }
 
+  /** Stage terminé calendairement : aucune création/modification/suppression d'absence (aligné backend). */
+  isStageFinished(stage: CompanyInternship): boolean {
+    return isStageFinishedByCalendarEndDate(stage.dateFin);
+  }
+
   getPagedAbsences(stageId: number): CompanyAbsence[] {
     const list = this.getAbsences(stageId);
     const page = this.pageMap[stageId] ?? 0;
@@ -153,6 +159,11 @@ export class CompanyAbsencesPageComponent implements OnInit {
   // ── Modal ─────────────────────────────────────────────────────────────────
 
   openModal(stageId: number, absence?: CompanyAbsence): void {
+    const stage = this.internships.find((i) => i.id === stageId);
+    if (stage && this.isStageFinished(stage) && !absence) {
+      return;
+    }
+
     this.modalStageId = stageId;
     this.editingAbsence = absence ?? null;
     this.formErrors = [];
@@ -211,6 +222,9 @@ export class CompanyAbsencesPageComponent implements OnInit {
     // Date dans la période du stage (± 7 jours après la fin)
     const stage = this.internships.find((s) => s.id === stageId);
     if (stage) {
+      if (this.isStageFinished(stage)) {
+        errors.push('Impossible de déclarer une absence : le stage est terminé.');
+      }
       if (stage.dateDebut) {
         const debut = new Date(stage.dateDebut + 'T00:00:00');
         if (d < debut) {
@@ -221,10 +235,9 @@ export class CompanyAbsencesPageComponent implements OnInit {
       }
       if (stage.dateFin) {
         const fin = new Date(stage.dateFin + 'T00:00:00');
-        const maxDate = new Date(fin.getTime() + 7 * 24 * 60 * 60 * 1000);
-        if (d > maxDate) {
+        if (d > fin) {
           errors.push(
-            `La date ne peut pas dépasser 7 jours après la fin du stage (${this.formatDate(stage.dateFin)}).`
+            `La date ne peut pas dépasser la fin du stage (${this.formatDate(stage.dateFin)}).`
           );
         }
       }
@@ -252,6 +265,12 @@ export class CompanyAbsencesPageComponent implements OnInit {
 
     this.isSaving = true;
     const stageId = this.modalStageId!;
+    const stageForSave = this.internships.find((i) => i.id === stageId);
+    if (stageForSave && this.isStageFinished(stageForSave)) {
+      this.formErrors = ['Impossible de déclarer une absence : le stage est terminé.'];
+      this.isSaving = false;
+      return;
+    }
 
     const payload: CompanyAbsencePayload = {
       stageId,

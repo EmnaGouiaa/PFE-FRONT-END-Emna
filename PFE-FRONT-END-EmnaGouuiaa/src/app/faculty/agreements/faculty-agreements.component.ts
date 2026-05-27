@@ -71,59 +71,72 @@ import { FacultyAgreement } from '../../services/faculty/faculty.models';
         <article class="panel">
           <div class="panel-header">
             <div>
-              <h2>Details de la convention</h2>
-              <div class="panel-subtitle">Etat des signatures pour la convention selectionnee.</div>
+              <h2>Détail de la convention</h2>
+              <div class="panel-subtitle">État des signatures pour la convention sélectionnée.</div>
             </div>
           </div>
 
-          <div *ngIf="!selectedAgreement" class="empty-card">Selectionnez une convention.</div>
+          <div *ngIf="!selectedAgreement" class="empty-card">Sélectionnez une convention dans la liste.</div>
 
           <div *ngIf="selectedAgreement" class="stack">
+
             <div class="detail-grid">
               <div class="detail-item">
-                <span class="label">Stagiaire</span>
-                <span class="value">{{ selectedAgreement.signeeStagiaire ? 'Signe' : 'En attente' }}</span>
+                <span class="label">Convention</span>
+                <span class="value">#{{ selectedAgreement.numConv || selectedAgreement.id }}</span>
               </div>
               <div class="detail-item">
-                <span class="label">Encadrant academique</span>
-                <span class="value">{{ selectedAgreement.signeeEncAca ? 'Signe' : 'En attente' }}</span>
+                <span class="label">Période</span>
+                <span class="value">{{ selectedAgreement.dateDebut || '-' }} → {{ selectedAgreement.dateFin || '-' }}</span>
               </div>
               <div class="detail-item">
-                <span class="label">Encadrant professionnel</span>
-                <span class="value">{{ selectedAgreement.signeeEncPro ? 'Signe' : 'En attente' }}</span>
-              </div>
-              <div class="detail-item">
-                <span class="label">Entreprise</span>
-                <span class="value">{{ selectedAgreement.signeeEntreprise ? 'Signe' : 'En attente' }}</span>
-              </div>
-              <div class="detail-item">
-                <span class="label">Responsable universitaire</span>
-                <span class="value">{{ selectedAgreement.signeeResp ? 'Signe' : 'En attente' }}</span>
-              </div>
-              <div class="detail-item">
-                <span class="label">Date signature responsable</span>
-                <span class="value">{{ selectedAgreement.dateSignatureResponsableUniversitaire || '-' }}</span>
-              </div>
-              <div class="detail-item">
-                <span class="label">Signature globale</span>
-                <span class="value">{{ selectedAgreement.statutSignatures ? 'Complete' : 'Incomplete' }}</span>
+                <span class="label">Statut global</span>
+                <span class="value">
+                  <span class="status-pill" [ngClass]="selectedAgreement.statutSignatures ? 'status-positive' : 'status-warning'">
+                    {{ selectedAgreement.statutSignatures ? 'Complète' : 'Incomplète' }}
+                  </span>
+                </span>
               </div>
             </div>
 
-            <div class="detail-card">
-              <div class="info-title">Signature du responsable universitaire</div>
-              <div class="info-meta" *ngIf="selectedAgreement.signeeResp">
-                Signee par le responsable universitaire{{ selectedAgreement.dateSignatureResponsableUniversitaire ? (' le ' + selectedAgreement.dateSignatureResponsableUniversitaire) : '' }}.
+            <!-- Signatures par acteur -->
+            <div class="sig-rows">
+              <div class="sig-row" [ngClass]="selectedAgreement.signeeStagiaire ? 'sig-row-ok' : 'sig-row-wait'">
+                <span class="sig-dot-sm"></span>
+                <span class="sig-row-role">Stagiaire</span>
+                <span class="sig-row-state">{{ selectedAgreement.signeeStagiaire ? 'Signé' : 'En attente' }}</span>
               </div>
-              <div class="info-meta" *ngIf="!selectedAgreement.signeeResp">
-                La convention attend encore la signature du responsable universitaire.
+              <div class="sig-row" [ngClass]="selectedAgreement.signeeEncAca ? 'sig-row-ok' : 'sig-row-wait'">
+                <span class="sig-dot-sm"></span>
+                <span class="sig-row-role">Encadrant académique</span>
+                <span class="sig-row-state">{{ selectedAgreement.signeeEncAca ? 'Signé' : 'En attente' }}</span>
+              </div>
+              <div class="sig-row" [ngClass]="selectedAgreement.signeeEncPro ? 'sig-row-ok' : 'sig-row-wait'">
+                <span class="sig-dot-sm"></span>
+                <span class="sig-row-role">Encadrant professionnel</span>
+                <span class="sig-row-state">{{ selectedAgreement.signeeEncPro ? 'Signé' : 'En attente' }}</span>
+              </div>
+              <div class="sig-row" [ngClass]="selectedAgreement.signeeEntreprise ? 'sig-row-ok' : 'sig-row-wait'">
+                <span class="sig-dot-sm"></span>
+                <span class="sig-row-role">Représentant entreprise</span>
+                <span class="sig-row-state">{{ selectedAgreement.signeeEntreprise ? 'Signé' : 'En attente' }}</span>
+              </div>
+              <div class="sig-row" [ngClass]="selectedAgreement.signeeResp ? 'sig-row-ok' : 'sig-row-wait'">
+                <span class="sig-dot-sm"></span>
+                <span class="sig-row-role">Responsable universitaire</span>
+                <span class="sig-row-state">
+                  {{ selectedAgreement.signeeResp ? 'Signé' : 'En attente' }}
+                  <span *ngIf="selectedAgreement.dateSignatureResponsableUniversitaire">
+                    — le {{ selectedAgreement.dateSignatureResponsableUniversitaire }}
+                  </span>
+                </span>
               </div>
             </div>
 
             <div class="inline-actions">
-              <a class="btn btn-secondary" [routerLink]="['/stages/convention', selectedAgreement.id]">Afficher la convention</a>
+              <a class="btn btn-secondary" [routerLink]="['/stages/convention', selectedAgreement.id]">Voir la convention</a>
               <button class="btn btn-primary" (click)="signSelectedAgreement()" [disabled]="!selectedAgreement || selectedAgreement.signeeResp || isLoading">
-                {{ selectedAgreement.signeeResp ? 'Deja signee' : 'Signer la convention' }}
+                {{ selectedAgreement.signeeResp ? 'Déjà signée' : 'Signer la convention' }}
               </button>
             </div>
           </div>

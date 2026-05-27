@@ -141,7 +141,37 @@ export class ProfileManagementComponent implements OnInit {
 
   // ── Gestion de l'import de signature ───────────────────────────────────────
 
+  /**
+   * Vrai si la signature de l'utilisateur a deja ete enregistree cote serveur
+   * (donc definitive et non modifiable).
+   */
+  get signatureVerrouillee(): boolean {
+    return Boolean(this.profil?.nomFichierSignature?.trim());
+  }
+
+  /** Message d'avertissement explicite — affiche AVANT le 1er enregistrement. */
+  readonly avertissementSignature =
+    "Attention : après l'ajout de votre signature, celle-ci ne pourra plus être modifiée. "
+    + "Veuillez vérifier attentivement votre signature avant de la valider.";
+
+  /** Remarque affichee quand la signature existe deja (lecture seule). */
+  readonly remarqueSignatureDefinitive =
+    "Votre signature est définitive et ne peut plus être modifiée ni supprimée. "
+    + "Elle est utilisée dans les documents officiels que vous signez.";
+
   ouvrirSelecteurFichier(): void {
+    // Blocage strict si la signature est deja enregistree (ne peut etre ni modifiee
+    // ni remplacee — regle metier).
+    if (this.signatureVerrouillee) {
+      this.messageErreur = this.remarqueSignatureDefinitive;
+      return;
+    }
+
+    // 1er enregistrement : avertissement obligatoire avant ouverture du selecteur.
+    const confirmation = window.confirm(this.avertissementSignature);
+    if (!confirmation) {
+      return;
+    }
     this.signatureFileInput?.nativeElement.click();
   }
 
@@ -149,6 +179,13 @@ export class ProfileManagementComponent implements OnInit {
     const input = event.target as HTMLInputElement;
     const fichier = input.files?.[0];
     if (!fichier) return;
+
+    // Re-garde-fou : si entre temps la signature a ete posee ailleurs, on bloque.
+    if (this.signatureVerrouillee) {
+      this.messageErreur = this.remarqueSignatureDefinitive;
+      input.value = '';
+      return;
+    }
 
     const typesAcceptes = ['image/png', 'image/jpeg', 'image/jpg', 'image/gif', 'image/webp'];
     if (!typesAcceptes.includes(fichier.type)) {
@@ -171,11 +208,18 @@ export class ProfileManagementComponent implements OnInit {
     };
     reader.readAsDataURL(fichier);
 
-    // Remet l'input à zéro pour permettre de re-sélectionner le même fichier
+    // Remet l'input a zero pour permettre de re-selectionner le meme fichier
     input.value = '';
   }
 
   supprimerSignature(): void {
+    // Suppression INTERDITE une fois la signature enregistree (regle metier).
+    if (this.signatureVerrouillee) {
+      this.messageErreur = this.remarqueSignatureDefinitive;
+      return;
+    }
+    // Avant le 1er enregistrement : on autorise a retirer l'apercu local
+    // (annulation de la selection avant validation du formulaire).
     this.signatureApercuLocal = null;
     this.formulaireProfil.get('nomFichierSignature')?.setValue('');
   }

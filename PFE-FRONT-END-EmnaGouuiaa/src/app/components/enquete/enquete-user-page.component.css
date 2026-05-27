@@ -394,6 +394,52 @@
 
 .enq-period-locked__body strong { color: #713f12; }
 
+/* ── Variante : fenêtre expirée (rouge foncé) ────────────────────────────── */
+
+.enq-period-expired {
+  background: linear-gradient(135deg, rgba(220, 38, 38, 0.07), rgba(220, 38, 38, 0.03));
+  border-color: rgba(220, 38, 38, 0.28);
+}
+
+.enq-period-expired .enq-period-locked__icon {
+  background: rgba(220, 38, 38, 0.1);
+  color: #b91c1c;
+}
+
+.enq-period-expired .enq-period-locked__body h2 {
+  color: #991b1b;
+}
+
+.enq-period-expired .enq-period-locked__body p {
+  color: #b91c1c;
+}
+
+.enq-expired-msg {
+  font-size: 1rem !important;
+}
+
+.enq-expired-detail {
+  font-size: 0.88rem !important;
+  font-weight: 500 !important;
+  color: #7f1d1d !important;
+  opacity: 0.85;
+  margin-top: 6px;
+}
+
+/* ── Message contextuel dans la carte ────────────────────────────────────── */
+
+.enq-card__message {
+  margin-top: 10px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  background: rgba(15, 76, 129, 0.06);
+  border-left: 3px solid rgba(15, 76, 129, 0.28);
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: #334155;
+  line-height: 1.55;
+}
+
 /* ── Responsive ──────────────────────────────────────────────────────────── */
 
 @media (max-width: 640px) {

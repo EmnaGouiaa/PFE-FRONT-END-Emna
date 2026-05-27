@@ -292,6 +292,17 @@
             </div>
           </div>
 
+          <!-- Note metier : verrouillage des donnees academiques apres demarrage d'un stage -->
+          <div class="form-group" *ngIf="isStagiaireForm() && isEditMode">
+            <div class="form-note" style="background:rgba(234,179,8,0.08);border-left:3px solid #eab308;
+                                          padding:10px 12px;border-radius:8px;font-size:0.85rem;
+                                          color:#92400e;line-height:1.5">
+              ⚠ Les informations académiques (filière, matricule, niveau) ne peuvent plus
+              être modifiées après le démarrage des processus de stage afin de garantir la
+              cohérence des données.
+            </div>
+          </div>
+
           <!-- Filière — stagiaire (création ET modification) -->
           <div class="form-group" *ngIf="isStagiaireForm()">
             <label>Filière *</label>

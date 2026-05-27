@@ -231,7 +231,24 @@
                   <!-- Input caché pour la valeur du formulaire réactif -->
                   <input type="hidden" formControlName="nomFichierSignature" />
 
-                  <div class="sig-upload-zone" (click)="ouvrirSelecteurFichier()">
+                  <!-- Bandeau d'avertissement AVANT le 1er enregistrement (signature non verrouillee) -->
+                  <div *ngIf="!signatureVerrouillee" class="alert alert-warning"
+                       style="margin-bottom:10px;font-size:0.88rem;line-height:1.5">
+                    ⚠ <strong>Attention :</strong> après l'ajout de votre signature, celle-ci ne pourra
+                    plus être modifiée. Veuillez vérifier attentivement votre signature avant de la valider.
+                  </div>
+
+                  <!-- Bandeau de verrouillage APRES enregistrement (signature definitive) -->
+                  <div *ngIf="signatureVerrouillee" class="alert"
+                       style="background:rgba(16,71,120,0.08);border:1px solid rgba(16,71,120,0.20);color:#1a3a6e;
+                              margin-bottom:10px;font-size:0.88rem;line-height:1.5;padding:10px 12px;border-radius:10px">
+                    🔒 <strong>Signature définitive.</strong> {{ remarqueSignatureDefinitive }}
+                  </div>
+
+                  <div class="sig-upload-zone"
+                       [style.cursor]="signatureVerrouillee ? 'not-allowed' : 'pointer'"
+                       [style.opacity]="signatureVerrouillee ? '0.85' : '1'"
+                       (click)="ouvrirSelecteurFichier()">
                     <img
                       *ngIf="signatureApercuLocal"
                       [src]="signatureApercuLocal"
@@ -245,8 +262,9 @@
                     </div>
                   </div>
 
+                  <!-- Bouton Supprimer : visible uniquement TANT QUE la signature n'est pas verrouillee -->
                   <button
-                    *ngIf="signatureApercuLocal"
+                    *ngIf="signatureApercuLocal && !signatureVerrouillee"
                     type="button"
                     class="btn btn-secondary sig-remove-btn"
                     (click)="supprimerSignature(); $event.stopPropagation()"

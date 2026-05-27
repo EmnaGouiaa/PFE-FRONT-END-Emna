@@ -1,4 +1,37 @@
 /**
+ * Nombre de jours après la date de fin du stage pendant lesquels l'enquête
+ * de satisfaction reste accessible.  dateFin = jour 1, donc la fenêtre est
+ * dateFin … dateFin + 6 = 7 jours au total.
+ * Doit rester synchronisé avec FENETRE_ENQUETE_JOURS dans EnqueteSatisfactionServiceImpl.
+ */
+export const ENQUETE_FENETRE_JOURS = 6;
+
+/**
+ * Détermine si la fenêtre d'accès à l'enquête de satisfaction est expirée
+ * pour un stage donné.
+ *
+ * Règle : today > dateFin + ENQUETE_FENETRE_JOURS  →  fenêtre expirée.
+ *
+ * @param dateFin  Date de fin du stage au format ISO "YYYY-MM-DD".
+ */
+export function isEnqueteWindowExpired(
+  dateFin: string | null | undefined
+): boolean {
+  if (!dateFin) return false;
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const fin = new Date(dateFin);
+  fin.setHours(0, 0, 0, 0);
+  if (isNaN(fin.getTime())) return false;
+  const deadline = new Date(fin);
+  deadline.setDate(deadline.getDate() + ENQUETE_FENETRE_JOURS);
+  // strictement supérieur : le jour deadline lui-même est encore dans la fenêtre
+  return today > deadline;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
  * Détermine si la période d'accès à l'évaluation / à l'enquête est ouverte
  * pour un stage donné.
  *

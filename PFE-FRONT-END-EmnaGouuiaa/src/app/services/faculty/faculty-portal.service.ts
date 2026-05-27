@@ -2,6 +2,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { forkJoin, Observable, of } from 'rxjs';
 import { catchError, map, tap } from 'rxjs/operators';
+import { getJsonOptional$ } from '../http-optional-body';
 import { API_BASE_URL } from '../api.config';
 import {
   FacultyAcademicSupervisor,
@@ -157,10 +158,10 @@ export class FacultyPortalService {
       .pipe(map((items) => (items ?? []).map((item) => this.normalizeEvaluation(item))));
   }
 
-  getEvaluationByStage(stageId: number): Observable<FacultyEvaluation> {
-    return this.http
-      .get<any>(`${this.evaluationsUrl}/stage/${stageId}`)
-      .pipe(map((item) => this.normalizeEvaluation(item)));
+  getEvaluationByStage(stageId: number): Observable<FacultyEvaluation | null> {
+    return getJsonOptional$<any>(this.http, `${this.evaluationsUrl}/stage/${stageId}`).pipe(
+      map((item) => (item ? this.normalizeEvaluation(item) : null))
+    );
   }
 
   listReports(): Observable<FacultyReport[]> {
@@ -193,8 +194,8 @@ export class FacultyPortalService {
    *  Returns an empty string on any error (graceful degradation). */
   getUserSignature(userId: number | null): Observable<string> {
     if (!userId) return of('');
-    return this.http.get<any>(`${API_BASE_URL}/utilisateurs/${userId}`).pipe(
-      map((raw) => String(raw?.urlSignature ?? raw?.nomFichierSignature ?? '')),
+    return this.http.get<{ urlSignature?: string }>(`${API_BASE_URL}/utilisateurs/${userId}/signature-collaborateur`).pipe(
+      map((raw) => String(raw?.urlSignature ?? '')),
       catchError(() => of(''))
     );
   }
@@ -255,6 +256,26 @@ export class FacultyPortalService {
 
   deleteOffer(offreId: number): Observable<void> {
     return this.http.delete<void>(`${this.offersUrl}/${offreId}`);
+  }
+
+  updateOffer(offreId: number, payload: {
+    titre: string;
+    descriptionMissions: string;
+    duree: number | null;
+    profilRecherche: string;
+    dateDebutPrevue: string;
+    entrepriseId: number | null;
+  }): Observable<FacultyOffer> {
+    return this.http
+      .put<any>(`${this.offersUrl}/${offreId}`, {
+        titre:               payload.titre.trim(),
+        descriptionMissions: payload.descriptionMissions.trim(),
+        duree:               payload.duree ?? null,
+        profilRecherche:     payload.profilRecherche.trim(),
+        dateDebutPrevue:     payload.dateDebutPrevue,
+        entrepriseId:        payload.entrepriseId
+      })
+      .pipe(map((item) => this.normalizeOffer(item)));
   }
 
   approveOffer(offreId: number, responsableId: number): Observable<FacultyOffer> {

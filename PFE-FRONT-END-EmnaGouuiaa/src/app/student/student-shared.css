@@ -786,3 +786,78 @@
     grid-template-columns: 1fr;
   }
 }
+
+/* ── Convention de stage — student view ─────────────────────── */
+.conv-summary-panel .panel-header {
+  align-items: flex-start;
+}
+
+.sig-status-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+.sig-status-item {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 10px 14px;
+  border-radius: 14px;
+  border: 1px solid rgba(15, 76, 129, 0.08);
+  background: rgba(255, 255, 255, 0.85);
+}
+
+.sig-status-item.sig-ok {
+  background: linear-gradient(135deg, rgba(21, 131, 109, 0.1), rgba(255, 255, 255, 0.95));
+  border-color: rgba(21, 131, 109, 0.2);
+}
+
+.sig-status-item.sig-wait {
+  background: rgba(248, 250, 252, 0.9);
+}
+
+.sig-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.sig-ok .sig-dot {
+  background: #15836d;
+  box-shadow: 0 0 0 3px rgba(21, 131, 109, 0.2);
+}
+
+.sig-wait .sig-dot {
+  background: #94a3b8;
+}
+
+.sig-role-label {
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.sig-state-label {
+  font-size: 0.8rem;
+  color: #64748b;
+  font-weight: 600;
+  margin-top: 1px;
+}
+
+.sig-ok .sig-state-label {
+  color: #15836d;
+}
+
+.info-banner {
+  margin-top: 16px;
+  padding: 12px 16px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, rgba(21, 131, 109, 0.1), rgba(255, 255, 255, 0.95));
+  border: 1px solid rgba(21, 131, 109, 0.2);
+  color: #0f4c81;
+  font-size: 0.9rem;
+  font-weight: 600;
+}

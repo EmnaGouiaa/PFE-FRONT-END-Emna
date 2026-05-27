@@ -3,6 +3,7 @@ import { HttpClient } from '@angular/common/http';
 import { Observable, catchError, throwError } from 'rxjs';
 import { ConventionStage } from '../models/convention-stage.model';
 import { API_BASE_URL } from './api.config';
+import { getJsonOptional$ } from './http-optional-body';
 
 @Injectable({
   providedIn: 'root'
@@ -17,9 +18,10 @@ export class ServiceConventionService {
       .pipe(catchError(this.handleError));
   }
 
-  getConventionParStage(stageId: number): Observable<ConventionStage> {
-    return this.http.get<ConventionStage>(`${this.API_URL}/stage/${stageId}`)
-      .pipe(catchError(this.handleError));
+  getConventionParStage(stageId: number): Observable<ConventionStage | null> {
+    return getJsonOptional$<ConventionStage>(this.http, `${this.API_URL}/stage/${stageId}`).pipe(
+      catchError(this.handleError)
+    );
   }
 
   signerParStagiaire(id: number): Observable<ConventionStage> {

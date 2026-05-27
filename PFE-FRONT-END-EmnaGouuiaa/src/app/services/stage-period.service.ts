@@ -32,6 +32,61 @@ export class StagePeriodService {
   ) {}
 
   /**
+   * Retourne l'identifiant du stage le plus pertinent pour calculer la fenêtre
+   * d'enquête de satisfaction de l'utilisateur connecté.
+   *
+   * Logique : premier stage de la liste renvoyée par l'API.
+   * Retourne null si aucun stage n'est disponible ou en cas d'erreur réseau.
+   */
+  getRelevantStageIdForEnquete(): Observable<number | null> {
+    const role = this.authService.getRoleUtilisateur();
+
+    switch (role) {
+      case RoleUtilisateur.STAGIAIRE:
+        return this.studentPortalService.listMyInternships().pipe(
+          timeout(TIMEOUT_MS),
+          map((internships) => internships.length ? internships[0].id : null),
+          catchError(() => of(null as number | null))
+        );
+
+      case RoleUtilisateur.ENCADRANT_PROFESSIONNEL:
+      case RoleUtilisateur.ENCADRANT_ACADEMIQUE: {
+        const supRole: SupervisorRole =
+          role === RoleUtilisateur.ENCADRANT_ACADEMIQUE
+            ? 'ENCADRANT_ACADEMIQUE'
+            : 'ENCADRANT_PROFESSIONNEL';
+        return this.supervisorService.listMyInternships(supRole).pipe(
+          timeout(TIMEOUT_MS),
+          map((internships) => internships.length ? internships[0].id : null),
+          catchError(() => of(null as number | null))
+        );
+      }
+
+      case RoleUtilisateur.RESPONSABLE_ENTREPRISE:
+        return this.companyContextService.getContext().pipe(
+          timeout(TIMEOUT_MS),
+          switchMap((ctx) => {
+            if (!ctx.responsable.entrepriseId) {
+              return of(null as number | null);
+            }
+            return this.companyInternshipsService
+              .listByEntreprise(ctx.responsable.entrepriseId)
+              .pipe(
+                timeout(TIMEOUT_MS),
+                map((internships) => internships.length ? internships[0].id : null),
+                catchError(() => of(null as number | null))
+              );
+          }),
+          catchError(() => of(null as number | null))
+        );
+
+      default:
+        // ADMINISTRATEUR, RESPONSABLE_STAGE — pas de fenêtre d'enquête propre
+        return of(null);
+    }
+  }
+
+  /**
    * Vérifie si au moins un stage de l'utilisateur connecté satisfait :
    *   sysdate >= dateRéunionFinale  OU  sysdate >= dateFinStage
    *

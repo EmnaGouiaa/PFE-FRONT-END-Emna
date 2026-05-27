@@ -88,6 +88,7 @@ export interface StudentInternship {
   niveauSouhaite: string;
   statut: string;
   statutSujet: string;
+  trelloBoardId: string;
   trelloBoardUrl: string;
   conventionId: number | null;
   ficheEvaluationId: number | null;

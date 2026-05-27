@@ -12,6 +12,7 @@ import {
 } from '../../services/student/student.models';
 import { PdfWindowService } from '../../services/pdf-window.service';
 import { StudentPortalService } from '../../services/student/student-portal.service';
+import { isStageFinishedByCalendarEndDate } from '../../utils/stage-fin.util';
 
 @Component({
   selector: 'app-student-follow-up-page',
@@ -78,6 +79,11 @@ export class StudentFollowUpPageComponent implements OnInit {
     );
   }
 
+  /** Stage terminé : date de fin calendaire strictement avant aujourd'hui (aligné backend). */
+  get isStageFinished(): boolean {
+    return isStageFinishedByCalendarEndDate(this.selectedInternship?.dateFin);
+  }
+
   get progressPercent(): number {
     const total = this.trelloSummary?.nombreTotalTaches ?? 0;
     if (!total) return 0;
@@ -85,7 +91,11 @@ export class StudentFollowUpPageComponent implements OnInit {
   }
 
   get hasTrelloBoard(): boolean {
-    return !!this.selectedInternship?.trelloBoardUrl;
+    return !!this.resolveTrelloBoardUrl(this.selectedInternship);
+  }
+
+  get trelloBoardHref(): string {
+    return this.resolveTrelloBoardUrl(this.selectedInternship);
   }
 
   get trelloPrimaryActionLabel(): string {
@@ -155,6 +165,16 @@ export class StudentFollowUpPageComponent implements OnInit {
 
   openTrelloBoard(): void {
     if (!this.selectedInternship) return;
+    if (this.isStageFinished) {
+      this.errorMessage = 'Trello indisponible : stage terminé.';
+      return;
+    }
+
+    const existingUrl = this.resolveTrelloBoardUrl(this.selectedInternship);
+    if (existingUrl) {
+      window.open(existingUrl, '_blank', 'noopener');
+      return;
+    }
 
     this.isOpeningTrello = true;
     this.errorMessage = '';
@@ -163,36 +183,77 @@ export class StudentFollowUpPageComponent implements OnInit {
       trelloWindow.opener = null;
     }
 
-    this.studentPortalService.getOrCreateTrelloBoard(this.selectedInternship.id).subscribe({
+    const stageId = this.selectedInternship.id;
+    this.studentPortalService.getOrCreateTrelloBoard(stageId).subscribe({
       next: (board) => {
         this.isOpeningTrello = false;
-        if (!board.trelloBoardUrl) {
+        const boardUrl = board.trelloBoardUrl || (board.trelloBoardId ? `https://trello.com/b/${board.trelloBoardId}` : '');
+        if (!boardUrl) {
           trelloWindow?.close();
           this.errorMessage = 'Erreur lors de la création du board Trello';
           return;
         }
-        this.selectedInternship!.trelloBoardUrl = board.trelloBoardUrl;
-        if (trelloWindow) {
-          trelloWindow.location.href = board.trelloBoardUrl;
-        } else {
-          window.open(board.trelloBoardUrl, '_blank', 'noopener');
-        }
-        this.loadDataForStage(this.selectedInternship!.id);
+        this.applyTrelloBoardToInternship(boardUrl, board.trelloBoardId);
+        this.openTrelloUrl(boardUrl, trelloWindow);
+        this.loadDataForStage(stageId);
       },
       error: (error) => {
-        this.isOpeningTrello = false;
-        if (error?.status === 409 && this.selectedInternship?.trelloBoardUrl) {
-          if (trelloWindow) {
-            trelloWindow.location.href = this.selectedInternship.trelloBoardUrl;
-          } else {
-            window.open(this.selectedInternship.trelloBoardUrl, '_blank', 'noopener');
-          }
+        if (error?.status === 409) {
+          this.studentPortalService.getInternshipById(stageId).subscribe({
+            next: (internship) => {
+              this.isOpeningTrello = false;
+              this.selectedInternship = internship;
+              const boardUrl = this.resolveTrelloBoardUrl(internship);
+              if (boardUrl) {
+                this.openTrelloUrl(boardUrl, trelloWindow);
+                this.loadDataForStage(stageId);
+                return;
+              }
+              trelloWindow?.close();
+              this.errorMessage = this.studentPortalService.describeError(
+                error,
+                'Erreur lors de la création du board Trello'
+              );
+            },
+            error: () => {
+              this.isOpeningTrello = false;
+              trelloWindow?.close();
+              this.errorMessage = this.studentPortalService.describeError(
+                error,
+                'Erreur lors de la création du board Trello'
+              );
+            }
+          });
           return;
         }
+        this.isOpeningTrello = false;
         trelloWindow?.close();
         this.errorMessage = this.studentPortalService.describeError(error, 'Erreur lors de la création du board Trello');
       }
     });
+  }
+
+  private resolveTrelloBoardUrl(internship: StudentInternship | null | undefined): string {
+    if (!internship) return '';
+    if (internship.trelloBoardUrl) return internship.trelloBoardUrl;
+    if (internship.trelloBoardId) return `https://trello.com/b/${internship.trelloBoardId}`;
+    return '';
+  }
+
+  private applyTrelloBoardToInternship(boardUrl: string, boardId?: string): void {
+    if (!this.selectedInternship) return;
+    this.selectedInternship.trelloBoardUrl = boardUrl;
+    if (boardId) {
+      this.selectedInternship.trelloBoardId = boardId;
+    }
+  }
+
+  private openTrelloUrl(boardUrl: string, trelloWindow: Window | null): void {
+    if (trelloWindow) {
+      trelloWindow.location.href = boardUrl;
+    } else {
+      window.open(boardUrl, '_blank', 'noopener');
+    }
   }
 
   formatDate(value: string): string {
@@ -215,16 +276,21 @@ export class StudentFollowUpPageComponent implements OnInit {
     this.stageDocuments = null;
 
     const internship = this.selectedInternship;
-    const trello$ = internship?.trelloBoardUrl
-      ? this.studentPortalService.getStageProgressSummary(stageId).pipe(
-          catchError((error) => {
-            this.trelloInfoMessage = this.studentPortalService.describeError(error, 'Synchronisation Trello indisponible.');
-            return of(null);
-          })
-        )
-      : of(null);
+    const stageFinished = internship ? isStageFinishedByCalendarEndDate(internship.dateFin) : false;
 
-    if (!internship?.trelloBoardUrl) {
+    const trello$ =
+      !stageFinished && this.resolveTrelloBoardUrl(internship)
+        ? this.studentPortalService.getStageProgressSummary(stageId).pipe(
+            catchError((error) => {
+              this.trelloInfoMessage = this.studentPortalService.describeError(error, 'Synchronisation Trello indisponible.');
+              return of(null);
+            })
+          )
+        : of(null);
+
+    if (stageFinished) {
+      this.trelloInfoMessage = 'Trello indisponible : stage terminé.';
+    } else if (!this.resolveTrelloBoardUrl(internship)) {
       this.trelloInfoMessage = "Le tableau Trello sera créé automatiquement lors de l'ouverture.";
     }
 

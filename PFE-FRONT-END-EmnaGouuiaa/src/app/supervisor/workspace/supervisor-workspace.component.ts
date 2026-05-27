@@ -24,6 +24,7 @@ import {
 import { PdfWindowService } from '../../services/pdf-window.service';
 import { SupervisorPortalService } from '../../services/supervisor/supervisor-portal.service';
 import { SignatureCaptureModalComponent } from '../../components/signature-capture-modal/signature-capture-modal.component';
+import { isStageFinishedByCalendarEndDate } from '../../utils/stage-fin.util';
 
 type SupervisorSection =
   | 'dashboard'
@@ -71,6 +72,8 @@ export class SupervisorWorkspaceComponent implements OnInit {
   followUpInfoMessage = '';
   isLoadingFollowUp = false;
   trelloModal: SupervisorTrelloSummary | null = null;
+  /** Stage associé au modal Trello liste (pour désactiver le lien après date de fin). */
+  trelloModalInternship: SupervisorInternship | null = null;
   meetingModalOpen = false;
   meetingDetailsModal: SupervisorMeeting | null = null;
   reportModal: SupervisorMeeting | null = null;
@@ -276,6 +279,15 @@ export class SupervisorWorkspaceComponent implements OnInit {
     return !!this.followUpModal?.trelloBoardUrl;
   }
 
+  /** Suivi modal : stage terminé calendairement — pas d'actions Trello API. */
+  get followUpStageFinished(): boolean {
+    return isStageFinishedByCalendarEndDate(this.followUpModal?.dateFin);
+  }
+
+  isInternshipStageFinished(internship: SupervisorInternship): boolean {
+    return isStageFinishedByCalendarEndDate(internship.dateFin);
+  }
+
   loadAll(): void {
     this.isLoading = true;
     this.errorMessage = '';
@@ -317,6 +329,11 @@ export class SupervisorWorkspaceComponent implements OnInit {
     this.followUpTrello = null;
     this.followUpInfoMessage = '';
 
+    if (this.isInternshipStageFinished(internship)) {
+      this.followUpInfoMessage = 'Trello indisponible : stage terminé.';
+      return;
+    }
+
     if (!internship.trelloBoardUrl) {
       this.followUpInfoMessage = "Le tableau Trello sera créé automatiquement lors de l'ouverture.";
       return;
@@ -337,6 +354,11 @@ export class SupervisorWorkspaceComponent implements OnInit {
 
   loadTrello(internship: SupervisorInternship): void {
     this.errorMessage = '';
+    if (this.isInternshipStageFinished(internship)) {
+      this.errorMessage = 'Trello indisponible : stage terminé.';
+      return;
+    }
+    this.trelloModalInternship = internship;
     this.supervisorService.getTrelloSummary(internship.id).pipe(timeout(15000)).subscribe({
       next: (summary) => {
         this.trelloModal = summary;
@@ -348,6 +370,16 @@ export class SupervisorWorkspaceComponent implements OnInit {
   }
 
   openTrelloBoard(internship: SupervisorInternship): void {
+    if (this.isInternshipStageFinished(internship)) {
+      const msg = 'Trello indisponible : stage terminé.';
+      if (this.followUpModal?.id === internship.id) {
+        this.followUpInfoMessage = msg;
+      } else {
+        this.errorMessage = msg;
+      }
+      return;
+    }
+
     this.openingTrelloStageId = internship.id;
     this.errorMessage = '';
     this.followUpInfoMessage = '';
@@ -388,26 +420,38 @@ export class SupervisorWorkspaceComponent implements OnInit {
     });
   }
 
+  /** Tooltip explicite pour le bouton de validation du sujet (modale detail). */
+  validateSubjectTooltip(internship: SupervisorInternship | null): string {
+    if (!internship) return '';
+    if (internship.statutSujet === 'VALIDEE') {
+      return 'Le sujet de stage est déjà validé.';
+    }
+    if (!internship.sujet) {
+      return "Aucun sujet de stage n'est renseigné.";
+    }
+    return 'Valider le sujet pour démarrer officiellement le stage';
+  }
+
+  /**
+   * Validation officielle du sujet de stage par l'encadrant academique.
+   * Reservee a ce role. Aucun refus n'est possible — seule la validation existe.
+   */
   validateSubject(internship: SupervisorInternship): void {
+    // Garde-fou : si déjà validé, ne pas appeler le backend inutilement.
+    if (internship.statutSujet === 'VALIDEE') {
+      this.errorMessage = 'Le sujet de stage est déjà validé.';
+      return;
+    }
+    this.errorMessage = '';
+    this.successMessage = '';
+
     this.supervisorService.validateSubject(internship.id).pipe(timeout(15000)).subscribe({
       next: () => {
-        this.successMessage = 'Sujet validé : le stage est en cours et la convention est générée.';
+        this.successMessage = 'Sujet de stage validé avec succès.';
         this.loadAll();
       },
       error: (error) => {
         this.errorMessage = error?.error?.message ?? 'Impossible de valider le sujet.';
-      }
-    });
-  }
-
-  rejectSubject(internship: SupervisorInternship): void {
-    this.supervisorService.rejectSubject(internship.id).pipe(timeout(15000)).subscribe({
-      next: () => {
-        this.successMessage = 'Sujet refusé.';
-        this.loadAll();
-      },
-      error: (error) => {
-        this.errorMessage = error?.error?.message ?? 'Impossible de refuser le sujet.';
       }
     });
   }
@@ -504,8 +548,11 @@ export class SupervisorWorkspaceComponent implements OnInit {
   }
 
   /**
-   * Ouvre la modale de capture de signature. La signature reelle est posee dans
-   * onSignatureCaptured() une fois que l'utilisateur a uploade et confirme une image.
+   * Signe le cahier de stage.
+   * – Si une signature est déjà enregistrée dans le profil, elle est utilisée
+   *   directement (aucune modale n'est ouverte).
+   * – Sinon, la modale de capture de signature est affichée pour que
+   *   l'utilisateur puisse dessiner ou uploader sa signature.
    */
   signLogbook(logbook: SupervisorLogbook): void {
     if (this.isLogbookSignedByMe(logbook)) {
@@ -514,6 +561,27 @@ export class SupervisorWorkspaceComponent implements OnInit {
     }
     this.errorMessage = '';
     this.successMessage = '';
+
+    // Vérifier si une signature de profil est déjà disponible en cache.
+    const savedSignature = this.currentUserProfileService.getCachedSignature();
+    if (savedSignature?.trim()) {
+      // Signature trouvée → signer directement sans ouvrir la modale.
+      this.signingLogbookInProgress = true;
+      this.supervisorService.signLogbook(this.role, logbook.id, savedSignature).pipe(timeout(15000)).subscribe({
+        next: () => {
+          this.signingLogbookInProgress = false;
+          this.successMessage = 'Cahier signé avec succès. La signature de votre profil a été utilisée.';
+          this.loadAll();
+        },
+        error: (error) => {
+          this.signingLogbookInProgress = false;
+          this.errorMessage = error?.error?.message ?? 'Impossible de signer le cahier.';
+        }
+      });
+      return;
+    }
+
+    // Aucune signature enregistrée dans le profil → ouvrir la modale de capture.
     this.pendingSignLogbook = logbook;
   }
 
@@ -710,6 +778,7 @@ export class SupervisorWorkspaceComponent implements OnInit {
     this.followUpInfoMessage = '';
     this.isLoadingFollowUp = false;
     this.trelloModal = null;
+    this.trelloModalInternship = null;
     this.meetingModalOpen = false;
     this.meetingDetailsModal = null;
     this.reportModal = null;

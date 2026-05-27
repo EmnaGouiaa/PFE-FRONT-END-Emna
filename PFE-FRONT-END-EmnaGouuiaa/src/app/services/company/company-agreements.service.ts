@@ -1,9 +1,10 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable } from 'rxjs';
+import { Observable, of } from 'rxjs';
 import { map } from 'rxjs/operators';
 import { API_BASE_URL } from '../api.config';
 import { CompanyAgreement } from './company.models';
+import { getJsonOptional$ } from '../http-optional-body';
 
 @Injectable({ providedIn: 'root' })
 export class CompanyAgreementsService {
@@ -12,10 +13,10 @@ export class CompanyAgreementsService {
 
   constructor(private http: HttpClient) {}
 
-  getByStageId(stageId: number): Observable<CompanyAgreement> {
-    return this.http
-      .get<any>(`${this.apiUrl}/stage/${stageId}`)
-      .pipe(map((item) => this.normalizeAgreement(item)));
+  getByStageId(stageId: number): Observable<CompanyAgreement | null> {
+    return getJsonOptional$<any>(this.http, `${this.apiUrl}/stage/${stageId}`).pipe(
+      map((item) => (item ? this.normalizeAgreement(item) : null))
+    );
   }
 
   downloadDocument(stageId: number, type: 'convention' | 'fiche-evaluation' | 'cahier-stage'): Observable<Blob> {

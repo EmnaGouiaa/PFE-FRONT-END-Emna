@@ -120,6 +120,13 @@
                 <span class="profile-field-label">Matricule</span>
                 <input class="input" type="text" formControlName="matricule" [readonly]="!isEditing" [class.readonly-input]="!isEditing" />
                 <span class="field-error" *ngIf="isInvalid('matricule')">Le matricule est trop long.</span>
+                <span class="field-hint" *ngIf="isEditing"
+                      style="color:#92400e;background:rgba(234,179,8,0.08);border-left:3px solid #eab308;
+                             padding:8px 10px;border-radius:6px;font-size:0.82rem;line-height:1.45;margin-top:4px;display:block">
+                  ⚠ Les informations académiques (filière, matricule, niveau) ne peuvent plus
+                  être modifiées après le démarrage des processus de stage afin de garantir la
+                  cohérence des données.
+                </span>
               </label>
 
               <label class="profile-field">
@@ -161,7 +168,28 @@
                   <!-- Input caché pour la valeur du formulaire réactif -->
                   <input type="hidden" formControlName="nomFichierSignature" />
 
-                  <div class="sig-upload-zone" (click)="ouvrirSelecteurFichier()">
+                  <!-- Bannière de verrouillage — signature définitive -->
+                  <div *ngIf="signatureVerrouillee"
+                       style="margin-bottom:10px;padding:10px 14px;
+                              background:#fff7ed;border:1px solid #fed7aa;
+                              border-radius:8px;color:#9a3412;
+                              font-size:0.82rem;line-height:1.5">
+                    🔒 {{ remarqueSignatureDefinitive }}
+                  </div>
+
+                  <!-- Avertissement — avant le 1er enregistrement -->
+                  <div *ngIf="!signatureVerrouillee"
+                       style="margin-bottom:10px;padding:10px 14px;
+                              background:rgba(234,179,8,0.08);
+                              border-left:3px solid #eab308;border-radius:6px;
+                              color:#92400e;font-size:0.82rem;line-height:1.45">
+                    ⚠ {{ avertissementSignature }}
+                  </div>
+
+                  <div class="sig-upload-zone"
+                       [style.cursor]="signatureVerrouillee ? 'not-allowed' : 'pointer'"
+                       [style.opacity]="signatureVerrouillee ? '0.65' : '1'"
+                       (click)="ouvrirSelecteurFichier()">
                     <img
                       *ngIf="signatureApercuLocal"
                       [src]="signatureApercuLocal"
@@ -175,8 +203,9 @@
                     </div>
                   </div>
 
+                  <!-- Bouton suppression masqué si signature verrouillée -->
                   <button
-                    *ngIf="signatureApercuLocal"
+                    *ngIf="signatureApercuLocal && !signatureVerrouillee"
                     type="button"
                     class="btn btn-secondary sig-remove-btn"
                     (click)="supprimerSignature(); $event.stopPropagation()"
@@ -184,7 +213,7 @@
                     Supprimer la signature
                   </button>
 
-                  <span class="field-hint">
+                  <span class="field-hint" *ngIf="!signatureVerrouillee">
                     Cette signature sera apposée sur les documents liés au stage.
                     Formats acceptés : PNG, JPG, WEBP · Taille max : 1 Mo.
                   </span>
@@ -200,6 +229,73 @@
               <button type="button" class="btn btn-secondary" *ngIf="isEditing" (click)="cancelEditing()" [disabled]="isSaving || isSavingEmail">Annuler</button>
             </div>
           </form>
+        </section>
+        <!-- ── Changer le mot de passe ── -->
+        <section class="analytics-card">
+          <div class="card-header">
+            <h2>Changer le mot de passe</h2>
+            <span class="pill soft" style="cursor:pointer" (click)="togglePasswordSection()">
+              {{ showPasswordSection ? 'Masquer' : 'Modifier' }}
+            </span>
+          </div>
+
+          <div class="alert alert-success supervisor-alert" *ngIf="passwordSuccessMessage">
+            {{ passwordSuccessMessage }}
+          </div>
+
+          <ng-container *ngIf="showPasswordSection">
+            <form [formGroup]="passwordForm" class="profile-form" (ngSubmit)="changerMotDePasse()">
+              <div class="profile-form-grid">
+
+                <label class="profile-field profile-field-full">
+                  <span class="profile-field-label">Mot de passe actuel</span>
+                  <input class="input" type="password" formControlName="motDePasseActuel"
+                         autocomplete="current-password" placeholder="Votre mot de passe actuel" />
+                  <span class="field-error" *ngIf="isPasswordFieldInvalid('motDePasseActuel')">
+                    Le mot de passe actuel est requis.
+                  </span>
+                </label>
+
+                <label class="profile-field">
+                  <span class="profile-field-label">Nouveau mot de passe</span>
+                  <input class="input" type="password" formControlName="nouveauMotDePasse"
+                         autocomplete="new-password" placeholder="Minimum 8 caractères" />
+                  <span class="field-hint">
+                    Minimum 8 caractères, une majuscule, une minuscule et un chiffre.
+                  </span>
+                  <span class="field-error" *ngIf="isPasswordFieldInvalid('nouveauMotDePasse')">
+                    Le nouveau mot de passe est requis (minimum 8 caractères).
+                  </span>
+                </label>
+
+                <label class="profile-field">
+                  <span class="profile-field-label">Confirmer le nouveau mot de passe</span>
+                  <input class="input" type="password" formControlName="confirmationMotDePasse"
+                         autocomplete="new-password" placeholder="Répétez le nouveau mot de passe" />
+                  <span class="field-error" *ngIf="isPasswordFieldInvalid('confirmationMotDePasse')">
+                    La confirmation du mot de passe est requise.
+                  </span>
+                </label>
+
+              </div>
+
+              <div class="dashboard-error" *ngIf="passwordErrorMessage">{{ passwordErrorMessage }}</div>
+
+              <div class="form-actions">
+                <button type="submit" class="btn btn-primary" [disabled]="isSavingPassword">
+                  {{ isSavingPassword ? 'Modification...' : 'Modifier le mot de passe' }}
+                </button>
+                <button type="button" class="btn btn-secondary"
+                        (click)="togglePasswordSection()" [disabled]="isSavingPassword">
+                  Annuler
+                </button>
+              </div>
+            </form>
+          </ng-container>
+
+          <p *ngIf="!showPasswordSection" class="field-hint" style="margin:8px 0 0">
+            Cliquez sur "Modifier" pour afficher le formulaire de changement de mot de passe.
+          </p>
         </section>
       </div>
     </ng-container>

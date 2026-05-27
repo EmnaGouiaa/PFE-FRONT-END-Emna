@@ -10,6 +10,7 @@ import { CompanyInternshipsService } from '../../services/company/company-intern
 import { CompanyAgreementsService } from '../../services/company/company-agreements.service';
 import { ProfessionalSupervisorsService } from '../../services/company/professional-supervisors.service';
 import { CompanyAbsence, CompanyAgreement, CompanyContext, CompanyInternship, ProfessionalSupervisor } from '../../services/company/company.models';
+import { isStageFinishedByCalendarEndDate } from '../../utils/stage-fin.util';
 
 @Component({
   selector: 'app-company-internships-page',
@@ -19,7 +20,6 @@ import { CompanyAbsence, CompanyAgreement, CompanyContext, CompanyInternship, Pr
   styleUrls: ['../company-shared.css']
 })
 export class CompanyInternshipsPageComponent implements OnInit {
-  private readonly absenceRevisionPeriodDays = 7;
   context: CompanyContext | null = null;
   internships: CompanyInternship[] = [];
   selectedInternship: CompanyInternship | null = null;
@@ -55,6 +55,56 @@ export class CompanyInternshipsPageComponent implements OnInit {
 
   ngOnInit(): void {
     this.loadInternships();
+  }
+
+  // ── Regles metier : modification de l'encadrant professionnel ─────────────
+  /**
+   * L'encadrant pro est modifiable uniquement si TOUTES ces conditions sont vraies :
+   *   1. Le stage n'a pas encore commence (date de debut > aujourd'hui),
+   *   2. Le stage n'est pas encore declenche (statut PAS_COMMENCE ou A_VENIR),
+   *   3. Le sujet a deja ete valide par l'encadrant academique (statutSujet === 'VALIDEE').
+   */
+  canEditProfessionalSupervisor(internship: CompanyInternship | null): boolean {
+    if (!internship) return false;
+    if (!this.isStageNotYetStarted(internship)) return false;
+    if (!this.isStageNotTriggered(internship)) return false;
+    if (internship.statutSujet !== 'VALIDEE') return false;
+    return true;
+  }
+
+  /** Motif explique a l'utilisateur quand la modification est verrouillee. */
+  professionalSupervisorLockReason(internship: CompanyInternship | null): string {
+    if (!internship) return '';
+    if (!this.isStageNotYetStarted(internship)) {
+      return "Le stage a déjà commencé : l'encadrant professionnel ne peut plus être modifié "
+        + "afin de garantir la cohérence des documents et signatures déjà engagés.";
+    }
+    if (!this.isStageNotTriggered(internship)) {
+      return "Le stage est déjà déclenché : l'encadrant professionnel ne peut plus être modifié.";
+    }
+    if (internship.statutSujet !== 'VALIDEE') {
+      return "L'encadrant pourra être modifié une fois le sujet validé par l'encadrant académique.";
+    }
+    return '';
+  }
+
+  /** Date de fin du stage sélectionné strictement avant aujourd'hui (aligné avec la règle Trello/absences). */
+  isSelectedInternshipPastEndDate(): boolean {
+    return isStageFinishedByCalendarEndDate(this.selectedInternship?.dateFin);
+  }
+
+  private isStageNotYetStarted(internship: CompanyInternship): boolean {
+    if (!internship.dateDebut) return true; // pas de date → on n'a pas demarre
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const debut = new Date(internship.dateDebut);
+    debut.setHours(0, 0, 0, 0);
+    return debut > today;
+  }
+
+  private isStageNotTriggered(internship: CompanyInternship): boolean {
+    const s = internship.statut;
+    return s === 'PAS_COMMENCE' || s === 'A_VENIR' || !s;
   }
 
   loadInternships(): void {
@@ -285,7 +335,7 @@ export class CompanyInternshipsPageComponent implements OnInit {
     };
   }
 
-  get absenceAvailabilityState(): 'allowed' | 'revision' | 'blocked-pre-stage' | 'blocked-expired' | 'unknown' {
+  get absenceAvailabilityState(): 'allowed' | 'blocked-pre-stage' | 'blocked-expired' | 'unknown' {
     if (!this.selectedInternship) {
       return 'unknown';
     }
@@ -302,32 +352,26 @@ export class CompanyInternshipsPageComponent implements OnInit {
       return 'blocked-pre-stage';
     }
 
+    /** Fin de stage au sens calendaire : pas d'absence après dateFin (voir backend). */
     if (today <= dateFin) {
       return 'allowed';
-    }
-
-    const revisionEnd = this.addDays(dateFin, this.absenceRevisionPeriodDays);
-    if (today <= revisionEnd) {
-      return 'revision';
     }
 
     return 'blocked-expired';
   }
 
   get isAbsenceRegistrationAllowed(): boolean {
-    return this.absenceAvailabilityState === 'allowed' || this.absenceAvailabilityState === 'revision';
+    return this.absenceAvailabilityState === 'allowed';
   }
 
   get absenceAvailabilityLabel(): string {
     switch (this.absenceAvailabilityState) {
       case 'allowed':
         return 'Autorise';
-      case 'revision':
-        return 'Revision';
       case 'blocked-pre-stage':
         return 'Bloque avant debut';
       case 'blocked-expired':
-        return 'Periode expiree';
+        return 'Stage termine';
       default:
         return 'Verification indisponible';
     }
@@ -337,8 +381,6 @@ export class CompanyInternshipsPageComponent implements OnInit {
     switch (this.absenceAvailabilityState) {
       case 'allowed':
         return 'status-positive';
-      case 'revision':
-        return 'status-warning';
       case 'blocked-pre-stage':
       case 'blocked-expired':
         return 'status-negative';
@@ -354,17 +396,14 @@ export class CompanyInternshipsPageComponent implements OnInit {
 
     const dateDebut = this.formatDate(this.selectedInternship.dateDebut);
     const dateFin = this.formatDate(this.selectedInternship.dateFin);
-    const revisionEnd = this.absenceRevisionEndLabel;
 
     switch (this.absenceAvailabilityState) {
       case 'allowed':
         return `Les absences peuvent etre enregistrees pendant la periode du stage, du ${dateDebut} au ${dateFin}.`;
-      case 'revision':
-        return `Le stage est termine, mais la periode de revision reste ouverte jusqu'au ${revisionEnd}. Vous pouvez encore enregistrer une absence.`;
       case 'blocked-pre-stage':
         return `Les absences ne peuvent pas etre enregistrees avant le debut du stage prevu le ${dateDebut}.`;
       case 'blocked-expired':
-        return `La periode d'enregistrement des absences est expiree. La revision s'est terminee le ${revisionEnd}.`;
+        return `Impossible de declarer une absence : le stage est termine (fin le ${dateFin}).`;
       default:
         return "La verification des regles d'absence est indisponible pour ce stage.";
     }
@@ -376,15 +415,6 @@ export class CompanyInternshipsPageComponent implements OnInit {
     }
 
     return `${this.formatDate(this.selectedInternship.dateDebut)} -> ${this.formatDate(this.selectedInternship.dateFin)}`;
-  }
-
-  get absenceRevisionEndLabel(): string {
-    const endDate = this.parseDateOnly(this.selectedInternship?.dateFin);
-    if (!endDate) {
-      return '-';
-    }
-
-    return this.formatDate(this.toIsoDate(this.addDays(endDate, this.absenceRevisionPeriodDays)));
   }
 
   private parseDateOnly(value: string | null | undefined): Date | null {
@@ -399,18 +429,6 @@ export class CompanyInternshipsPageComponent implements OnInit {
 
   private toDateOnly(date: Date): Date {
     return new Date(date.getFullYear(), date.getMonth(), date.getDate());
-  }
-
-  private addDays(date: Date, days: number): Date {
-    const result = new Date(date);
-    result.setDate(result.getDate() + days);
-    return this.toDateOnly(result);
-  }
-
-  private toIsoDate(date: Date): string {
-    const month = `${date.getMonth() + 1}`.padStart(2, '0');
-    const day = `${date.getDate()}`.padStart(2, '0');
-    return `${date.getFullYear()}-${month}-${day}`;
   }
 
   private formatDate(value: string | null | undefined): string {
