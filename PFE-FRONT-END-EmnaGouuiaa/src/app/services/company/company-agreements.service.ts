@@ -1,3 +1,7 @@
+// Envoyer GET /api/stages/{stageId}/documents/{type}/pdf
+// → Récupérer le fichier PDF sous forme de Blob (données binaires)
+// → Le retourner à openDocumentPdf() qui l'enverra à showPdf()  http
+
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, of } from 'rxjs';
@@ -16,6 +20,17 @@ export class CompanyAgreementsService {
   getByStageId(stageId: number): Observable<CompanyAgreement | null> {
     return getJsonOptional$<any>(this.http, `${this.apiUrl}/stage/${stageId}`).pipe(
       map((item) => (item ? this.normalizeAgreement(item) : null))
+    );
+  }
+
+  getStageDocuments(stageId: number): Observable<any> {
+    return this.http.get(`${this.stagesUrl}/${stageId}/documents`);
+  }
+
+  generateConvention(stageId: number): Observable<{ message?: string; stageDocuments?: unknown }> {
+    return this.http.post<{ message?: string; stageDocuments?: unknown }>(
+      `${this.stagesUrl}/${stageId}/documents/convention/generer`,
+      {}
     );
   }
 

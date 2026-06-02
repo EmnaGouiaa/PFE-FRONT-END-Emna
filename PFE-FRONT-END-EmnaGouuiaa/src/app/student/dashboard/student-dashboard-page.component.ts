@@ -6,8 +6,10 @@ import { catchError } from 'rxjs/operators';
 import { AuthentificationService } from '../../services/authentification.service';
 import { NotificationService } from '../../services/notification.service';
 import { ProfileCompletionService } from '../../services/profile-completion.service';
+import { formatStageStatutLabel } from '../../shared/stage-status.util';
 import { StudentInternship, StudentMeeting, StudentOffer, StudentProfile, StudentTrelloSummary } from '../../services/student/student.models';
 import { StudentPortalService } from '../../services/student/student-portal.service';
+import { splitMeetingsBySchedule } from '../../utils/meeting-schedule.util';
 @Component({
   selector: 'app-student-dashboard-page',
   standalone: true,
@@ -110,7 +112,7 @@ export class StudentDashboardPageComponent implements OnInit {
   }
 
   formatStatus(value: string): string {
-    return String(value || 'INCONNU').replace(/_/g, ' ');
+    return formatStageStatutLabel(value);
   }
 
   statusClass(value: string): string {
@@ -198,18 +200,7 @@ export class StudentDashboardPageComponent implements OnInit {
   }
 
   private pickNextMeeting(meetings: StudentMeeting[]): StudentMeeting | null {
-    const now = Date.now();
-    const upcomingMeetings = meetings
-      .map((meeting) => ({ meeting, timestamp: this.toTimestamp(meeting) }))
-      .filter((item) => item.timestamp >= now)
-      .sort((a, b) => a.timestamp - b.timestamp);
-
-    return upcomingMeetings[0]?.meeting ?? null;
-  }
-
-  private toTimestamp(meeting: StudentMeeting): number {
-    const isoValue = `${meeting.date || '1970-01-01'}T${meeting.heure || '00:00:00'}`;
-    const timestamp = new Date(isoValue).getTime();
-    return Number.isNaN(timestamp) ? 0 : timestamp;
+    const { upcoming } = splitMeetingsBySchedule(meetings);
+    return upcoming[0] ?? null;
   }
 }

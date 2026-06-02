@@ -2,7 +2,7 @@
   <header class="page-hero">
     <div>
       <h1>Documents de stage</h1>
-      <p>Signez les conventions et fiches d'évaluation depuis les mini-cards ci-dessous.</p>
+      <p>Consultez l'état des signatures et téléchargez le PDF lorsque toutes les signatures sont complètes et les conditions métier remplies.</p>
     </div>
     <div class="hero-actions">
       <button type="button" class="btn btn-secondary" (click)="loadAll()" [disabled]="isLoading || isActing || isSigning">Actualiser</button>
@@ -53,49 +53,37 @@
                 {{ getConventionStatusLabel(agreement) }}
               </span>
             </div>
-            <div class="doc-card-short-status">
-              {{ isConventionSignedByCompany(agreement) ? 'Vous avez signé cette convention' : 'En attente de votre signature' }}
-            </div>
+            <div class="doc-card-short-status">{{ getDocumentShortStatus(internship.id, 'convention') }}</div>
             <div class="doc-card-meta">
               <div class="doc-card-meta-item">
                 <span class="label">Statut</span>
                 <strong>{{ getConventionStatusLabel(agreement) }}</strong>
               </div>
               <div class="doc-card-meta-item">
-                <span class="label">Année univ.</span>
-                <strong>{{ agreement.anneeUniversitaire || '—' }}</strong>
-              </div>
-              <div class="doc-card-meta-item">
                 <span class="label">Accès PDF</span>
-                <strong>{{ canAccessPdf(internship.id, 'convention') ? 'Autorisé' : 'En attente' }}</strong>
+                <strong>{{ isPdfAvailable(internship.id, 'convention', agreement) ? 'Autorisé' : 'Indisponible' }}</strong>
               </div>
             </div>
-            <div class="doc-card-actions">
+            <div class="doc-card-actions doc-card-actions--standard">
               <button
+                *ngIf="canShowDetail(internship.id, 'convention')"
                 type="button"
                 class="btn btn-secondary btn-sm"
                 (click)="openConventionDetails(internship.id)"
-                title="Consulter les informations de la convention"
-              >Détails</button>
+                title="Statut des signatures et conditions d'accès PDF"
+              >Détail</button>
               <button
                 type="button"
                 class="btn btn-secondary btn-sm"
-                [disabled]="!canAccessPdf(internship.id, 'convention')"
-                [style.pointerEvents]="!canAccessPdf(internship.id, 'convention') ? 'none' : 'auto'"
-                [style.opacity]="!canAccessPdf(internship.id, 'convention') ? '0.38' : '1'"
-                [style.cursor]="!canAccessPdf(internship.id, 'convention') ? 'not-allowed' : 'pointer'"
-                (click)="downloadPdf(internship.id, 'convention')"
-                [title]="canAccessPdf(internship.id, 'convention') ? 'Télécharger la convention' : 'PDF disponible uniquement après toutes les signatures'"
+                [disabled]="!isPdfAvailable(internship.id, 'convention', agreement)"
+                [title]="getPdfButtonTitle(internship.id, 'convention', agreement)"
+                (click)="downloadPdf(internship.id, 'convention', agreement)"
               >PDF</button>
-              <button
-                type="button"
-                class="btn btn-sm"
-                [class.btn-primary]="!isConventionSignedByCompany(agreement)"
-                [class.btn-secondary]="isConventionSignedByCompany(agreement)"
-                [disabled]="isSigning || isConventionSignedByCompany(agreement)"
-                (click)="signConvention(agreement)"
-                [title]="isConventionSignedByCompany(agreement) ? 'Vous avez déjà signé cette convention' : 'Signer côté entreprise'"
-              >{{ isConventionSignedByCompany(agreement) ? '✓ Signé' : 'Signer' }}</button>
+              <app-stage-document-sign-action
+                [context]="buildConventionSignContextPublic(internship, agreement)"
+                (sign)="signConvention(agreement)"
+                (initialize)="initializeConvention(internship)"
+              />
             </div>
           </ng-container>
           <ng-container *ngIf="!getAgreement(internship.id)">
@@ -103,7 +91,26 @@
               <div class="doc-card-title">Non générée</div>
               <span class="status-pill status-neutral">En attente</span>
             </div>
-            <div class="doc-card-short-status">En attente de génération par l'administration</div>
+            <div class="doc-card-short-status">{{ getDocumentShortStatus(internship.id, 'convention') }}</div>
+            <div class="doc-card-actions doc-card-actions--standard">
+              <button
+                type="button"
+                class="btn btn-secondary btn-sm"
+                (click)="openConventionDetails(internship.id)"
+                [disabled]="!hasDocStatusEntry(internship.id, 'convention')"
+              >Détail</button>
+              <button
+                type="button"
+                class="btn btn-secondary btn-sm"
+                [disabled]="!isPdfAvailable(internship.id, 'convention')"
+                [title]="getPdfButtonTitle(internship.id, 'convention')"
+                (click)="downloadPdf(internship.id, 'convention')"
+              >PDF</button>
+              <app-stage-document-sign-action
+                [context]="buildConventionSignContextPublic(internship, null)"
+                (initialize)="initializeConvention(internship)"
+              />
+            </div>
           </ng-container>
         </div>
 
@@ -117,48 +124,40 @@
                 {{ getEvaluationStatusLabel(evaluation) }}
               </span>
             </div>
-            <div class="doc-card-short-status">{{ getEvaluationStatusLabel(evaluation) }}</div>
+            <div class="doc-card-short-status">{{ getDocumentShortStatus(internship.id, 'fiche-evaluation') }}</div>
             <div class="doc-card-meta">
               <div class="doc-card-meta-item">
-                <span class="label">Complétée</span>
-                <strong>{{ evaluation.donneesCompletes ? 'Oui' : 'Non' }}</strong>
+                <span class="label">Statut</span>
+                <strong>{{ getEvaluationStatusLabel(evaluation) }}</strong>
               </div>
               <div class="doc-card-meta-item">
                 <span class="label">Accès PDF</span>
-                <strong>{{ canAccessPdf(internship.id, 'fiche-evaluation') ? 'Autorisé' : 'En attente' }}</strong>
+                <strong>{{ isPdfAvailable(internship.id, 'fiche-evaluation', null, evaluation) ? 'Autorisé' : 'Indisponible' }}</strong>
               </div>
             </div>
-            <div class="doc-card-actions">
+            <p *ngIf="needsEvaluationInputBeforeSign(evaluation)" class="doc-card-pdf-hint">
+              {{ evaluationSignIncompleteMessage }}
+              <a routerLink="/entreprise/evaluation" [queryParams]="{ stageId: internship.id }" class="doc-card-link">Remplir la fiche →</a>
+            </p>
+            <div class="doc-card-actions doc-card-actions--standard">
               <button
+                *ngIf="canShowDetail(internship.id, 'fiche-evaluation')"
                 type="button"
                 class="btn btn-secondary btn-sm"
                 (click)="openEvaluationDetails(internship.id)"
-                title="Consulter la fiche d'évaluation"
-              >Détails</button>
+                title="Statut des signatures et conditions d'accès PDF"
+              >Détail</button>
               <button
                 type="button"
                 class="btn btn-secondary btn-sm"
-                [disabled]="!canAccessPdf(internship.id, 'fiche-evaluation')"
-                [style.pointerEvents]="!canAccessPdf(internship.id, 'fiche-evaluation') ? 'none' : 'auto'"
-                [style.opacity]="!canAccessPdf(internship.id, 'fiche-evaluation') ? '0.38' : '1'"
-                [style.cursor]="!canAccessPdf(internship.id, 'fiche-evaluation') ? 'not-allowed' : 'pointer'"
-                (click)="downloadPdf(internship.id, 'fiche-evaluation')"
-                [title]="canAccessPdf(internship.id, 'fiche-evaluation') ? 'Voir la fiche en PDF' : 'PDF disponible uniquement après toutes les signatures et la fin du stage'"
+                [disabled]="!isPdfAvailable(internship.id, 'fiche-evaluation', null, evaluation)"
+                [title]="getPdfButtonTitle(internship.id, 'fiche-evaluation', null, evaluation)"
+                (click)="downloadPdf(internship.id, 'fiche-evaluation', null, evaluation)"
               >PDF</button>
-              <a
-                class="btn btn-secondary btn-sm"
-                routerLink="/entreprise/evaluation"
-                title="Remplir ma partie dans la section Évaluation"
-              >Remplir</a>
-              <button
-                type="button"
-                class="btn btn-sm"
-                [class.btn-primary]="!isEvaluationSignedByCompany(evaluation)"
-                [class.btn-secondary]="isEvaluationSignedByCompany(evaluation)"
-                [disabled]="isSigning || isEvaluationSignedByCompany(evaluation) || !evaluation.donneesCompletes"
-                (click)="signEvaluation(evaluation)"
-                [title]="isEvaluationSignedByCompany(evaluation) ? 'Vous avez déjà signé cette fiche' : (!evaluation.donneesCompletes ? 'Remplissez votre partie avant de signer' : 'Signer la fiche')"
-              >{{ isEvaluationSignedByCompany(evaluation) ? '✓ Signé' : 'Signer' }}</button>
+              <app-stage-document-sign-action
+                [context]="buildEvaluationSignContextPublic(internship, evaluation)"
+                (sign)="signEvaluation(evaluation)"
+              />
             </div>
           </ng-container>
           <ng-container *ngIf="!getEvaluation(internship.id)">
@@ -166,59 +165,68 @@
               <div class="doc-card-title">Fiche d'évaluation</div>
               <span class="status-pill status-neutral">Non générée</span>
             </div>
-            <div class="doc-card-short-status">En attente de génération</div>
+            <div class="doc-card-short-status">{{ getDocumentShortStatus(internship.id, 'fiche-evaluation') }}</div>
+            <div class="doc-card-actions doc-card-actions--standard">
+              <button
+                type="button"
+                class="btn btn-secondary btn-sm"
+                (click)="openEvaluationDetails(internship.id)"
+                [disabled]="!hasDocStatusEntry(internship.id, 'fiche-evaluation')"
+              >Détail</button>
+              <button
+                type="button"
+                class="btn btn-secondary btn-sm"
+                [disabled]="!isPdfAvailable(internship.id, 'fiche-evaluation')"
+                [title]="getPdfButtonTitle(internship.id, 'fiche-evaluation')"
+                (click)="downloadPdf(internship.id, 'fiche-evaluation')"
+              >PDF</button>
+              <app-stage-document-sign-action
+                [context]="buildEvaluationSignContextPublic(internship, null)"
+              />
+            </div>
           </ng-container>
         </div>
 
         <!-- Cahier de stage (via validations) -->
         <div class="doc-mini-card">
           <div class="doc-card-eyebrow">Cahier de stage</div>
-          <ng-container *ngIf="getCahierItem(internship.id) as cahierItem; else noCahier">
+          <ng-container *ngIf="hasDocument(internship.id, 'cahier-stage'); else noCahier">
             <div class="doc-card-top">
               <div class="doc-card-title">Cahier de stage</div>
-              <span class="status-pill" [ngClass]="'status-' + cahierItem.status">
-                {{ statusLabel(cahierItem.status) }}
+              <span class="status-pill" [ngClass]="getCahierItem(internship.id) ? ('status-' + getCahierItem(internship.id)!.status) : 'status-positive'">
+                {{ getCahierItem(internship.id) ? statusLabel(getCahierItem(internship.id)!.status) : 'Disponible' }}
               </span>
             </div>
-            <div class="doc-card-short-status">
-              {{ cahierItem.status === 'VALIDEE' ? 'Validé par l\'entreprise' : (cahierItem.pending ? 'En attente de validation' : statusLabel(cahierItem.status)) }}
-            </div>
+            <div class="doc-card-short-status">{{ getDocumentShortStatus(internship.id, 'cahier-stage') }}</div>
             <div class="doc-card-meta">
               <div class="doc-card-meta-item">
                 <span class="label">Statut</span>
-                <strong>{{ statusLabel(cahierItem.status) }}</strong>
+                <strong>{{ getCahierItem(internship.id) ? statusLabel(getCahierItem(internship.id)!.status) : 'Disponible' }}</strong>
               </div>
               <div class="doc-card-meta-item">
                 <span class="label">Accès PDF</span>
-                <strong>{{ canAccessPdf(internship.id, 'cahier-stage') ? 'Autorisé' : 'En attente' }}</strong>
+                <strong>{{ isPdfAvailable(internship.id, 'cahier-stage') ? 'Autorisé' : 'Indisponible' }}</strong>
               </div>
             </div>
-            <div class="doc-card-actions">
+            <div class="doc-card-actions doc-card-actions--standard">
               <button
+                *ngIf="canShowDetail(internship.id, 'cahier-stage')"
                 type="button"
                 class="btn btn-secondary btn-sm"
                 (click)="openCahierDetails(internship.id)"
-                title="Consulter les informations du cahier de stage"
-              >Détails</button>
+                title="Statut des signatures et conditions d'accès PDF"
+              >Détail</button>
               <button
                 type="button"
                 class="btn btn-secondary btn-sm"
-                [disabled]="!canAccessPdf(internship.id, 'cahier-stage')"
-                [style.pointerEvents]="!canAccessPdf(internship.id, 'cahier-stage') ? 'none' : 'auto'"
-                [style.opacity]="!canAccessPdf(internship.id, 'cahier-stage') ? '0.38' : '1'"
-                [style.cursor]="!canAccessPdf(internship.id, 'cahier-stage') ? 'not-allowed' : 'pointer'"
+                [disabled]="!isPdfAvailable(internship.id, 'cahier-stage')"
+                [title]="getPdfButtonTitle(internship.id, 'cahier-stage')"
                 (click)="downloadPdf(internship.id, 'cahier-stage')"
-                [title]="canAccessPdf(internship.id, 'cahier-stage') ? 'Télécharger le cahier de stage' : 'PDF disponible uniquement après validation et fin du stage'"
               >PDF</button>
-              <button
-                type="button"
-                class="btn btn-sm"
-                [class.btn-primary]="cahierItem.pending"
-                [class.btn-secondary]="!cahierItem.pending"
-                [disabled]="isActing || !cahierItem.pending"
-                (click)="approveSelected(cahierItem)"
-                [title]="!cahierItem.pending ? 'Vous avez déjà signé ce cahier' : 'Signer le cahier de stage'"
-              >{{ cahierItem.pending ? 'Signer' : '✓ Signé' }}</button>
+              <app-stage-document-sign-action
+                [context]="buildCahierSignContextPublic(internship)"
+                (sign)="approveSelected(getCahierItem(internship.id)!)"
+              />
             </div>
           </ng-container>
           <ng-template #noCahier>
@@ -228,8 +236,24 @@
                 {{ isStageEnded(internship) ? 'Stage terminé' : 'En attente' }}
               </span>
             </div>
-            <div class="doc-card-short-status">
-              {{ isStageEnded(internship) ? 'Stage terminé — le cahier est en cours de préparation' : 'En attente de la fin du stage' }}
+            <div class="doc-card-short-status">{{ getDocumentShortStatus(internship.id, 'cahier-stage') }}</div>
+            <div class="doc-card-actions doc-card-actions--standard">
+              <button
+                type="button"
+                class="btn btn-secondary btn-sm"
+                (click)="openCahierDetails(internship.id)"
+                [disabled]="!hasDocStatusEntry(internship.id, 'cahier-stage')"
+              >Détail</button>
+              <button
+                type="button"
+                class="btn btn-secondary btn-sm"
+                [disabled]="!isPdfAvailable(internship.id, 'cahier-stage')"
+                [title]="getPdfButtonTitle(internship.id, 'cahier-stage')"
+                (click)="downloadPdf(internship.id, 'cahier-stage')"
+              >PDF</button>
+              <app-stage-document-sign-action
+                [context]="buildCahierSignContextPublic(internship)"
+              />
             </div>
           </ng-template>
         </div>
@@ -247,9 +271,9 @@
         <ng-container *ngIf="getAgreement(selectedDocStageId!) as ag">
           <div class="modal-header">
             <div>
-              <h2 style="margin:0;font-size:1.15rem">Convention de stage</h2>
+              <h2 style="margin:0;font-size:1.15rem">Convention — signatures</h2>
               <p style="margin:4px 0 0;color:var(--text-muted,#64748b);font-size:0.9rem">
-                N° {{ ag.numConv || ag.id }} · {{ ag.anneeUniversitaire || '—' }}
+                N° {{ ag.numConv || ag.id }} · détail des signataires et accès PDF
               </p>
             </div>
             <button type="button" class="btn-close" (click)="closeDocDetails()">✕</button>
@@ -272,46 +296,80 @@
               </div>
               <div class="detail-item">
                 <span class="label">Accès PDF</span>
-                <span class="value">{{ canAccessPdf(selectedDocStageId!, 'convention') ? 'Autorisé' : 'En attente des signatures' }}</span>
+                <span class="value">{{ isPdfAvailable(selectedDocStageId!, 'convention', ag) ? 'Autorisé' : 'Indisponible' }}</span>
               </div>
             </div>
 
-            <div style="margin-top:14px">
-              <div style="font-size:0.78rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#64748b;margin-bottom:8px">État des signatures</div>
-              <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:8px">
-                <div *ngFor="let sig of [
-                  {label:'Stagiaire',            done: ag.signeeStagiaire},
-                  {label:'Enc. académique',       done: ag.signeeEncAca},
-                  {label:'Enc. professionnel',    done: ag.signeeEncPro},
-                  {label:'Resp. entreprise',      done: ag.signeeEntreprise},
-                  {label:'Resp. universitaire',   done: ag.signeeResp}
-                ]" style="padding:8px 10px;border-radius:8px;background:#f8fafc;border:1px solid rgba(15,23,42,0.08)">
-                  <div style="font-size:0.73rem;color:#64748b;margin-bottom:3px">{{ sig.label }}</div>
-                  <span [style.color]="sig.done ? '#16a34a' : '#b45309'" style="font-weight:700;font-size:0.8rem">
-                    {{ sig.done ? '✓ Signé' : '⏳ En attente' }}
-                  </span>
-                </div>
-              </div>
-            </div>
+            <app-stage-document-signatures-block
+              [actors]="getSignatureActorsForDoc(selectedDocStageId!, 'convention')"
+            />
 
-            <div *ngIf="canAccessPdf(selectedDocStageId!, 'convention')"
-                 style="margin-top:14px;padding:12px 16px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
-              <span style="color:#166534;font-size:0.9rem;font-weight:600">✓ Toutes les signatures sont complètes. Ce document est disponible en PDF.</span>
-              <button type="button" class="btn btn-primary btn-sm"
-                      (click)="downloadPdf(selectedDocStageId!, 'convention'); closeDocDetails()">Voir PDF</button>
-            </div>
-            <div *ngIf="!canAccessPdf(selectedDocStageId!, 'convention')"
-                 style="margin-top:14px;padding:12px 16px;background:#fff7ed;border:1px solid #fed7aa;border-radius:8px;color:#9a3412;font-size:0.9rem">
-              <strong>⚠ Document non disponible au format PDF.</strong>
-              Il sera généré et consultable après la signature de tous les signataires requis.
+            <div class="doc-pdf-action-block"
+                 [class.doc-pdf-action-block--available]="isPdfAvailable(selectedDocStageId!, 'convention', ag)">
+              <span class="doc-pdf-action-block__message">
+                <ng-container *ngIf="isPdfAvailable(selectedDocStageId!, 'convention', ag); else conventionPdfLocked">
+                  ✓ {{ getPdfAvailableMessage('convention') }}
+                </ng-container>
+                <ng-template #conventionPdfLocked>
+                  <strong>Document non disponible au format PDF.</strong>
+                  {{ getPdfHint(selectedDocStageId!, 'convention', ag) }}
+                </ng-template>
+              </span>
+              <button
+                type="button"
+                class="btn btn-primary btn-sm"
+                [disabled]="!isPdfAvailable(selectedDocStageId!, 'convention', ag)"
+                [title]="getPdfButtonTitle(selectedDocStageId!, 'convention', ag)"
+                (click)="downloadPdf(selectedDocStageId!, 'convention', ag); closeDocDetails()"
+              >Télécharger PDF</button>
             </div>
 
             <div class="inline-actions">
               <button type="button" class="btn btn-secondary" (click)="closeDocDetails()">Fermer</button>
-              <button *ngIf="!isConventionSignedByCompany(ag)" type="button" class="btn btn-primary"
-                      [disabled]="isSigning" (click)="signConvention(ag)">
-                Signer la convention
-              </button>
+              <app-stage-document-sign-action
+                buttonClass="btn btn-primary"
+                [context]="buildConventionSignContextPublic(getSelectedInternship()!, ag)"
+                (sign)="signConvention(ag)"
+                (initialize)="initializeConvention(getSelectedInternship()!)"
+              />
+            </div>
+          </div>
+        </ng-container>
+        <ng-container *ngIf="!getAgreement(selectedDocStageId!)">
+          <div class="modal-header">
+            <div>
+              <h2 style="margin:0;font-size:1.15rem">Convention — signatures</h2>
+              <p style="margin:4px 0 0;color:var(--text-muted,#64748b);font-size:0.9rem">
+                {{ getSelectedInternship()?.stagiaireNom || '—' }} · convention non encore générée
+              </p>
+            </div>
+            <button type="button" class="btn-close" (click)="closeDocDetails()">✕</button>
+          </div>
+          <div class="form">
+            <app-stage-document-signatures-block
+              [actors]="getSignatureActorsForDoc(selectedDocStageId!, 'convention')"
+            />
+            <div class="doc-pdf-action-block"
+                 [class.doc-pdf-action-block--available]="isPdfAvailable(selectedDocStageId!, 'convention')">
+              <span class="doc-pdf-action-block__message">
+                <strong>Document non disponible au format PDF.</strong>
+                {{ getPdfHint(selectedDocStageId!, 'convention') }}
+              </span>
+              <button
+                type="button"
+                class="btn btn-primary btn-sm"
+                [disabled]="!isPdfAvailable(selectedDocStageId!, 'convention')"
+                [title]="getPdfButtonTitle(selectedDocStageId!, 'convention')"
+                (click)="downloadPdf(selectedDocStageId!, 'convention'); closeDocDetails()"
+              >Télécharger PDF</button>
+            </div>
+            <div class="inline-actions">
+              <button type="button" class="btn btn-secondary" (click)="closeDocDetails()">Fermer</button>
+              <app-stage-document-sign-action
+                buttonClass="btn btn-primary"
+                [context]="buildConventionSignContextPublic(getSelectedInternship()!, null)"
+                (initialize)="initializeConvention(getSelectedInternship()!)"
+              />
             </div>
           </div>
         </ng-container>
@@ -343,7 +401,7 @@
               </div>
               <div class="detail-item">
                 <span class="label">Note finale</span>
-                <span class="value">{{ ev.noteFinale != null ? (ev.noteFinale | number:'1.2-2') + ' / 20' : '—' }}</span>
+                <span class="value">{{ ev.noteFinale != null ? (ev.noteFinale | number:'1.1-1') + ' / 5' : '—' }}</span>
               </div>
               <div class="detail-item">
                 <span class="label">Stage terminé</span>
@@ -351,57 +409,49 @@
               </div>
             </div>
 
-            <div style="margin-top:14px">
-              <div style="font-size:0.78rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#64748b;margin-bottom:8px">État des signatures</div>
-              <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
-                <div style="padding:10px 12px;border-radius:8px;background:#f8fafc;border:1px solid rgba(15,23,42,0.08)">
-                  <div style="font-size:0.73rem;color:#64748b;margin-bottom:3px">Encadrant professionnel</div>
-                  <span [style.color]="ev.dateSignatureEncadrantProfessionnel ? '#16a34a' : '#b45309'" style="font-weight:700;font-size:0.8rem">
-                    {{ ev.dateSignatureEncadrantProfessionnel ? '✓ Signé' : '⏳ En attente' }}
-                  </span>
-                  <div *ngIf="ev.dateSignatureEncadrantProfessionnel" style="font-size:0.73rem;color:#64748b;margin-top:2px">
-                    le {{ ev.dateSignatureEncadrantProfessionnel | date:'dd/MM/yyyy' }}
-                  </div>
-                </div>
-                <div style="padding:10px 12px;border-radius:8px;background:#f8fafc;border:1px solid rgba(15,23,42,0.08)">
-                  <div style="font-size:0.73rem;color:#64748b;margin-bottom:3px">Représentant entreprise</div>
-                  <span [style.color]="ev.dateSignatureRepresentantEntreprise ? '#16a34a' : '#b45309'" style="font-weight:700;font-size:0.8rem">
-                    {{ ev.dateSignatureRepresentantEntreprise ? '✓ Signé' : '⏳ En attente' }}
-                  </span>
-                  <div *ngIf="ev.dateSignatureRepresentantEntreprise" style="font-size:0.73rem;color:#64748b;margin-top:2px">
-                    le {{ ev.dateSignatureRepresentantEntreprise | date:'dd/MM/yyyy' }}
-                  </div>
-                </div>
-              </div>
-            </div>
+            <app-stage-document-signatures-block
+              [actors]="getSignatureActorsForDoc(selectedDocStageId!, 'fiche-evaluation')"
+            />
 
-            <div *ngIf="canAccessPdf(selectedDocStageId!, 'fiche-evaluation')"
-                 style="margin-top:14px;padding:12px 16px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
-              <span style="color:#166534;font-size:0.9rem;font-weight:600">✓ Toutes les signatures sont complètes. Ce document est disponible en PDF.</span>
-              <button type="button" class="btn btn-primary btn-sm"
-                      (click)="downloadPdf(selectedDocStageId!, 'fiche-evaluation'); closeDocDetails()">Voir PDF</button>
-            </div>
-            <div *ngIf="!canAccessPdf(selectedDocStageId!, 'fiche-evaluation')"
-                 style="margin-top:14px;padding:12px 16px;background:#fff7ed;border:1px solid #fed7aa;border-radius:8px;color:#9a3412;font-size:0.9rem">
-              <strong>⚠ Document non disponible au format PDF.</strong>
-              Il sera généré et consultable après la signature de tous les signataires requis et la fin du stage.
+            <p *ngIf="needsEvaluationInputBeforeSign(ev)" class="doc-card-pdf-hint" style="margin-top:14px">
+              {{ evaluationSignIncompleteMessage }}
+              <a routerLink="/entreprise/evaluation" [queryParams]="{ stageId: selectedDocStageId }" class="doc-card-link">Remplir la fiche →</a>
+            </p>
+
+            <div class="doc-pdf-action-block"
+                 [class.doc-pdf-action-block--available]="isPdfAvailable(selectedDocStageId!, 'fiche-evaluation', null, ev)">
+              <span class="doc-pdf-action-block__message">
+                <ng-container *ngIf="isPdfAvailable(selectedDocStageId!, 'fiche-evaluation', null, ev); else evalPdfLocked">
+                  ✓ {{ getPdfAvailableMessage('fiche-evaluation') }}
+                </ng-container>
+                <ng-template #evalPdfLocked>
+                  <strong>Document non disponible au format PDF.</strong>
+                  {{ getPdfHint(selectedDocStageId!, 'fiche-evaluation', null, ev) }}
+                </ng-template>
+              </span>
+              <button
+                type="button"
+                class="btn btn-primary btn-sm"
+                [disabled]="!isPdfAvailable(selectedDocStageId!, 'fiche-evaluation', null, ev)"
+                [title]="getPdfButtonTitle(selectedDocStageId!, 'fiche-evaluation', null, ev)"
+                (click)="downloadPdf(selectedDocStageId!, 'fiche-evaluation', null, ev); closeDocDetails()"
+              >Télécharger PDF</button>
             </div>
 
             <div class="inline-actions">
               <button type="button" class="btn btn-secondary" (click)="closeDocDetails()">Fermer</button>
-              <button *ngIf="!isEvaluationSignedByCompany(ev)" type="button" class="btn btn-primary"
-                      [disabled]="isSigning || !ev.donneesCompletes"
-                      [title]="!ev.donneesCompletes ? 'Remplissez votre partie avant de signer' : 'Signer la fiche'"
-                      (click)="signEvaluation(ev)">
-                Signer la fiche
-              </button>
+              <app-stage-document-sign-action
+                buttonClass="btn btn-primary"
+                [context]="buildEvaluationSignContextPublic(getSelectedInternship()!, ev)"
+                (sign)="signEvaluation(ev)"
+              />
             </div>
           </div>
         </ng-container>
       </ng-container>
 
       <!-- ═══ Cahier de stage ═══════════════════════════════════════════════════════ -->
-      <ng-container *ngIf="selectedDocType === 'cahier-stage'">
+      <ng-container *ngIf="selectedDocType === 'cahier-stage' && hasDocument(selectedDocStageId!, 'cahier-stage')">
         <ng-container *ngIf="getCahierItem(selectedDocStageId!) as cahier">
           <div class="modal-header">
             <div>
@@ -415,7 +465,7 @@
           <div class="form">
             <div class="detail-grid">
               <div class="detail-item">
-                <span class="label">Statut</span>
+                <span class="label">Statut validation</span>
                 <span class="value">
                   <span class="status-pill" [ngClass]="'status-' + cahier.status">{{ statusLabel(cahier.status) }}</span>
                 </span>
@@ -426,7 +476,7 @@
               </div>
               <div class="detail-item">
                 <span class="label">Accès PDF</span>
-                <span class="value">{{ canAccessPdf(selectedDocStageId!, 'cahier-stage') ? 'Autorisé' : 'En attente' }}</span>
+                <span class="value">{{ isPdfAvailable(selectedDocStageId!, 'cahier-stage') ? 'Autorisé' : 'Indisponible' }}</span>
               </div>
               <div class="detail-item" *ngIf="cahier.description">
                 <span class="label">Description</span>
@@ -434,25 +484,75 @@
               </div>
             </div>
 
-            <div *ngIf="canAccessPdf(selectedDocStageId!, 'cahier-stage')"
-                 style="margin-top:14px;padding:12px 16px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
-              <span style="color:#166534;font-size:0.9rem;font-weight:600">✓ Le cahier est validé et le stage est terminé. Ce document est disponible en PDF.</span>
-              <button type="button" class="btn btn-primary btn-sm"
-                      (click)="downloadPdf(selectedDocStageId!, 'cahier-stage'); closeDocDetails()">Voir PDF</button>
-            </div>
-            <div *ngIf="!canAccessPdf(selectedDocStageId!, 'cahier-stage')"
-                 style="margin-top:14px;padding:12px 16px;background:#fff7ed;border:1px solid #fed7aa;border-radius:8px;color:#9a3412;font-size:0.9rem">
-              <strong>⚠ Document non disponible au format PDF.</strong>
-              Il sera généré et consultable après la validation du cahier et la fin du stage.
+            <app-stage-document-signatures-block
+              [actors]="getSignatureActorsForDoc(selectedDocStageId!, 'cahier-stage')"
+            />
+
+            <div class="doc-pdf-action-block"
+                 [class.doc-pdf-action-block--available]="isPdfAvailable(selectedDocStageId!, 'cahier-stage')">
+              <span class="doc-pdf-action-block__message">
+                <ng-container *ngIf="isPdfAvailable(selectedDocStageId!, 'cahier-stage'); else cahierPdfLocked">
+                  ✓ {{ getPdfAvailableMessage('cahier-stage') }}
+                </ng-container>
+                <ng-template #cahierPdfLocked>
+                  <strong>Document non disponible au format PDF.</strong>
+                  {{ getPdfHint(selectedDocStageId!, 'cahier-stage') }}
+                </ng-template>
+              </span>
+              <button
+                type="button"
+                class="btn btn-primary btn-sm"
+                [disabled]="!isPdfAvailable(selectedDocStageId!, 'cahier-stage')"
+                [title]="getPdfButtonTitle(selectedDocStageId!, 'cahier-stage')"
+                (click)="downloadPdf(selectedDocStageId!, 'cahier-stage'); closeDocDetails()"
+              >Télécharger PDF</button>
             </div>
 
             <div class="inline-actions">
               <button type="button" class="btn btn-secondary" (click)="closeDocDetails()">Fermer</button>
-              <button *ngIf="cahier.pending" type="button" class="btn btn-primary"
-                      [disabled]="isActing"
-                      (click)="approveSelected(cahier); closeDocDetails()">
-                Valider / Signer
-              </button>
+              <app-stage-document-sign-action
+                buttonClass="btn btn-primary"
+                [context]="buildCahierSignContextPublic(getSelectedInternship()!)"
+                (sign)="approveSelected(cahier); closeDocDetails()"
+              />
+            </div>
+          </div>
+        </ng-container>
+        <ng-container *ngIf="!getCahierItem(selectedDocStageId!)">
+          <div class="modal-header">
+            <div>
+              <h2 style="margin:0;font-size:1.15rem">Cahier de stage — signatures</h2>
+              <p style="margin:4px 0 0;color:var(--text-muted,#64748b);font-size:0.9rem">
+                {{ getSelectedInternship()?.stagiaireNom || '—' }}
+              </p>
+            </div>
+            <button type="button" class="btn-close" (click)="closeDocDetails()">✕</button>
+          </div>
+          <div class="form">
+            <app-stage-document-signatures-block
+              [actors]="getSignatureActorsForDoc(selectedDocStageId!, 'cahier-stage')"
+            />
+            <div class="doc-pdf-action-block"
+                 [class.doc-pdf-action-block--available]="isPdfAvailable(selectedDocStageId!, 'cahier-stage')">
+              <span class="doc-pdf-action-block__message">
+                <ng-container *ngIf="isPdfAvailable(selectedDocStageId!, 'cahier-stage'); else cahierPdfLockedAlt">
+                  ✓ {{ getPdfAvailableMessage('cahier-stage') }}
+                </ng-container>
+                <ng-template #cahierPdfLockedAlt>
+                  <strong>Document non disponible au format PDF.</strong>
+                  {{ getPdfHint(selectedDocStageId!, 'cahier-stage') }}
+                </ng-template>
+              </span>
+              <button
+                type="button"
+                class="btn btn-primary btn-sm"
+                [disabled]="!isPdfAvailable(selectedDocStageId!, 'cahier-stage')"
+                [title]="getPdfButtonTitle(selectedDocStageId!, 'cahier-stage')"
+                (click)="downloadPdf(selectedDocStageId!, 'cahier-stage'); closeDocDetails()"
+              >Télécharger PDF</button>
+            </div>
+            <div class="inline-actions">
+              <button type="button" class="btn btn-secondary" (click)="closeDocDetails()">Fermer</button>
             </div>
           </div>
         </ng-container>

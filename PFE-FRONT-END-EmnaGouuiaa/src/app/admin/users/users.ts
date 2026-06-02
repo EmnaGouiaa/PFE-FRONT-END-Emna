@@ -1,6 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { personNameErrorMessage, personNameValidators } from '../../shared/validators/person-name.validators';
 import { RouterModule } from '@angular/router';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { timeout } from 'rxjs/operators';
@@ -47,15 +48,9 @@ export class Users implements OnInit {
   formSubmitAttempted = false;
   fieldErrors: FieldErrors = {};
 
-  // Role change modal state
-  showRoleChangeModal = false;
-  roleChangeUser: User | null = null;
-  roleChangeOriginalRole = '';
-  selectedNewRole = '';
-  isChangingRole = false;
-
   // Delete in progress (id of the user being deleted, null if idle)
   deletingUserId: number | null = null;
+  deletingSignatureUserId: number | null = null;
 
   roles = [
     { value: 'ALL', label: 'Tous les roles' },
@@ -68,10 +63,8 @@ export class Users implements OnInit {
   ];
 
   /**
-   * Roles available in the create/edit form and role-change modal.
-   * RESPONSABLE_ENTREPRISE and ENCADRANT_PROFESSIONNEL are intentionally
-   * excluded — they must be created exclusively via the "Entreprises &
-   * responsables" section, always linked to an existing company.
+   * Roles disponibles uniquement a la creation d'un compte (non modifiables ensuite).
+   * RESPONSABLE_ENTREPRISE et ENCADRANT_PROFESSIONNEL sont exclus — creation via Entreprises.
    */
   assignableRoles = [
     { value: RoleUtilisateur.ADMINISTRATEUR, label: 'Administrateur' },
@@ -94,8 +87,8 @@ export class Users implements OnInit {
 
   initForm(): void {
     this.userForm = this.fb.group({
-      prenom: ['', [Validators.required, Validators.minLength(2)]],
-      nom: ['', [Validators.required, Validators.minLength(2)]],
+      prenom: ['', personNameValidators()],
+      nom: ['', personNameValidators()],
       email: ['', [Validators.required, strictEmailValidator()]],
       telephone: ['', [phoneValidator()]],
       role: [RoleUtilisateur.STAGIAIRE, Validators.required],
@@ -421,6 +414,12 @@ export class Users implements OnInit {
     this.updateStagiaireValidators(normalizedRole);
   }
 
+  hasSignature(user: User | null): boolean {
+    const url = String(user?.urlSignature ?? '').trim();
+    const fileName = String(user?.nomFichierSignature ?? '').trim();
+    return !!url || !!fileName;
+  }
+
   closeForm(): void {
     this.showForm = false;
     this.isEditMode = false;
@@ -428,6 +427,7 @@ export class Users implements OnInit {
     this.selectedUser = null;
     this.formSubmitAttempted = false;
     this.fieldErrors = {};
+    this.deletingSignatureUserId = null;
     this.userForm.reset();
     this.userForm.get('email')?.enable({ emitEvent: false });
     this.userForm.get('role')?.enable({ emitEvent: false });
@@ -650,6 +650,59 @@ export class Users implements OnInit {
     });
   }
 
+  deleteUserSignature(user: User): void {
+    if (!user || !user.id || this.deletingSignatureUserId !== null) {
+      return;
+    }
+
+    if (!this.hasSignature(user)) {
+      this.snackBar.open('Aucune signature a supprimer pour cet utilisateur.', 'Fermer', { duration: 3500 });
+      return;
+    }
+
+    const fullName = `${user.prenom ?? ''} ${user.nom ?? ''}`.trim() || user.email || `Utilisateur #${user.id}`;
+    const confirmation = window.confirm(
+      `Confirmer la suppression definitive de la signature de ${fullName} ?\n\n`
+      + `L'utilisateur devra ensuite televerser une nouvelle signature depuis son profil.`
+    );
+    if (!confirmation) {
+      return;
+    }
+
+    this.deletingSignatureUserId = user.id;
+    this.clearFeedback();
+
+    this.userManagementService.deleteUserSignature(user.id).pipe(
+      timeout(15000)
+    ).subscribe({
+      next: (updatedUser) => {
+        try {
+          const success = (updatedUser as any)?.message?.trim()
+            || 'Signature supprimee avec succes.';
+          this.successMessage = success;
+          this.upsertUserInState(updatedUser);
+          if (this.selectedUser?.id === updatedUser.id) {
+            this.selectedUser = { ...updatedUser };
+          }
+          this.snackBar.open(success, 'Fermer', { duration: 4000 });
+        } finally {
+          this.deletingSignatureUserId = null;
+        }
+      },
+      error: (error) => {
+        try {
+          this.errorMessage = this.extractErrorMessage(
+            error,
+            "Echec de la suppression de la signature de l'utilisateur."
+          );
+          this.snackBar.open(this.errorMessage, 'Fermer', { duration: 5000 });
+        } finally {
+          this.deletingSignatureUserId = null;
+        }
+      }
+    });
+  }
+
   getFieldError(fieldName: string): string {
     if (this.fieldErrors[fieldName]) {
       return this.fieldErrors[fieldName];
@@ -659,6 +712,9 @@ export class Users implements OnInit {
     if (!control || !(control.touched || this.formSubmitAttempted)) {
       return '';
     }
+
+    const personNameMessage = personNameErrorMessage(control.errors);
+    if (personNameMessage) return personNameMessage;
 
     if (control.errors?.['required']) {
       if (fieldName === 'filiereId') return 'La filiere est obligatoire.';
@@ -694,57 +750,6 @@ export class Users implements OnInit {
       default:
         return 'badge-default';
     }
-  }
-
-  openRoleChangeModal(user: User): void {
-    const normalized = this.normalizeRole((user as any).role);
-    this.roleChangeUser = { ...user };
-    this.selectedNewRole = normalized;
-    this.roleChangeOriginalRole = normalized;
-    this.showRoleChangeModal = true;
-    this.clearFeedback();
-  }
-
-  cancelRoleChange(): void {
-    this.roleChangeUser = null;
-    this.selectedNewRole = '';
-    this.roleChangeOriginalRole = '';
-    this.showRoleChangeModal = false;
-    this.isChangingRole = false;
-  }
-
-  confirmRoleChange(): void {
-    if (!this.roleChangeUser || !this.selectedNewRole || this.isChangingRole) return;
-
-    this.isChangingRole = true;
-    this.clearFeedback();
-
-    const userId = this.roleChangeUser.id;
-    const fullName = `${this.roleChangeUser.prenom ?? ''} ${this.roleChangeUser.nom ?? ''}`.trim();
-
-    this.userManagementService.changeUserRole(userId, this.selectedNewRole).pipe(
-      timeout(15000)
-    ).subscribe({
-      next: (updatedUser) => {
-        try {
-          this.successMessage = (updatedUser as any).message?.trim()
-            || `Role mis a jour avec succes pour ${fullName}.`;
-          this.upsertUserInState(updatedUser);
-          this.snackBar.open(this.successMessage, 'Fermer', { duration: 3500 });
-          this.cancelRoleChange();
-        } finally {
-          this.isChangingRole = false;
-        }
-      },
-      error: (error) => {
-        try {
-          this.errorMessage = this.extractErrorMessage(error, 'Echec du changement de role.');
-          this.snackBar.open(this.errorMessage, 'Fermer', { duration: 4500 });
-        } finally {
-          this.isChangingRole = false;
-        }
-      }
-    });
   }
 
   getRoleLabel(role: string): string {

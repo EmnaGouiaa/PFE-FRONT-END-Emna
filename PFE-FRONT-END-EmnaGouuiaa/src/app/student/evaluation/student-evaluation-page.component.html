@@ -41,7 +41,7 @@
     <div class="detail-grid" *ngIf="evaluation">
       <div class="detail-item">
         <span class="label">Note finale</span>
-        <span class="value">{{ evaluation.noteFinale ?? 'Non renseignée' }}</span>
+        <span class="value">{{ evaluation.noteFinale != null ? (evaluation.noteFinale | number:'1.1-1') + ' / 5' : 'Non renseignée' }}</span>
       </div>
       <div class="detail-item">
         <span class="label">État de la fiche</span>

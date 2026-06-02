@@ -33,10 +33,15 @@
         Aucune réunion n'est actuellement retournée pour cette entreprise.
       </div>
 
-      <div class="info-list" *ngIf="meetings.length > 0">
+      <div class="panel-header" *ngIf="meetings.length > 0" style="margin-top: 1rem">
+        <h3>À venir</h3>
+        <span class="status-pill status-neutral">{{ upcomingMeetings.length }}</span>
+      </div>
+      <div class="empty-card" *ngIf="meetings.length > 0 && !upcomingMeetings.length">Aucune réunion à venir.</div>
+      <div class="info-list" *ngIf="upcomingMeetings.length > 0">
         <article
           class="info-item"
-          *ngFor="let meeting of meetings"
+          *ngFor="let meeting of upcomingMeetings"
         >
           <div class="panel-header">
             <div>
@@ -47,7 +52,7 @@
               </div>
             </div>
             <span class="status-pill" [class.status-warning]="meeting.source === 'FINALE'" [class.status-neutral]="meeting.source !== 'FINALE'">
-              {{ meeting.source }}
+              {{ getMeetingTypeLabel(meeting) }}
             </span>
           </div>
 
@@ -66,6 +71,41 @@
             </div>
           </div>
 
+          <div class="inline-actions">
+            <button type="button" class="btn btn-secondary" (click)="openMeetingDetails(meeting)">Détails</button>
+          </div>
+        </article>
+      </div>
+
+      <div class="panel-header" *ngIf="meetings.length > 0" style="margin-top: 1.5rem">
+        <h3>Historique</h3>
+        <span class="status-pill status-neutral">{{ pastMeetings.length }}</span>
+      </div>
+      <div class="empty-card" *ngIf="meetings.length > 0 && !pastMeetings.length">Aucune réunion passée.</div>
+      <div class="info-list" *ngIf="pastMeetings.length > 0">
+        <article class="info-item" *ngFor="let meeting of pastMeetings">
+          <div class="panel-header">
+            <div>
+              <div class="info-title">{{ getMeetingTypeLabel(meeting) }} - {{ meeting.numReunion || 'Sans numéro' }}</div>
+              <div class="info-meta">
+                Stage: {{ meeting.stageTitre || '-' }}
+                <span *ngIf="meeting.stagiaireNom"> | Stagiaire: {{ meeting.stagiaireNom }}</span>
+              </div>
+            </div>
+            <span class="status-pill" [class.status-warning]="meeting.source === 'FINALE'" [class.status-neutral]="meeting.source !== 'FINALE'">
+              {{ getMeetingTypeLabel(meeting) }}
+            </span>
+          </div>
+          <div class="offer-card-meta compact-grid">
+            <div class="offer-meta-item">
+              <span class="label">Date</span>
+              <span class="value">{{ meeting.date || '-' }}</span>
+            </div>
+            <div class="offer-meta-item">
+              <span class="label">Heure</span>
+              <span class="value">{{ meeting.heure || '-' }}</span>
+            </div>
+          </div>
           <div class="inline-actions">
             <button type="button" class="btn btn-secondary" (click)="openMeetingDetails(meeting)">Détails</button>
           </div>
@@ -97,7 +137,15 @@
           </div>
           <div class="detail-item">
             <span class="label">Stagiaire</span>
-            <span class="value">{{ selectedMeeting.stagiaireNom || '-' }}</span>
+            <span class="value">{{ meetingLabel(selectedMeeting.stagiaireNom) }}</span>
+          </div>
+          <div class="detail-item">
+            <span class="label">Créateur de la réunion</span>
+            <span class="value">{{ getMeetingCreatorName(selectedMeeting) }} ({{ getMeetingCreatorTypeLabel(selectedMeeting) }})</span>
+          </div>
+          <div class="detail-item">
+            <span class="label">Responsable entreprise</span>
+            <span class="value">{{ getMeetingCompanySupervisorName(selectedMeeting) }}</span>
           </div>
           <div class="detail-item">
             <span class="label">Date</span>
@@ -107,7 +155,7 @@
             <span class="label">Heure</span>
             <span class="value">{{ selectedMeeting.heure || '-' }}</span>
           </div>
-          <div class="detail-item full-width">
+          <div class="detail-item full-width" *ngIf="showsMeetingObservation(selectedMeeting)">
             <span class="label">Observation</span>
             <span class="value">{{ selectedMeeting.observation || '-' }}</span>
           </div>

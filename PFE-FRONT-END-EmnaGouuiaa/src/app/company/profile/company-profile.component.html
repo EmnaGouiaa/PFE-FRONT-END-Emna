@@ -35,12 +35,12 @@
         <div>
           <label>Prénom</label>
           <input class="input" formControlName="prenom" [readonly]="!isEditingProfile" [class.readonly-input]="!isEditingProfile" />
-          <div class="field-error" *ngIf="isProfileInvalid('prenom')">Le prénom est requis.</div>
+          <div class="field-error" *ngIf="getProfileFieldError('prenom')">{{ getProfileFieldError('prenom') }}</div>
         </div>
         <div>
           <label>Nom</label>
           <input class="input" formControlName="nom" [readonly]="!isEditingProfile" [class.readonly-input]="!isEditingProfile" />
-          <div class="field-error" *ngIf="isProfileInvalid('nom')">Le nom est requis.</div>
+          <div class="field-error" *ngIf="getProfileFieldError('nom')">{{ getProfileFieldError('nom') }}</div>
         </div>
         <div>
           <label>Téléphone</label>
@@ -166,7 +166,8 @@
         </div>
         <div>
           <label>E-mail</label>
-          <input class="input" type="email" formControlName="emailEntreprise" [readonly]="!isEditingCompany" [class.readonly-input]="!isEditingCompany" />
+          <input class="input" type="email" formControlName="emailEntreprise" readonly class="readonly-input" />
+          <p class="field-hint">L'email de l'entreprise ne peut pas etre modifie apres la creation.</p>
           <div class="field-error" *ngIf="isCompanyInvalid('emailEntreprise')">Saisissez une adresse e-mail valide.</div>
         </div>
         <div>

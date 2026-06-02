@@ -10,7 +10,8 @@
         type="button"
         class="btn btn-primary pdf-btn"
         (click)="telechargerPdf()"
-        [disabled]="telechargementEnCours"
+        [disabled]="telechargementEnCours || !canDownloadEvaluationPdf()"
+        [title]="canDownloadEvaluationPdf() ? 'Télécharger la fiche en PDF' : evaluationPdfBlockReason"
       >
         <span *ngIf="telechargementEnCours">Génération en cours…</span>
         <span *ngIf="!telechargementEnCours">Télécharger PDF</span>
@@ -23,9 +24,20 @@
   </header>
 
   <div *ngIf="messageErreur" class="alert alert-error">{{ messageErreur }}</div>
+  <div
+    *ngIf="evaluation && !canDownloadEvaluationPdf() && evaluationPdfBlockReason"
+    class="alert alert-info"
+  >
+    {{ evaluationPdfBlockReason }}
+  </div>
   <div *ngIf="chargement" class="loading">Chargement de l'évaluation…</div>
 
-  <section class="content-grid" *ngIf="!chargement">
+  <div *ngIf="!chargement && !evaluationAccessible" class="alert alert-info">
+    {{ evaluationUnavailableMessage }}
+    <span *ngIf="stageStatut"> (statut actuel : {{ stageStatut }})</span>
+  </div>
+
+  <section class="content-grid" *ngIf="!chargement && evaluationAccessible">
 
     <!-- Aucune fiche -->
     <article class="panel" *ngIf="!evaluation">
@@ -57,7 +69,7 @@
           </div>
           <div class="detail-item">
             <span class="label">Note finale</span>
-            <span class="value note-finale">{{ evaluation.noteFinale != null ? (evaluation.noteFinale | number:'1.2-2') + ' / 20' : '—' }}</span>
+            <span class="value note-finale">{{ evaluation.noteFinale != null ? (evaluation.noteFinale | number:'1.1-1') + ' / 5' : '—' }}</span>
           </div>
           <div class="detail-item">
             <span class="label">Signatures complètes</span>
@@ -145,28 +157,22 @@
             <thead>
               <tr>
                 <th class="col-critere">Critère évalué</th>
-                <th class="col-center">Note obtenue</th>
-                <th class="col-center">Barème</th>
-                <th class="col-center">Coefficient</th>
-                <th class="col-center">Score pondéré</th>
+                <th class="col-center">Note</th>
+                <th class="col-commentaire">Commentaire</th>
               </tr>
             </thead>
             <tbody>
               <tr *ngFor="let note of evaluation.notesAttribuees; let i = index" [class.row-alt]="i % 2 === 1">
                 <td>{{ note.critereLibelle || '—' }}</td>
-                <td class="col-center note-val">{{ note.note ?? '—' }}</td>
-                <td class="col-center">{{ note.bareme ?? 5 }}</td>
-                <td class="col-center">{{ note.poids ?? '—' }}</td>
-                <td class="col-center score-val">
-                  {{ note.scorePondere != null ? (note.scorePondere | number:'1.2-2') : '—' }}
-                </td>
+                <td class="col-center note-val">{{ note.note != null ? note.note + ' / 5' : '—' }}</td>
+                <td>{{ note.commentaire?.trim() || '—' }}</td>
               </tr>
             </tbody>
             <tfoot>
               <tr class="note-finale-row">
-                <td colspan="4" class="note-finale-label">NOTE FINALE (Somme des scores pondérés)</td>
+                <td colspan="2" class="note-finale-label">NOTE FINALE (moyenne sur 5)</td>
                 <td class="col-center note-finale-val">
-                  {{ evaluation.noteFinale != null ? (evaluation.noteFinale | number:'1.2-2') + ' / 20' : '—' }}
+                  {{ evaluation.noteFinale != null ? (evaluation.noteFinale | number:'1.1-1') + ' / 5' : '—' }}
                 </td>
               </tr>
             </tfoot>

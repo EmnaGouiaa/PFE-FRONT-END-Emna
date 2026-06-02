@@ -2,37 +2,55 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { EnqueteStageDto, EnqueteService } from '../../services/enquete.service';
 import { StagePeriodService } from '../../services/stage-period.service';
+import { SatisfactionSurveyPageShellComponent } from '../satisfaction-survey/satisfaction-survey-page-shell.component';
+import { SatisfactionSurveyStateViewComponent } from '../satisfaction-survey/satisfaction-survey-state-view.component';
+import {
+  buildPendingSurveyDto,
+  resolveSatisfactionSurveyView,
+  SatisfactionSurveyViewModel
+} from '../satisfaction-survey/satisfaction-survey-state.model';
 
 /**
- * Page dédiée à la consultation et réponse à l'enquête de satisfaction.
- * Accessible aux rôles : STAGIAIRE, ENCADRANT_PROFESSIONNEL,
- * ENCADRANT_ACADEMIQUE, RESPONSABLE_ENTREPRISE.
- *
- * Flux nominal :
- *   1. Résolution du stageId de l'utilisateur connecté (via StagePeriodService).
- *   2. Appel à GET /api/enquete/stage/{stageId} qui applique la règle des 7 jours.
- *   3. Affichage selon le statut retourné par le backend :
- *        "Ouverte"        → bouton "Répondre à l'enquête" actif
- *        "Fermée"         → "La période de réponse à l'enquête est expirée."
- *        "En attente"     → "L'enquête sera accessible à la fin de votre stage."
- *        "Désactivée"     → "L'enquête est temporairement désactivée."
- *        "Non configurée" → "L'enquête n'est pas encore configurée."
- *
- * Sécurité :
- *   - L'URL du formulaire n'est transmise par le backend QUE si la fenêtre est active.
- *   - GET /api/enquete/acteur ne retourne plus l'URL (masquée côté backend).
- *   - Aucun contournement possible via un autre endpoint.
+ * Page enquête de satisfaction — stagiaire, encadrants, etc.
+ * Présentation unifiée via les composants partagés satisfaction-survey.
  */
 @Component({
   selector: 'app-enquete-user-page',
   standalone: true,
-  imports: [CommonModule],
-  templateUrl: './enquete-user-page.component.html',
-  styleUrls: ['./enquete-user-page.component.css']
+  imports: [
+    CommonModule,
+    SatisfactionSurveyPageShellComponent,
+    SatisfactionSurveyStateViewComponent
+  ],
+  template: `
+    <app-satisfaction-survey-page-shell
+      [isLoading]="isLoading"
+      [errorMessage]="errorMessage"
+      (refresh)="load()"
+    >
+      <app-satisfaction-survey-state-view
+        *ngIf="viewModel"
+        [viewModel]="viewModel"
+        [formOpened]="formOpened"
+        [showInfoBlock]="true"
+        (respond)="ouvrirFormulaire()"
+      />
+
+      <div class="enq-empty" *ngIf="!viewModel">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="40" height="40" aria-hidden="true">
+          <path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/>
+          <path d="M9 5a3 3 0 0 1 6 0"/>
+        </svg>
+        <p>Aucune enquête de satisfaction n'est disponible pour le moment.</p>
+      </div>
+    </app-satisfaction-survey-page-shell>
+  `,
+  styleUrls: ['../satisfaction-survey/satisfaction-survey.shared.css']
 })
 export class EnqueteUserPageComponent implements OnInit {
 
   enquete: EnqueteStageDto | null = null;
+  viewModel: SatisfactionSurveyViewModel | null = null;
   isLoading = false;
   errorMessage = '';
   formOpened = false;
@@ -51,28 +69,21 @@ export class EnqueteUserPageComponent implements OnInit {
     this.errorMessage = '';
     this.formOpened = false;
     this.enquete = null;
+    this.viewModel = null;
 
-    // Étape 1 : résoudre le stageId de l'utilisateur
     this.stagePeriodService.getRelevantStageIdForEnquete().subscribe({
       next: (stageId) => {
         if (!stageId) {
-          // Aucun stage trouvé → afficher état "En attente" sans URL
-          this.enquete = {
-            titre: 'Enquête de satisfaction',
-            description: '',
-            urlFormulaire: '',
-            statut: 'En attente',
-            sectionEnqueteOuverte: false,
-            message: "Aucun stage actif trouvé. L'enquête sera accessible après la fin de votre stage."
-          };
+          this.enquete = buildPendingSurveyDto();
+          this.viewModel = resolveSatisfactionSurveyView(this.enquete, { showInfoBlock: false });
           this.isLoading = false;
           return;
         }
 
-        // Étape 2 : appeler /api/enquete/stage/{id} pour obtenir le statut calculé
         this.enqueteService.getEnqueteParStage(stageId).subscribe({
           next: (data) => {
             this.enquete = data;
+            this.viewModel = resolveSatisfactionSurveyView(data, { showInfoBlock: true });
             this.isLoading = false;
           },
           error: (err) => {
@@ -88,64 +99,28 @@ export class EnqueteUserPageComponent implements OnInit {
     });
   }
 
-  // ── Computed ─────────────────────────────────────────────────────────────
-
-  /** true si la fenêtre de 7 jours est expirée (statut "Fermée"). */
-  get isExpired(): boolean {
-    return this.enquete?.statut === 'Fermée';
-  }
-
-  /** true si l'enquête est ouverte ET que l'URL est valide. */
-  get isOpen(): boolean {
-    return this.enquete?.sectionEnqueteOuverte === true && this.urlValide;
-  }
-
-  /** true si l'URL fournie par le backend est un lien http(s) valide. */
-  get urlValide(): boolean {
-    const url = (this.enquete?.urlFormulaire ?? '').trim();
-    if (!url) return false;
-    try {
-      const p = new URL(url);
-      return p.protocol === 'http:' || p.protocol === 'https:';
-    } catch {
-      return false;
-    }
-  }
-
-  get statusLabel(): string {
-    return this.enquete?.statut ?? '';
-  }
-
-  get statusClass(): string {
-    switch (this.enquete?.statut) {
-      case 'Ouverte':        return 'badge-open';
-      case 'Fermée':         return 'badge-closed';
-      case 'Désactivée':     return 'badge-closed';
-      case 'Non configurée': return 'badge-warning';
-      default:               return 'badge-neutral';
-    }
-  }
-
-  // ── Actions ──────────────────────────────────────────────────────────────
-
-  /** Ouvre le formulaire dans un nouvel onglet (session conservée). */
   ouvrirFormulaire(): void {
-    if (!this.urlValide || !this.isOpen) return;
-    window.open(this.enquete!.urlFormulaire!, '_blank', 'noopener,noreferrer');
+    if (!this.viewModel?.canRespond || !this.enquete?.urlFormulaire) {
+      return;
+    }
+    window.open(this.enquete.urlFormulaire, '_blank', 'noopener,noreferrer');
     this.formOpened = true;
   }
 
-  // ── Helpers ──────────────────────────────────────────────────────────────
-
-  private describeError(err: any): string {
-    if (err?.status === 401)
-      return 'E3 — Votre session a expiré. Veuillez vous reconnecter.';
-    if (err?.status === 403)
-      return 'E3 — Vous n\'êtes pas autorisé à consulter cette enquête.';
-    if (err?.status === 404)
-      return 'E1 — Stage introuvable ou enquête non configurée.';
-    if (err?.status === 0 || err?.status >= 500)
-      return 'E2 — Impossible d\'accéder au serveur. Vérifiez votre connexion Internet.';
+  private describeError(err: unknown): string {
+    const status = (err as { status?: number })?.status;
+    if (status === 401) {
+      return 'Votre session a expiré. Veuillez vous reconnecter.';
+    }
+    if (status === 403) {
+      return "Vous n'êtes pas autorisé à consulter cette enquête.";
+    }
+    if (status === 404) {
+      return 'Stage introuvable ou enquête non configurée.';
+    }
+    if (status === 0 || (status ?? 0) >= 500) {
+      return "Impossible d'accéder au serveur. Vérifiez votre connexion Internet.";
+    }
     return 'Problème de connexion. Veuillez réessayer.';
   }
 }

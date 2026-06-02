@@ -4,6 +4,16 @@ import { forkJoin, Observable, of } from 'rxjs';
 import { catchError, map } from 'rxjs/operators';
 import { API_BASE_URL } from '../api.config';
 import { CompanyMeeting } from './company.models';
+import {
+  normalizeMeetingDate,
+  normalizeMeetingHeure,
+  resolveMeetingSourceFromApi
+} from '../../utils/meeting-schedule.util';
+import {
+  normalizeParticipantNames,
+  pickMeetingCompanySupervisorName,
+  pickMeetingCreatorFields
+} from '../../utils/meeting-display.util';
 
 @Injectable({ providedIn: 'root' })
 export class CompanyMeetingsService {
@@ -45,33 +55,23 @@ export class CompanyMeetingsService {
   private normalizeMeeting(raw: any): CompanyMeeting {
     return {
       id: Number(raw?.id ?? 0),
-      source: this.resolveMeetingSource(raw),
+      source: resolveMeetingSourceFromApi(raw, 'HEBDOMADAIRE'),
       numReunion: String(raw?.numReunion ?? ''),
-      date: String(raw?.date ?? ''),
-      heure: String(raw?.heure ?? ''),
+      date: normalizeMeetingDate(raw?.date),
+      heure: normalizeMeetingHeure(raw?.heure),
       observation: String(raw?.observation ?? ''),
       compteRendu: String(raw?.compteRendu ?? ''),
       stageId: Number(raw?.stageId ?? raw?.stage?.id ?? 0),
       stageTitre: String(raw?.stageTitre ?? raw?.stage?.titre ?? ''),
       stagiaireNom: String(raw?.stagiaireNom ?? ''),
       entrepriseNom: String(raw?.entrepriseNom ?? ''),
+      ...pickMeetingCreatorFields(raw),
+      companySupervisorName: pickMeetingCompanySupervisorName(raw),
       participantIds: Array.isArray(raw?.participantIds) ? raw.participantIds.map((item: unknown) => Number(item)) : [],
+      participantNames: normalizeParticipantNames(raw?.participantNoms ?? raw?.participantNames),
       note: this.normalizeNullableNumber(raw?.note),
       urlFormSatisfaction: String(raw?.urlFormSatisfaction ?? '')
     };
-  }
-
-  private resolveMeetingSource(raw: any): 'HEBDOMADAIRE' | 'FINALE' {
-    const candidates = [raw?.typeReunion, raw?.reunionType, raw?.discriminator, raw?.type];
-    const normalized = candidates
-      .map((value) => String(value ?? '').trim().toUpperCase())
-      .find((value) => value.length > 0);
-
-    if (normalized === 'FINALE' || normalized === 'FINAL') {
-      return 'FINALE';
-    }
-
-    return 'HEBDOMADAIRE';
   }
 
   private extractCollection(raw: any): any[] {

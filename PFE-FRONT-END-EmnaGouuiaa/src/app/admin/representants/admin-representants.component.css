@@ -26,6 +26,17 @@
   z-index: 1;
 }
 
+.field-hint {
+  margin: 6px 0 0;
+  color: var(--text-muted, #64748b);
+  font-size: 0.82rem;
+}
+
+.readonly-input {
+  background: rgba(15, 23, 42, 0.04);
+  cursor: default;
+}
+
 .table {
   min-width: 860px;
 }

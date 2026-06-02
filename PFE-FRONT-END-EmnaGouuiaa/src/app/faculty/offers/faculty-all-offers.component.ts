@@ -4,6 +4,13 @@ import { FormsModule } from '@angular/forms';
 import { timeout } from 'rxjs/operators';
 import { FacultyPortalService } from '../../services/faculty/faculty-portal.service';
 import { FacultyOffer } from '../../services/faculty/faculty.models';
+import {
+  canFacultyEditOffer,
+  canShowFacultyOfferEditActions,
+  isFacultyOfferApproved,
+  isFacultyOfferLockedForEdit,
+} from './faculty-offer-actions.util';
+import { validateStagePeriod } from '../../shared/validators/stage-period.validation';
 
 interface OfferEditDraft {
   titre: string;
@@ -30,7 +37,8 @@ interface OfferEditDraft {
       </header>
 
       <div class="support-banner">
-        Les offres déjà affectées restent visibles pour suivi, mais ne peuvent plus être modifiées.
+        Seules les offres au statut <strong>Approuvée</strong> peuvent être modifiées (boutons « Voir détails » et « Modifier »).
+        Les autres statuts sont affichés en consultation, sans action sur la carte.
       </div>
 
       <div *ngIf="errorMessage" class="alert alert-error">{{ errorMessage }}</div>
@@ -67,9 +75,9 @@ interface OfferEditDraft {
         <div class="offer-card-grid" *ngIf="filteredOffers.length > 0">
           <article
             class="offer-card"
-            [class.offer-card-disabled]="isLockedOffer(offer)"
+            [class.offer-card-disabled]="!canShowOfferCardActions(offer)"
             *ngFor="let offer of filteredOffers"
-            (click)="openOfferDetails(offer)"
+            (click)="canShowOfferCardActions(offer) && openOfferDetails(offer)"
           >
             <div class="offer-card-top">
               <div style="min-width:0">
@@ -90,11 +98,11 @@ interface OfferEditDraft {
               </div>
             </div>
 
-            <div class="offer-card-foot" *ngIf="isLockedOffer(offer)">
-              <span class="status-pill status-warning">Non modifiable — stage créé ou affectée</span>
+            <div class="offer-card-foot" *ngIf="!canShowOfferCardActions(offer)">
+              <span class="status-pill status-neutral">Consultation seule — modification réservée aux offres approuvées</span>
             </div>
 
-            <div class="inline-actions">
+            <div class="inline-actions" *ngIf="canShowOfferCardActions(offer)">
               <button type="button" class="btn btn-secondary"
                       (click)="openOfferDetails(offer); $event.stopPropagation()">
                 Voir détails
@@ -103,8 +111,8 @@ interface OfferEditDraft {
                 type="button"
                 class="btn btn-primary"
                 (click)="openEditModal(offer); $event.stopPropagation()"
-                [disabled]="isLockedOffer(offer)"
-                [title]="isLockedOffer(offer) ? 'Cette offre ne peut plus être modifiée' : 'Modifier les informations de cette offre'"
+                [disabled]="!canEditOffer(offer)"
+                [title]="getOfferLockTooltip(offer) || 'Modifier les informations de cette offre'"
               >
                 Modifier
               </button>
@@ -148,7 +156,11 @@ interface OfferEditDraft {
                 <span class="label">Validation</span>
                 <span class="value">{{ selectedOffer.valideeParNomComplet || 'En attente de validation' }}</span>
               </div>
-              <div class="detail-item full-width" *ngIf="isLockedOffer(selectedOffer)">
+              <div class="detail-item full-width" *ngIf="isOfferLockedByTerminatedStage(selectedOffer)">
+                <span class="label">État</span>
+                <span class="value">Offre verrouillée (stage terminé)</span>
+              </div>
+              <div class="detail-item full-width" *ngIf="isLockedOffer(selectedOffer) && !isOfferLockedByTerminatedStage(selectedOffer)">
                 <span class="label">État</span>
                 <span class="value">Non modifiable — stage créé ou offre affectée</span>
               </div>
@@ -171,9 +183,10 @@ interface OfferEditDraft {
               <button
                 type="button"
                 class="btn btn-primary"
+                *ngIf="canShowOfferCardActions(selectedOffer)"
                 (click)="openEditModal(selectedOffer); closeOfferDetails()"
-                [disabled]="isLockedOffer(selectedOffer)"
-                [title]="isLockedOffer(selectedOffer) ? 'Cette offre ne peut plus être modifiée' : 'Modifier les informations de cette offre'"
+                [disabled]="!canEditOffer(selectedOffer)"
+                [title]="getOfferLockTooltip(selectedOffer) || 'Modifier les informations de cette offre'"
               >
                 Modifier
               </button>
@@ -203,7 +216,7 @@ interface OfferEditDraft {
                    placeholder="Compétences, niveau requis..." />
 
             <label>Durée (mois)</label>
-            <input class="input" type="number" [(ngModel)]="editDraft.duree" min="1" max="24" />
+            <input class="input" type="number" [(ngModel)]="editDraft.duree" min="1" max="3" />
 
             <label>Date de début prévue</label>
             <input class="input" type="date" [(ngModel)]="editDraft.dateDebutPrevue" />
@@ -286,9 +299,25 @@ export class FacultyAllOffersPageComponent implements OnInit {
     this.showDetailsModal = false;
   }
 
+  canShowOfferCardActions(offer: FacultyOffer): boolean {
+    return canShowFacultyOfferEditActions(offer);
+  }
+
+  isOfferApproved(offer: FacultyOffer): boolean {
+    return isFacultyOfferApproved(offer);
+  }
+
+  canEditOffer(offer: FacultyOffer): boolean {
+    return canFacultyEditOffer(offer);
+  }
+
   openEditModal(offer: FacultyOffer): void {
-    if (this.isLockedOffer(offer)) {
-      this.errorMessage = "Cette offre ne peut plus être modifiée car elle est déjà affectée ou liée à un stage.";
+    if (!this.canShowOfferCardActions(offer)) {
+      this.errorMessage = 'Seules les offres approuvées peuvent être modifiées.';
+      return;
+    }
+    if (!this.canEditOffer(offer)) {
+      this.errorMessage = this.getOfferLockMessage(offer);
       return;
     }
     this.editTargetOffer = offer;
@@ -323,6 +352,12 @@ export class FacultyAllOffersPageComponent implements OnInit {
     }
     if (!this.editDraft.dateDebutPrevue) {
       this.errorMessage = "La date de début est requise.";
+      return;
+    }
+
+    const periodCheck = validateStagePeriod(this.editDraft.dateDebutPrevue, this.editDraft.duree);
+    if (!periodCheck.valid) {
+      this.errorMessage = periodCheck.message ?? 'Période de stage invalide.';
       return;
     }
 
@@ -369,8 +404,27 @@ export class FacultyAllOffersPageComponent implements OnInit {
     return this.offers.filter((offer) => this.isLockedOffer(offer)).length;
   }
 
+  isOfferLockedByTerminatedStage(offer: FacultyOffer): boolean {
+    return offer.stageTermine === true;
+  }
+
   isLockedOffer(offer: FacultyOffer): boolean {
-    return offer.stageCree || offer.statut === 'AFFECTEE';
+    return isFacultyOfferLockedForEdit(offer);
+  }
+
+  getOfferLockMessage(offer: FacultyOffer): string {
+    if (this.isOfferLockedByTerminatedStage(offer)) {
+      return 'Modification impossible : stage terminé';
+    }
+    if (offer.stageCree || offer.statut === 'AFFECTEE') {
+      return "Cette offre ne peut plus être modifiée car elle est déjà affectée ou liée à un stage.";
+    }
+    return '';
+  }
+
+  getOfferLockTooltip(offer: FacultyOffer): string {
+    const message = this.getOfferLockMessage(offer);
+    return message || '';
   }
 
   getOfferStateLabel(offer: FacultyOffer): string {

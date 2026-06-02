@@ -3,8 +3,8 @@
     <div>
       <h1>Encadrants professionnels</h1>
       <p>
-        Gerez les encadrants professionnels rattaches a votre entreprise. Les nouveaux comptes recoivent
-        automatiquement leurs identifiants par email.
+        Consultez les encadrants professionnels de votre entreprise et créez de nouveaux comptes.
+        La modification d'un encadrant existant n'est pas disponible depuis cette interface.
       </p>
     </div>
     <div class="hero-actions">
@@ -28,7 +28,6 @@
               <th>Telephone</th>
               <th>Poste</th>
               <th>Service</th>
-              <th>Actions</th>
             </tr>
           </thead>
           <tbody>
@@ -38,11 +37,6 @@
               <td>{{ supervisor.telephone || '-' }}</td>
               <td>{{ supervisor.poste || '-' }}</td>
               <td>{{ supervisor.service || '-' }}</td>
-              <td class="actions">
-                <button type="button" class="btn btn-secondary" (click)="openEdit(supervisor); $event.stopPropagation()" [disabled]="isSaving">
-                  Modifier
-                </button>
-              </td>
             </tr>
           </tbody>
         </table>
@@ -94,8 +88,8 @@
     <div class="modal" (click)="$event.stopPropagation()">
       <div class="modal-header">
         <div>
-          <h2>{{ isEditMode ? 'Modifier un encadrant' : 'Creer un encadrant' }}</h2>
-          <p class="modal-subtitle" *ngIf="!isEditMode">
+          <h2>Creer un encadrant</h2>
+          <p class="modal-subtitle">
             Le mot de passe est genere automatiquement et envoye par email a l'encadrant professionnel.
           </p>
         </div>
@@ -139,7 +133,7 @@
           </div>
         </div>
 
-        <div class="form-note" *ngIf="!isEditMode">
+        <div class="form-note">
           L'entreprise de l'encadrant est rattachee automatiquement a votre compte. Aucun mot de passe manuel n'est demande.
         </div>
 
@@ -147,7 +141,7 @@
           <button type="button" class="btn btn-secondary" (click)="closeForm()" [disabled]="isSaving">Annuler</button>
           <button type="submit" class="btn btn-primary" [disabled]="isSaving">
             <span class="btn-spinner" *ngIf="isSaving"></span>
-            {{ isSaving ? (isEditMode ? 'Mise a jour...' : 'Creation...') : 'Enregistrer' }}
+            {{ isSaving ? 'Creation...' : 'Creer' }}
           </button>
         </div>
       </form>

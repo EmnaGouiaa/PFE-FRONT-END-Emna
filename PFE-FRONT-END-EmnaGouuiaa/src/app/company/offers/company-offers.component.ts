@@ -1,102 +1,19 @@
 import { Component, HostListener, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { AbstractControl, FormBuilder, FormGroup, ReactiveFormsModule, ValidationErrors, Validators } from '@angular/forms';
+import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
+import {
+  STAGE_MAX_DURATION_MONTHS,
+  STAGE_MIN_DURATION_MONTHS,
+  maxDurationMonthsForStartDate,
+  notPastDateValidator,
+  stagePeriodValidator,
+  validateStagePeriod,
+} from '../../shared/validators/stage-period.validation';
 import { timeout } from 'rxjs/operators';
 import { CompanyContextService } from '../../services/company/company-context.service';
 import { CompanyOffersService } from '../../services/company/company-offers.service';
 import { ProfessionalSupervisorsService } from '../../services/company/professional-supervisors.service';
 import { CompanyContext, CompanyOffer, CompanyOfferPayload, ProfessionalSupervisor } from '../../services/company/company.models';
-
-/**
- * Validateur de groupe : verifie qu'une offre respecte sa periode academique.
- *
- * Periode 1 (Stage academique) : debut ∈ [1 fev, 31 mai], duree ≤ 4 mois, fin ≤ 1 juin.
- * Periode 2 (Stage ete)          : debut ∈ [1 juin, 31 aout], duree ≤ 2 mois, fin ≤ 1 sept.
- *
- * Toute autre periode de debut est rejetee. La date de fin est calculee en ajoutant
- * "duree" mois calendaires a la date de debut. La regle est aussi appliquee cote backend
- * (validateStagePeriod) — ce validator frontend evite l'aller-retour reseau.
- *
- * En cas d'echec, renvoie { stagePeriod: { message: string } } afin que le template
- * puisse afficher un message clair sous le champ Durée.
- */
-export function stagePeriodValidator(group: AbstractControl): ValidationErrors | null {
-  const dateCtrl = group.get('dateDebutPrevue');
-  const dureeCtrl = group.get('duree');
-  if (!dateCtrl || !dureeCtrl) return null;
-
-  const dateValue = dateCtrl.value;
-  const dureeValue = dureeCtrl.value;
-  if (!dateValue || dureeValue == null || dureeValue === '') return null;
-
-  const dateDebut = new Date(dateValue);
-  if (Number.isNaN(dateDebut.getTime())) return null;
-
-  const duree = Number(dureeValue);
-  if (!Number.isFinite(duree) || duree < 1) return null;
-
-  const month = dateDebut.getMonth() + 1; // 1-12
-  const inPeriod1 = month >= 2 && month <= 5;
-  const inPeriod2 = month >= 6 && month <= 8;
-
-  if (!inPeriod1 && !inPeriod2) {
-    return {
-      stagePeriod: {
-        message:
-          'La date de début doit être comprise dans une période académique valide : ' +
-          'Période 1 (1er février → 1er juin) ou Période 2 (1er juin → 1er septembre).'
-      }
-    };
-  }
-
-  const year = dateDebut.getFullYear();
-  const maxEnd = inPeriod1 ? new Date(year, 5, 1) : new Date(year, 8, 1); // 1 juin / 1 sept (mois 0-based)
-  const maxDuration = inPeriod1 ? 4 : 2;
-  const periodLabel = inPeriod1 ? 'Période 1 (Stage académique)' : 'Période 2 (Stage été)';
-
-  if (duree > maxDuration) {
-    return {
-      stagePeriod: {
-        message: `${periodLabel} : la durée maximale autorisée est de ${maxDuration} mois.`
-      }
-    };
-  }
-
-  // Date de fin = debut + duree mois calendaires.
-  const dateFin = new Date(dateDebut);
-  dateFin.setMonth(dateFin.getMonth() + duree);
-
-  if (dateFin > maxEnd) {
-    const fmt = (d: Date) => d.toLocaleDateString('fr-FR');
-    return {
-      stagePeriod: {
-        message:
-          `${periodLabel} : la date de fin calculée (${fmt(dateFin)}) dépasse ` +
-          `la limite autorisée (${fmt(maxEnd)}).`
-      }
-    };
-  }
-  return null;
-}
-
-/**
- * Refuse une date de début prévue antérieure à la date du jour (comparaison en jours,
- * indépendante de l'heure). La règle est aussi appliquée côté backend.
- */
-export function notPastDateValidator(control: AbstractControl): ValidationErrors | null {
-  const value = control.value;
-  if (!value) {
-    return null; // le caractère obligatoire est géré par Validators.required
-  }
-  const selected = new Date(value);
-  if (Number.isNaN(selected.getTime())) {
-    return null;
-  }
-  selected.setHours(0, 0, 0, 0);
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  return selected < today ? { pastDate: true } : null;
-}
 
 @Component({
   selector: 'app-company-offers-page',
@@ -148,7 +65,7 @@ export class CompanyOffersPageComponent implements OnInit {
       titre: ['', [Validators.required, Validators.minLength(3)]],
       descriptionMissions: ['', [Validators.required, Validators.minLength(10)]],
       profilRecherche: ['', [Validators.required, Validators.minLength(2)]],
-      duree: [null, [Validators.required, Validators.min(1), Validators.max(4)]],
+      duree: [null, [Validators.required, Validators.min(STAGE_MIN_DURATION_MONTHS)]],
       dateDebutPrevue: ['', [Validators.required, notPastDateValidator]],
       encadrantProId: [null, Validators.required]
     }, { validators: [stagePeriodValidator] });
@@ -241,6 +158,12 @@ export class CompanyOffersPageComponent implements OnInit {
   }
 
   /** Date du jour au format YYYY-MM-DD (local) pour l'attribut min du champ date. */
+  /** Plafond de durée selon la date de début saisie (3 mois période 1, 2 mois période 2). */
+  get maxDureeForForm(): number {
+    const fromDate = maxDurationMonthsForStartDate(this.offerForm?.get('dateDebutPrevue')?.value);
+    return fromDate ?? STAGE_MAX_DURATION_MONTHS;
+  }
+
   get todayIso(): string {
     const d = new Date();
     const month = String(d.getMonth() + 1).padStart(2, '0');
@@ -304,6 +227,10 @@ export class CompanyOffersPageComponent implements OnInit {
   }
 
   openEdit(offer: CompanyOffer): void {
+    if (!this.canEdit(offer)) {
+      this.errorMessage = this.getEditDisabledReason(offer) ?? 'Modification impossible.';
+      return;
+    }
     this.selectedOffer = offer;
     this.isEditMode = true;
     this.showForm = true;
@@ -437,7 +364,14 @@ export class CompanyOffersPageComponent implements OnInit {
     });
   }
 
+  isOfferLockedByTerminatedStage(offer: CompanyOffer): boolean {
+    return offer.stageTermine === true;
+  }
+
   canEdit(offer: CompanyOffer): boolean {
+    if (this.isOfferLockedByTerminatedStage(offer)) {
+      return false;
+    }
     // Etats finaux ou refus definitif : aucune modification.
     if (offer.statut === 'TERMINEE' || offer.statut === 'ARCHIVEE' || offer.statut === 'FERMEE') {
       return false;
@@ -467,6 +401,9 @@ export class CompanyOffersPageComponent implements OnInit {
 
   /** Motif explique a l'utilisateur (tooltip ou banniere) quand l'edition est restreinte. */
   getEditDisabledReason(offer: CompanyOffer): string | null {
+    if (this.isOfferLockedByTerminatedStage(offer)) {
+      return 'Modification impossible : stage terminé';
+    }
     if (offer.statut === 'TERMINEE' || offer.statut === 'ARCHIVEE') {
       return 'Offre terminée — lecture seule, plus aucune modification possible.';
     }
@@ -511,7 +448,14 @@ export class CompanyOffersPageComponent implements OnInit {
     return this.getAssignDisabledReason(offer) === null;
   }
 
+  canCloseOffer(offer: CompanyOffer): boolean {
+    return !this.isOfferLockedByTerminatedStage(offer);
+  }
+
   getAssignDisabledReason(offer: CompanyOffer): string | null {
+    if (this.isOfferLockedByTerminatedStage(offer)) {
+      return 'Modification impossible : stage terminé';
+    }
     if (offer.stageCree) {
       return 'Stage deja cree';
     }
@@ -568,7 +512,43 @@ export class CompanyOffersPageComponent implements OnInit {
   }
 
   canCancelAssignment(offer: CompanyOffer): boolean {
-    return offer.stageCree || offer.statut === 'AFFECTEE';
+    if (offer.annulationAffectationAutorisee === true) {
+      return true;
+    }
+    if (offer.annulationAffectationAutorisee === false) {
+      return false;
+    }
+    if (offer.stageTermine || offer.statutSujet === 'VALIDEE') {
+      return false;
+    }
+    if (!offer.affectationActive && offer.statut !== 'AFFECTEE' && !offer.stageCree) {
+      return false;
+    }
+    const dateDebut = offer.dateDebutPrevue?.trim();
+    if (!dateDebut) {
+      return offer.affectationActive ?? offer.statut === 'AFFECTEE';
+    }
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const debut = new Date(dateDebut);
+    debut.setHours(0, 0, 0, 0);
+    return !Number.isNaN(debut.getTime()) && debut.getTime() > today.getTime();
+  }
+
+  getCancelAssignmentDisabledReason(offer: CompanyOffer): string {
+    if (this.canCancelAssignment(offer)) {
+      return '';
+    }
+    if (offer.stageTermine) {
+      return 'Le stage est terminé : annulation impossible.';
+    }
+    if (offer.statutSujet === 'VALIDEE') {
+      return 'Le sujet a été validé par l\'encadrant académique : annulation impossible.';
+    }
+    if (offer.dateDebutPrevue) {
+      return 'La date de début du stage est atteinte ou passée : annulation impossible.';
+    }
+    return 'Aucune affectation annulable pour cette offre.';
   }
 
   assignStudent(): void {
@@ -604,7 +584,8 @@ export class CompanyOffersPageComponent implements OnInit {
 
   cancelAssignment(offer: CompanyOffer): void {
     if (!this.canCancelAssignment(offer)) {
-      this.errorMessage = "Aucune affectation active trouvee pour cette offre.";
+      this.errorMessage = this.getCancelAssignmentDisabledReason(offer)
+        || "Aucune affectation active trouvee pour cette offre.";
       return;
     }
 

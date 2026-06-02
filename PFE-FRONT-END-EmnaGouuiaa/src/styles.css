@@ -542,3 +542,58 @@ a {
     font-size: 0.84rem;
   }
 }
+
+.faculty-internship-detail-dialog .mat-mdc-dialog-container {
+  border-radius: 24px;
+  overflow: hidden;
+  box-shadow: 0 28px 64px rgba(15, 76, 129, 0.18);
+}
+
+/* Suivi des stages — panneaux déroulants des filtres (overlay CDK, hors composant) */
+.cdk-overlay-pane .internships-filter-select-panel.mat-mdc-select-panel,
+.cdk-overlay-pane .internships-filter-select-panel .mdc-menu-surface {
+  background: #ffffff !important;
+  background-color: #ffffff !important;
+}
+
+.cdk-overlay-pane .internships-filter-select-panel.mat-mdc-select-panel {
+  border-radius: 14px !important;
+  border: 1px solid rgba(15, 76, 129, 0.12) !important;
+  box-shadow:
+    0 18px 40px rgba(15, 76, 129, 0.14),
+    0 4px 12px rgba(15, 76, 129, 0.08) !important;
+  padding: 6px 0 !important;
+  margin-top: 4px;
+  max-height: 320px !important;
+  overflow: hidden !important;
+}
+
+.cdk-overlay-pane .internships-filter-select-panel .mat-mdc-option {
+  min-height: 44px;
+  padding: 0 16px !important;
+  color: #0f172a !important;
+  font-size: 0.92rem;
+  font-weight: 500;
+}
+
+.cdk-overlay-pane .internships-filter-select-panel .mat-mdc-option .mdc-list-item__primary-text {
+  color: #0f172a !important;
+}
+
+.cdk-overlay-pane .internships-filter-select-panel .mat-mdc-option:hover:not(.mdc-list-item--disabled),
+.cdk-overlay-pane .internships-filter-select-panel .mat-mdc-option.mat-mdc-option-active {
+  background: rgba(21, 131, 109, 0.1) !important;
+}
+
+.cdk-overlay-pane .internships-filter-select-panel .mat-mdc-option.mdc-list-item--selected:not(.mdc-list-item--disabled) {
+  background: rgba(15, 76, 129, 0.1) !important;
+}
+
+.cdk-overlay-pane .internships-filter-select-panel .mat-mdc-option.mdc-list-item--selected:not(.mdc-list-item--disabled) .mdc-list-item__primary-text {
+  color: #0f4c81 !important;
+  font-weight: 700;
+}
+
+.cdk-overlay-pane .internships-filter-select-panel .mat-pseudo-checkbox {
+  color: #15836d !important;
+}

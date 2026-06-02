@@ -5,6 +5,8 @@ import { switchMap } from 'rxjs/operators';
 import { ProfileCompletionService } from '../services/profile-completion.service';
 import { DonneesProfil, ServiceProfilService } from '../services/service-profil.service';
 import { PhoneInputComponent } from './phone-input/phone-input.component';
+import { birthDateNotInFutureValidator, birthDateErrorMessage } from '../shared/validators/birth-date.validators';
+import { personNameErrorMessage, personNameValidators } from '../shared/validators/person-name.validators';
 
 @Component({
   selector: 'app-profile-management',
@@ -72,8 +74,8 @@ export class ProfileManagementComponent implements OnInit {
   initialiserFormulaires(): void {
     this.formulaireProfil = this.fb.group({
       email: ['', [Validators.required, Validators.email, Validators.maxLength(150)]],
-      prenom: ['', [Validators.required, Validators.minLength(2)]],
-      nom: ['', [Validators.required, Validators.minLength(2)]],
+      prenom: ['', personNameValidators()],
+      nom: ['', personNameValidators()],
       telephone: ['', [Validators.maxLength(20)]],
       adresse: [''],
       poste: [''],
@@ -81,7 +83,7 @@ export class ProfileManagementComponent implements OnInit {
       specialite: [''],
       grade: [''],
       matricule: [''],
-      dateNaiss: [''],
+      dateNaiss: ['', [birthDateNotInFutureValidator()]],
       // Pas de limite de longueur : la valeur peut être une image encodée en Base-64
       nomFichierSignature: ['']
     });
@@ -227,6 +229,26 @@ export class ProfileManagementComponent implements OnInit {
   champInvalide(formulaire: FormGroup, nomChamp: string): boolean {
     const control = formulaire.get(nomChamp);
     return Boolean(control && control.invalid && (control.touched || control.dirty));
+  }
+
+  messageChamp(formulaire: FormGroup, nomChamp: string): string {
+    const control = formulaire.get(nomChamp);
+    if (!this.champInvalide(formulaire, nomChamp) || !control) {
+      return '';
+    }
+    if (nomChamp === 'nom' || nomChamp === 'prenom') {
+      return personNameErrorMessage(control.errors);
+    }
+    if (nomChamp === 'dateNaiss') {
+      return birthDateErrorMessage(control.errors);
+    }
+    if (nomChamp === 'email' && control.errors?.['email']) {
+      return 'Saisissez une adresse e-mail valide.';
+    }
+    if (nomChamp === 'telephone' && control.errors) {
+      return 'Numéro de téléphone invalide.';
+    }
+    return '';
   }
 
   activerEditionProfil(): void {
@@ -385,6 +407,10 @@ export class ProfileManagementComponent implements OnInit {
     return this.serviceProfil.formaterDate(date);
   }
 
+  isServiceLockedForRole(): boolean {
+    return this.profil?.role === 'RESPONSABLE_STAGE';
+  }
+
   private extraireMessageErreur(err: any, fallback: string): string {
     if (typeof err?.error === 'string' && err.error.trim()) {
       return err.error;
@@ -450,7 +476,9 @@ export class ProfileManagementComponent implements OnInit {
       telephone: valeurs.telephone,
       adresse: valeurs.adresse,
       poste: this.afficherChampSpecifique('poste') ? valeurs.poste : undefined,
-      service: this.afficherChampSpecifique('service') ? valeurs.service : undefined,
+      service: this.afficherChampSpecifique('service') && !this.isServiceLockedForRole()
+        ? valeurs.service
+        : undefined,
       specialite: this.afficherChampSpecifique('specialite') ? valeurs.specialite : undefined,
       grade: this.afficherChampSpecifique('grade') ? valeurs.grade : undefined,
       matricule: this.afficherChampSpecifique('matricule') ? valeurs.matricule : undefined,

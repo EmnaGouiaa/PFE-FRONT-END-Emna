@@ -153,13 +153,13 @@
               <label class="profile-field">
                 <span class="profile-field-label">Prénom</span>
                 <input type="text" class="input" formControlName="prenom" [readonly]="!modeEditionProfil" [class.readonly-input]="!modeEditionProfil" />
-                <span class="field-error" *ngIf="champInvalide(formulaireProfil, 'prenom')">Le prénom doit contenir au moins 2 caractères.</span>
+                <span class="field-error" *ngIf="messageChamp(formulaireProfil, 'prenom')">{{ messageChamp(formulaireProfil, 'prenom') }}</span>
               </label>
 
               <label class="profile-field">
                 <span class="profile-field-label">Nom</span>
                 <input type="text" class="input" formControlName="nom" [readonly]="!modeEditionProfil" [class.readonly-input]="!modeEditionProfil" />
-                <span class="field-error" *ngIf="champInvalide(formulaireProfil, 'nom')">Le nom doit contenir au moins 2 caractères.</span>
+                <span class="field-error" *ngIf="messageChamp(formulaireProfil, 'nom')">{{ messageChamp(formulaireProfil, 'nom') }}</span>
               </label>
 
               <label class="profile-field">
@@ -176,6 +176,7 @@
               <label class="profile-field" *ngIf="afficherChampSpecifique('dateNaiss')">
                 <span class="profile-field-label">Date de naissance</span>
                 <input type="date" class="input" formControlName="dateNaiss" [readonly]="!modeEditionProfil" [class.readonly-input]="!modeEditionProfil" />
+                <span class="field-error" *ngIf="messageChamp(formulaireProfil, 'dateNaiss')">{{ messageChamp(formulaireProfil, 'dateNaiss') }}</span>
               </label>
 
               <label class="profile-field" *ngIf="afficherChampSpecifique('matricule')">
@@ -195,7 +196,13 @@
 
               <label class="profile-field" *ngIf="afficherChampSpecifique('service')">
                 <span class="profile-field-label">Service</span>
-                <input type="text" class="input" formControlName="service" [readonly]="!modeEditionProfil" [class.readonly-input]="!modeEditionProfil" />
+                <input
+                  type="text"
+                  class="input"
+                  formControlName="service"
+                  [readonly]="!modeEditionProfil || isServiceLockedForRole()"
+                  [class.readonly-input]="!modeEditionProfil || isServiceLockedForRole()"
+                />
               </label>
 
               <label class="profile-field" *ngIf="afficherChampSpecifique('specialite')">

@@ -1,0 +1,432 @@
+:host {
+  display: block;
+}
+
+.enquete-page {
+  max-width: 860px;
+  margin: 0 auto;
+  padding: 28px 24px;
+}
+
+.enquete-page--wide {
+  max-width: 1040px;
+}
+
+.enq-hero {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  padding: 24px 28px;
+  border-radius: 22px;
+  background: rgba(255, 255, 255, 0.85);
+  border: 1px solid rgba(16, 71, 120, 0.1);
+  box-shadow: 0 8px 24px rgba(16, 71, 120, 0.07);
+  margin-bottom: 22px;
+  backdrop-filter: blur(6px);
+}
+
+.enq-hero__content {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+}
+
+.enq-hero__icon {
+  flex-shrink: 0;
+  width: 52px;
+  height: 52px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 16px;
+  background: linear-gradient(135deg, rgba(16, 71, 120, 0.12), rgba(37, 150, 190, 0.18));
+  color: #1a3a6e;
+}
+
+.enq-hero__title {
+  margin: 0;
+  font-size: 1.75rem;
+  font-weight: 900;
+  color: #0f172a;
+}
+
+.enq-hero__subtitle {
+  margin: 6px 0 0;
+  color: #64748b;
+  font-size: 0.95rem;
+  font-weight: 500;
+  max-width: 560px;
+  line-height: 1.55;
+}
+
+.enq-loading {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 18px;
+  color: #64748b;
+  font-weight: 600;
+}
+
+.enq-spinner {
+  width: 18px;
+  height: 18px;
+  border: 2.5px solid rgba(16, 71, 120, 0.15);
+  border-top-color: #1a3a6e;
+  border-radius: 50%;
+  animation: enq-spin 0.7s linear infinite;
+}
+
+@keyframes enq-spin {
+  to { transform: rotate(360deg); }
+}
+
+.enq-alert {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 14px 16px;
+  border-radius: 14px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  margin-bottom: 18px;
+}
+
+.enq-alert--error {
+  background: rgba(220, 38, 38, 0.07);
+  border: 1px solid rgba(220, 38, 38, 0.18);
+  color: #9f1239;
+}
+
+.enq-alert svg {
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.enq-body {
+  display: grid;
+  gap: 18px;
+}
+
+/* ── Carte d'état unifiée ───────────────────────────────────────────────── */
+
+.enq-state-card {
+  padding: 28px;
+  border-radius: 22px;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  background: rgba(255, 255, 255, 0.95);
+  box-shadow: 0 12px 32px rgba(15, 23, 42, 0.07);
+  display: grid;
+  gap: 18px;
+}
+
+.enq-state-card--active {
+  border-color: rgba(37, 150, 190, 0.28);
+  background: linear-gradient(160deg, #f0f9ff 0%, #f8fcff 100%);
+}
+
+.enq-state-card--not_open_yet {
+  border-color: rgba(234, 179, 8, 0.3);
+  background: linear-gradient(160deg, rgba(254, 252, 232, 0.95) 0%, #fffbeb 100%);
+}
+
+.enq-state-card--unavailable {
+  border-color: rgba(148, 163, 184, 0.22);
+  background: linear-gradient(160deg, #f8fafc 0%, #f1f5f9 100%);
+}
+
+.enq-state-card--closed {
+  border-color: rgba(220, 38, 38, 0.24);
+  background: linear-gradient(160deg, rgba(254, 242, 242, 0.95) 0%, #fff5f5 100%);
+}
+
+.enq-state-card__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.enq-state-card__icon {
+  width: 52px;
+  height: 52px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 16px;
+}
+
+.enq-state-card__icon--active {
+  background: rgba(37, 150, 190, 0.14);
+  color: #0e7490;
+}
+
+.enq-state-card__icon--not_open_yet {
+  background: rgba(234, 179, 8, 0.14);
+  color: #92400e;
+}
+
+.enq-state-card__icon--unavailable {
+  background: rgba(148, 163, 184, 0.16);
+  color: #475569;
+}
+
+.enq-state-card__icon--closed {
+  background: rgba(220, 38, 38, 0.1);
+  color: #b91c1c;
+}
+
+.enq-state-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 12px;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  border: 1px solid transparent;
+}
+
+.enq-state-badge--active {
+  background: rgba(37, 150, 190, 0.12);
+  border-color: rgba(37, 150, 190, 0.25);
+  color: #0e7490;
+}
+
+.enq-state-badge--pending {
+  background: rgba(234, 179, 8, 0.12);
+  border-color: rgba(234, 179, 8, 0.28);
+  color: #854d0e;
+}
+
+.enq-state-badge--unavailable {
+  background: rgba(148, 163, 184, 0.14);
+  border-color: rgba(148, 163, 184, 0.22);
+  color: #475569;
+}
+
+.enq-state-badge--closed {
+  background: rgba(220, 38, 38, 0.1);
+  border-color: rgba(220, 38, 38, 0.22);
+  color: #991b1b;
+}
+
+.enq-state-card__body {
+  display: grid;
+  gap: 10px;
+}
+
+.enq-state-card__title {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: #0f172a;
+}
+
+.enq-state-card__desc {
+  margin: 0;
+  color: #475569;
+  font-size: 0.95rem;
+  line-height: 1.6;
+  font-weight: 500;
+}
+
+.enq-state-card__detail {
+  margin: 0;
+  padding: 10px 14px;
+  border-radius: 10px;
+  background: rgba(15, 76, 129, 0.06);
+  border-left: 3px solid rgba(15, 76, 129, 0.28);
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: #334155;
+  line-height: 1.55;
+}
+
+.enq-state-card__survey {
+  margin-top: 4px;
+  padding-top: 14px;
+  border-top: 1px solid rgba(15, 23, 42, 0.08);
+}
+
+.enq-state-card__survey-title {
+  margin: 0 0 6px;
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: #0f172a;
+}
+
+.enq-state-card__survey-desc {
+  margin: 0;
+  color: #64748b;
+  font-size: 0.9rem;
+  line-height: 1.55;
+}
+
+.enq-state-card__action {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.enq-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px 24px;
+  border-radius: 12px;
+  border: none;
+  font-size: 0.95rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.18s, transform 0.1s;
+}
+
+.enq-btn--primary {
+  background: linear-gradient(135deg, #1a3a6e 0%, #2563eb 100%);
+  color: #fff;
+  box-shadow: 0 4px 14px rgba(26, 58, 110, 0.22);
+  align-self: flex-start;
+}
+
+.enq-btn--primary:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 18px rgba(26, 58, 110, 0.3);
+}
+
+.enq-btn--secondary {
+  background: rgba(15, 23, 42, 0.06);
+  color: #334155;
+  border: 1px solid rgba(15, 23, 42, 0.1);
+  padding: 9px 18px;
+  font-size: 0.88rem;
+}
+
+.enq-btn--secondary:hover {
+  background: rgba(15, 23, 42, 0.1);
+}
+
+.enq-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none !important;
+}
+
+.enq-hint {
+  font-size: 0.83rem;
+  color: #64748b;
+  margin: 0;
+}
+
+.enq-confirmation {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 18px;
+  border-radius: 14px;
+  background: rgba(22, 163, 74, 0.08);
+  border: 1px solid rgba(22, 163, 74, 0.2);
+  color: #15803d;
+  font-weight: 700;
+  font-size: 0.9rem;
+}
+
+.enq-confirmation svg {
+  flex-shrink: 0;
+}
+
+.enq-info-block {
+  padding: 20px 22px;
+  border-radius: 18px;
+  background: rgba(241, 245, 249, 0.8);
+  border: 1px solid rgba(15, 23, 42, 0.07);
+}
+
+.enq-info-block__title {
+  margin: 0 0 12px;
+  font-size: 0.9rem;
+  font-weight: 800;
+  color: #334155;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.enq-info-list {
+  margin: 0;
+  padding-left: 1.3rem;
+  display: grid;
+  gap: 6px;
+}
+
+.enq-info-list li {
+  color: #64748b;
+  font-size: 0.88rem;
+  line-height: 1.5;
+}
+
+.enq-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 40px 24px;
+  border-radius: 18px;
+  background: rgba(248, 250, 252, 0.9);
+  border: 1px dashed rgba(15, 23, 42, 0.1);
+  text-align: center;
+  color: #94a3b8;
+}
+
+.enq-empty p {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+
+.enq-section-divider {
+  margin: 28px 0 18px;
+  padding-top: 22px;
+  border-top: 1px solid rgba(15, 23, 42, 0.08);
+}
+
+.enq-section-divider h2 {
+  margin: 0 0 6px;
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: #0f172a;
+}
+
+.enq-section-divider p {
+  margin: 0;
+  font-size: 0.88rem;
+  color: #64748b;
+}
+
+@media (max-width: 640px) {
+  .enquete-page {
+    padding: 16px;
+  }
+
+  .enq-hero {
+    padding: 18px;
+    flex-direction: column;
+  }
+
+  .enq-hero__title {
+    font-size: 1.4rem;
+  }
+
+  .enq-state-card {
+    padding: 20px;
+  }
+
+  .enq-btn--primary {
+    width: 100%;
+    justify-content: center;
+  }
+}

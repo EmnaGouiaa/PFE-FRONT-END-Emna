@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { StudentAgreement, StudentInternship } from '../../services/student/student.models';
 import { StudentPortalService } from '../../services/student/student-portal.service';
+import { isConventionSigningPermitted } from '../../shared/stage-documents/stage-document-signature-eligibility.util';
 
 @Component({
   selector: 'app-student-agreement-page',
@@ -52,15 +53,29 @@ export class StudentAgreementPageComponent implements OnInit {
     }
   }
 
+  canSignAgreement(): boolean {
+    if (!this.agreement || this.agreement.signeeStagiaire || !this.selectedInternship) {
+      return false;
+    }
+    return isConventionSigningPermitted({
+      stageStatut: this.selectedInternship.statut,
+      dateDebut: this.selectedInternship.dateDebut,
+      allSignaturesComplete: this.agreement.statutSignatures,
+    });
+  }
+
   signAgreement(): void {
-    if (!this.agreement || this.agreement.signeeStagiaire) return;
+    const agreement = this.agreement;
+    if (!agreement || !this.canSignAgreement()) {
+      return;
+    }
     if (!window.confirm('Confirmer la signature de la convention de stage ?')) return;
 
     this.isSigning = true;
     this.errorMessage = '';
     this.successMessage = '';
 
-    this.studentPortalService.signAgreementAsStudent(this.agreement.id).subscribe({
+    this.studentPortalService.signAgreementAsStudent(agreement.id).subscribe({
       next: (agreement) => {
         this.agreement = agreement;
         this.successMessage = 'La convention a été signée avec succès.';

@@ -4,6 +4,17 @@ import { timeout } from 'rxjs/operators';
 import { CompanyContextService } from '../../services/company/company-context.service';
 import { CompanyMeetingsService } from '../../services/company/company-meetings.service';
 import { CompanyContext, CompanyMeeting } from '../../services/company/company.models';
+import {
+  getMeetingTimestamp,
+  meetingShowsObservation,
+  splitMeetingsBySchedule
+} from '../../utils/meeting-schedule.util';
+import {
+  meetingDisplayValue,
+  resolveMeetingCompanySupervisorName,
+  resolveMeetingCreatorName,
+  resolveMeetingCreatorTypeLabel
+} from '../../utils/meeting-display.util';
 
 @Component({
   selector: 'app-company-meetings-page',
@@ -49,7 +60,9 @@ export class CompanyMeetingsPageComponent implements OnInit {
           .pipe(timeout(15000))
           .subscribe({
             next: (meetings) => {
-              this.meetings = meetings;
+              this.meetings = [...meetings].sort(
+                (left, right) => getMeetingTimestamp(left) - getMeetingTimestamp(right)
+              );
               this.selectedMeeting = null;
               this.isLoading = false;
             },
@@ -83,5 +96,47 @@ export class CompanyMeetingsPageComponent implements OnInit {
       return '-';
     }
     return meeting.source === 'FINALE' ? 'Réunion finale' : 'Réunion hebdomadaire';
+  }
+
+  getMeetingCreatorName(meeting: CompanyMeeting | null): string {
+    if (!meeting) {
+      return 'Non renseigné';
+    }
+    const contextStage = {
+      companySupervisor: {
+        fullName: `${this.context?.responsable?.prenom ?? ''} ${this.context?.responsable?.nom ?? ''}`.trim()
+      }
+    };
+    return resolveMeetingCreatorName(meeting, contextStage);
+  }
+
+  getMeetingCreatorTypeLabel(meeting: CompanyMeeting | null): string {
+    return meeting ? resolveMeetingCreatorTypeLabel(meeting.typeEncadrantCreateur) : 'Non renseigné';
+  }
+
+  getMeetingCompanySupervisorName(meeting: CompanyMeeting | null): string {
+    if (!meeting) {
+      return 'Non renseigné';
+    }
+    const contextStage = {
+      companySupervisor: {
+        fullName: `${this.context?.responsable?.prenom ?? ''} ${this.context?.responsable?.nom ?? ''}`.trim()
+      }
+    };
+    return resolveMeetingCompanySupervisorName(meeting.companySupervisorName, contextStage);
+  }
+
+  meetingLabel(value: string | null | undefined): string {
+    return meetingDisplayValue(value);
+  }
+
+  readonly showsMeetingObservation = meetingShowsObservation;
+
+  get upcomingMeetings(): CompanyMeeting[] {
+    return splitMeetingsBySchedule(this.meetings).upcoming;
+  }
+
+  get pastMeetings(): CompanyMeeting[] {
+    return splitMeetingsBySchedule(this.meetings).past;
   }
 }

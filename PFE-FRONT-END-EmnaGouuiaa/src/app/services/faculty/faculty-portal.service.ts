@@ -5,6 +5,16 @@ import { catchError, map, tap } from 'rxjs/operators';
 import { getJsonOptional$ } from '../http-optional-body';
 import { API_BASE_URL } from '../api.config';
 import {
+  facultyStageSuiviLabel,
+  resolveFacultyStageSuiviStatut,
+} from './faculty-stage-status.util';
+import { isStageEligibleForStageDocuments } from '../../shared/stage-documents/stage-documents-eligibility.util';
+import {
+  normalizeParticipantNames,
+  pickMeetingCompanySupervisorName,
+  pickMeetingCreatorFields
+} from '../../utils/meeting-display.util';
+import {
   FacultyAcademicSupervisor,
   FacultyAcademicSupervisorAssignmentResult,
   FacultyAgreement,
@@ -20,6 +30,7 @@ import {
   FacultyUserRef,
   StatutDocument
 } from './faculty.models';
+import { normalizeDocumentSignatoriesApi } from '../../shared/stage-documents/stage-document-signatures.util';
 
 @Injectable({ providedIn: 'root' })
 export class FacultyPortalService {
@@ -36,9 +47,13 @@ export class FacultyPortalService {
 
   constructor(private http: HttpClient) {}
 
-  listInternships(): Observable<FacultyInternship[]> {
+  listInternships(statutSuivi?: string): Observable<FacultyInternship[]> {
+    const params: Record<string, string> = {};
+    if (statutSuivi && statutSuivi !== 'ALL') {
+      params['statutSuivi'] = statutSuivi;
+    }
     return this.http
-      .get<any[]>(this.stagesUrl)
+      .get<any[]>(this.stagesUrl, { params })
       .pipe(map((items) => (items ?? []).map((item) => this.normalizeInternship(item))));
   }
 
@@ -217,7 +232,13 @@ export class FacultyPortalService {
   listStageDocuments(): Observable<FacultyStageDocumentsOverview[]> {
     return this.http
       .get<any[]>(`${this.stagesUrl}/documents`)
-      .pipe(map((items) => (items ?? []).map((item) => this.normalizeStageDocumentsOverview(item))));
+      .pipe(
+        map((items) =>
+          (items ?? [])
+            .map((item) => this.normalizeStageDocumentsOverview(item))
+            .filter((item) => isStageEligibleForStageDocuments(item.stageStatut))
+        )
+      );
   }
 
   getStageDocuments(stageId: number): Observable<FacultyStageDocumentsOverview> {
@@ -323,6 +344,13 @@ export class FacultyPortalService {
       nbSemaine: this.normalizeNullableNumber(raw?.nbSemaine),
       niveauSouhaite: String(raw?.niveauSouhaite ?? ''),
       statut: String(raw?.statut ?? ''),
+      statutSuivi: String(
+        raw?.statutSuivi ?? resolveFacultyStageSuiviStatut(raw?.statut ?? '')
+      ),
+      statutSuiviLibelle: String(
+        raw?.statutSuiviLibelle
+          ?? facultyStageSuiviLabel(String(raw?.statutSuivi ?? raw?.statut ?? ''))
+      ),
       statutSujet: String(raw?.statutSujet ?? ''),
       trelloBoardUrl: String(raw?.trelloBoardUrl ?? ''),
       conventionId: this.normalizeNullableNumber(raw?.conventionDeStage?.id),
@@ -384,7 +412,10 @@ export class FacultyPortalService {
       stageTitre: String(raw?.stageTitre ?? ''),
       studentName: String(raw?.stagiaireNom ?? ''),
       companyName: String(raw?.entrepriseNom ?? ''),
+      ...pickMeetingCreatorFields(raw),
+      companySupervisorName: pickMeetingCompanySupervisorName(raw),
       participantIds: Array.isArray(raw?.participantIds) ? raw.participantIds.map((item: unknown) => Number(item)) : [],
+      participantNames: normalizeParticipantNames(raw?.participantNoms ?? raw?.participantNames),
       note: this.normalizeNullableNumber(raw?.note),
       urlFormSatisfaction: String(raw?.urlFormSatisfaction ?? ''),
       titreEnqueteSatisfaction: String(raw?.titreEnqueteSatisfaction ?? ''),
@@ -492,7 +523,7 @@ export class FacultyPortalService {
       stageTitre: String(raw?.stageTitre ?? ''),
       stageStatut: String(raw?.stageStatut ?? ''),
       dateDebut: String(raw?.dateDebut ?? ''),
-      dateFin: String(raw?.dateFin ?? ''),
+      dateFin: String(raw?.dateFinStage ?? raw?.dateFin ?? ''),
       stagiaireNom: String(raw?.stagiaireNom ?? ''),
       entrepriseNom: String(raw?.entrepriseNom ?? ''),
       encadrantAcademiqueNom: String(raw?.encadrantAcademiqueNom ?? ''),
@@ -519,6 +550,7 @@ export class FacultyPortalService {
       raisonAbsence: String(raw?.raisonAbsence ?? ''),
       signeeParResponsableUniversitaire: Boolean(raw?.signeeParResponsableUniversitaire),
       dateSignatureResponsableUniversitaire: String(raw?.dateSignatureResponsableUniversitaire ?? ''),
+      signataires: normalizeDocumentSignatoriesApi(raw?.signataires),
       statutDocument: (raw?.statutDocument ?? null) as StatutDocument | null
     };
   }
@@ -541,6 +573,8 @@ export class FacultyPortalService {
       valideeParId: this.normalizeNullableNumber(raw?.valideeParId),
       valideeParNomComplet: String(raw?.valideeParNomComplet ?? ''),
       stageCree: Boolean(raw?.stageCree),
+      dateFinStage: String(raw?.dateFinStage ?? ''),
+      stageTermine: Boolean(raw?.stageTermine),
       affectable: Boolean(raw?.affectable)
     };
   }

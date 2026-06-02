@@ -135,7 +135,7 @@
 
           <td>
             <span [class]="badgeClass(d.statutValidationResponsableStages || StatutValidation.EN_ATTENTE)">
-              {{ d.statutValidationResponsableStages || StatutValidation.EN_ATTENTE }}
+              {{ formatValidationStatus(d.statutValidationResponsableStages) }}
             </span>
           </td>
 

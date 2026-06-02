@@ -249,7 +249,7 @@
         <section class="health-card">
           <div class="card-header">
             <h2>Cahier de stage</h2>
-            <span class="pill" [class.soft]="report">{{ report ? 'Disponible' : 'À générer' }}</span>
+            <span class="pill" [class.soft]="canOpenLogbookPdf">{{ getLogbookPillLabel() }}</span>
           </div>
 
           <div class="message-info" *ngIf="reportInfoMessage">{{ reportInfoMessage }}</div>
@@ -271,10 +271,24 @@
             </div>
           </div>
           <div class="detail-actions">
-            <button type="button" class="btn btn-secondary" (click)="generateLogbook()" [disabled]="isGeneratingLogbook || !canGenerateLogbook">
-              {{ isGeneratingLogbook ? 'Génération...' : 'Générer / synchroniser' }}
+            <a
+              *ngIf="selectedInternship"
+              class="btn btn-secondary"
+              [routerLink]="['/stages/journal-de-bord', selectedInternship.id]"
+            >
+              Détail
+            </a>
+            <button type="button" class="btn btn-primary" (click)="openLogbookPdf()" [disabled]="!canOpenLogbookPdf">PDF</button>
+            <button
+              type="button"
+              class="btn btn-primary"
+              (click)="signLogbook()"
+              *ngIf="report?.id"
+              [disabled]="!canSignStudentLogbook()"
+              [title]="getStudentLogbookSignTooltip()"
+            >
+              Signer
             </button>
-            <button type="button" class="btn btn-primary" (click)="openLogbookPdf()" [disabled]="!canOpenLogbookPdf">Ouvrir PDF</button>
           </div>
         </section>
       </div>

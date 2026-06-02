@@ -1,10 +1,15 @@
 import { Component, OnInit } from '@angular/core';
-import { FormBuilder, FormGroup, Validators, FormControl } from '@angular/forms';
+import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { ServiceDemandeStageService, DemandeStageDTO } from '../services/service-demande-stage.service';
 import { Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule } from '@angular/forms';
 import { PhoneInputComponent } from './phone-input/phone-input.component';
+import { personNamePatternValidator } from '../shared/validators/person-name.validators';
+import {
+  stagePeriodValidator,
+  validateStagePeriodWithEndDate,
+} from '../shared/validators/stage-period.validation';
 
 @Component({
   selector: 'app-internship-request-form',
@@ -46,7 +51,7 @@ export class InternshipRequestFormComponent implements OnInit {
     });
 
     this.infoEncadrant = this.fb.group({
-      nomEncadrant: ['', [Validators.required, Validators.maxLength(100)]],
+      nomEncadrant: ['', [Validators.required, Validators.maxLength(100), personNamePatternValidator()]],
       emailEncadrant: ['', [Validators.required, Validators.email]],
       telephoneEncadrant: ['', [Validators.pattern('^[+]?[0-9]{8,15}$')]],
       posteEncadrant: ['', [Validators.maxLength(100)]]
@@ -56,8 +61,8 @@ export class InternshipRequestFormComponent implements OnInit {
       sujetStage: ['', [Validators.required, Validators.maxLength(200)]],
       descriptionStage: ['', [Validators.maxLength(2000)]],
       dateDebut: ['', Validators.required],
-      dateFin: ['', Validators.required]
-    });
+      dateFin: ['', Validators.required],
+    }, { validators: [stagePeriodValidator] });
   }
 
   nextStep(): void {
@@ -73,9 +78,22 @@ export class InternshipRequestFormComponent implements OnInit {
   }
 
   onSubmit(): void {
+    this.infoEntreprise.markAllAsTouched();
+    this.infoEncadrant.markAllAsTouched();
+    this.detailsStage.markAllAsTouched();
+
+    const periodCheck = validateStagePeriodWithEndDate(
+      this.detailsStage.get('dateDebut')?.value,
+      this.detailsStage.get('dateFin')?.value
+    );
+    if (!periodCheck.valid) {
+      alert(periodCheck.message ?? 'Période de stage invalide.');
+      return;
+    }
+
     if (this.infoEntreprise.valid && this.infoEncadrant.valid && this.detailsStage.valid) {
       this.soumissionEnCours = true;
-      
+
       const demande: DemandeStageDTO = {
         ...this.infoEntreprise.value,
         ...this.infoEncadrant.value,

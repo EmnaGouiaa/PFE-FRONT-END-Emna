@@ -50,8 +50,10 @@ export interface SupervisorMeeting {
   companyName: string;
   typeEncadrantCreateur: string;
   nomEncadrantCreateur: string;
+  encadrantCreateurId: number | null;
+  companySupervisorName: string;
   participantIds: number[];
-  participantNames?: string[];
+  participantNames: string[];
   note: number | null;
   urlFormSatisfaction: string;
 }
@@ -61,12 +63,27 @@ export interface SupervisorMeetingPayload {
   numReunion?: string;
   date: string;
   heure: string;
-  observation: string;
+  /** Renseignée uniquement via l'endpoint observation (hors création). */
+  observation?: string;
   compteRendu?: string;
   stageId: number;
   participantIds?: number[];
   /** Toujours "HEBDOMADAIRE" — requis par le backend. */
   typeReunion?: string;
+}
+
+export interface MeetingEligibleParticipant {
+  id: number;
+  fullName: string;
+  email: string;
+  role: string;
+  roleLabel: string;
+}
+
+export interface MeetingParticipantGroup {
+  key: string;
+  label: string;
+  participants: MeetingEligibleParticipant[];
 }
 
 export interface SupervisorAgreement {
@@ -130,9 +147,12 @@ export interface SupervisorEvaluation {
   dateSignatureRepresentantEntreprise: string;
   noteFinale: number | null;
   donneesCompletes: boolean;
+  pretSignatureEncadrantProfessionnel: boolean;
   signaturesCompletes: boolean;
   complete: boolean;
   verrouillee: boolean;
+  evaluationAccessible: boolean;
+  evaluationIndisponibleMessage: string;
   notesAttribuees: EvaluationNoteDto[];
 }
 
@@ -147,6 +167,7 @@ export interface SupervisorStageDocumentStatus {
   raisonAbsence: string;
   signeeParResponsableUniversitaire: boolean;
   dateSignatureResponsableUniversitaire: string;
+  signataires?: { role?: string; libelle: string; signe: boolean }[];
 }
 
 export interface SupervisorStageDocumentsOverview {

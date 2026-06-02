@@ -2,15 +2,20 @@ import { ChangeDetectorRef, Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { finalize, timeout } from 'rxjs/operators';
-import { DemandeStage, StatutValidation } from '../../models/demande-stage.model';
+import { DemandeStage, StatutDemande, StatutValidation } from '../../models/demande-stage.model';
+import { CompanyRequestRefreshService } from '../../services/company-request-refresh.service';
 import { ServiceDemandeStageService } from '../../services/service-demande-stage.service';
+import {
+  canResponsibleActOnRequest,
+  formatCompanyRequestGlobalLabel,
+  formatResponsibleStatusLabel,
+  isCompanyRequestFullyApproved,
+} from '../../utils/company-request-state.util';
 
 type ValidationFilter = 'ALL' | 'EN_ATTENTE' | 'APPROUVEE' | 'REJETEE';
 
-/** Délai max (ms) pour les appels API simples (liste, détail). */
+/** Délai max (ms) pour les appels API simples (liste, détail, validation). */
 const API_TIMEOUT_MS = 20_000;
-/** Délai max (ms) pour les actions métier lourdes (validation = BCrypt + DB + email). */
-const API_TIMEOUT_VALIDATION_MS = 60_000;
 
 @Component({
   selector: 'app-faculty-company-requests-page',
@@ -104,8 +109,8 @@ const API_TIMEOUT_VALIDATION_MS = 60_000;
                     <div class="cell-sub">{{ r.etudiant?.email || '-' }}</div>
                   </td>
                   <td>
-                    <span [class]="badgeClass(r.statutValidationResponsableStages || StatutValidation.EN_ATTENTE)">
-                      {{ r.statutValidationResponsableStages || StatutValidation.EN_ATTENTE }}
+                    <span [class]="badgeClass(r.statutValidationResponsableStages)">
+                      {{ formatValidationStatus(r.statutValidationResponsableStages) }}
                     </span>
                   </td>
                   <td class="actions">
@@ -171,14 +176,14 @@ const API_TIMEOUT_VALIDATION_MS = 60_000;
               </div>
               <div class="detail-item">
                 <span class="label">Validation responsable</span>
-                <span [class]="badgeClass(selectedRequest.statutValidationResponsableStages || StatutValidation.EN_ATTENTE)">
-                  {{ selectedRequest.statutValidationResponsableStages || StatutValidation.EN_ATTENTE }}
+                <span [class]="badgeClass(selectedRequest.statutValidationResponsableStages)">
+                  {{ formatValidationStatus(selectedRequest.statutValidationResponsableStages) }}
                 </span>
               </div>
               <div class="detail-item">
-                <span class="label">Statut</span>
-                <span [class]="badgeClass(selectedRequest.statutValidationResponsableStages || StatutValidation.EN_ATTENTE)">
-                  {{ selectedRequest.statutValidationResponsableStages || StatutValidation.EN_ATTENTE }}
+                <span class="label">Statut global</span>
+                <span [class]="badgeClass(selectedRequest.statutValidationResponsableStages)">
+                  {{ formatGlobalStatus(selectedRequest) }}
                 </span>
               </div>
             </div>
@@ -193,7 +198,10 @@ const API_TIMEOUT_VALIDATION_MS = 60_000;
               <div class="info-meta" *ngIf="isFullyValidated(selectedRequest)">
                 Demande validee. L'entreprise a ete creee automatiquement.
               </div>
-              <div class="info-meta" *ngIf="!isFullyValidated(selectedRequest)">
+              <div class="info-meta" *ngIf="selectedRequest.statutValidationResponsableStages === StatutValidation.REJETEE">
+                Demande refusee par le responsable universitaire.
+              </div>
+              <div class="info-meta" *ngIf="!isFullyValidated(selectedRequest) && selectedRequest.statutValidationResponsableStages !== StatutValidation.REJETEE">
                 En attente de validation du responsable universitaire.
               </div>
             </div>
@@ -283,6 +291,10 @@ export class FacultyCompanyRequestsPageComponent implements OnInit {
    */
   loadingApprove: Record<number, boolean> = {};
   loadingReject: Record<number, boolean> = {};
+  /** Verrou synchrone anti double-clic (avant le prochain cycle Angular). */
+  private readonly approvalsInFlight = new Set<number>();
+  /** Snapshot avant mise à jour optimiste (rollback en cas d'échec). */
+  private readonly pendingApprovalSnapshots = new Map<number, DemandeStage>();
 
   errorMessage = '';
   successMessage = '';
@@ -295,6 +307,7 @@ export class FacultyCompanyRequestsPageComponent implements OnInit {
 
   constructor(
     private demandeStageService: ServiceDemandeStageService,
+    private companyRequestRefresh: CompanyRequestRefreshService,
     private cdr: ChangeDetectorRef
   ) {}
 
@@ -306,12 +319,19 @@ export class FacultyCompanyRequestsPageComponent implements OnInit {
     this.loadRequests();
   }
 
+  formatValidationStatus(status: StatutValidation | undefined): string {
+    return formatResponsibleStatusLabel(status);
+  }
+
+  formatGlobalStatus(request: DemandeStage): string {
+    return formatCompanyRequestGlobalLabel(request);
+  }
+
   // ── Chargement de la liste ────────────────────────────────────────────────
 
   loadRequests(): void {
     this.isLoadingList = true;
     this.errorMessage = '';
-    this.successMessage = '';
 
     this.demandeStageService.getToutesDemandes().pipe(
       timeout(API_TIMEOUT_MS),
@@ -363,41 +383,57 @@ export class FacultyCompanyRequestsPageComponent implements OnInit {
   approve(request: DemandeStage, event: Event): void {
     event.stopPropagation();
 
-    // Bloque le double-clic
-    if (this.loadingApprove[request.id]) return;
+    if (this.approvalsInFlight.has(request.id) || this.loadingApprove[request.id]) {
+      return;
+    }
     if (!this.canAct(request)) return;
     if (!confirm(`Approuver la demande #${request.id} en tant que responsable universitaire ?`)) return;
 
-    // Nouvelle référence objet → Angular détecte le changement même hors zone
-    this.loadingApprove = { ...this.loadingApprove, [request.id]: true };
+    this.approvalsInFlight.add(request.id);
+    this.pendingApprovalSnapshots.set(request.id, { ...request });
     this.errorMessage = '';
     this.successMessage = '';
 
+    // Mise à jour optimiste : statut « Approuvée » immédiatement, sans attendre le PUT (BCrypt côté serveur).
+    this.applyLocalRequestUpdate(this.buildApprovedRequestSnapshot(request));
+    this.setApprovalLoading(request.id, false);
+    this.cdr.detectChanges();
+
     this.demandeStageService.validerResponsableStages(request.id).pipe(
-      timeout(API_TIMEOUT_VALIDATION_MS),
-      // finalize() est appelé dans TOUS les cas : succès, erreur, timeout, désabonnement
-      finalize(() => {
-        this.loadingApprove = { ...this.loadingApprove, [request.id]: false };
-        this.cdr.markForCheck();
-      })
+      timeout(API_TIMEOUT_MS)
     ).subscribe({
       next: (updatedRequest) => {
-        console.log('[FacultyRequests] approve success, id=', request.id, updatedRequest);
-        this.successMessage = this.isFullyValidated(updatedRequest)
-          ? `Demande #${request.id} validee. L'entreprise a ete creee automatiquement.`
+        this.pendingApprovalSnapshots.delete(request.id);
+        if (updatedRequest?.id) {
+          this.applyLocalRequestUpdate(updatedRequest);
+        }
+        this.successMessage = updatedRequest && this.isFullyValidated(updatedRequest)
+          ? `Demande #${request.id} validee. L'entreprise sera creee automatiquement.`
           : `Demande #${request.id} approuvee par le responsable universitaire.`;
-        this.syncUpdatedRequest(updatedRequest);
-        this.cdr.markForCheck();
+        this.companyRequestRefresh.notifyChange();
+        this.cdr.detectChanges();
       },
       error: (error) => {
         console.error('[FacultyRequests] approve error, id=', request.id, error);
-        this.errorMessage = this.extractErrorMessage(
-          error,
-          error?.name === 'TimeoutError'
-            ? 'Le serveur met trop de temps a repondre. Veuillez verifier et reessayer.'
-            : 'La validation a echoue. Verifiez la console pour plus de details.'
-        );
-        this.cdr.markForCheck();
+        if (this.isBenignApprovalConflict(error)) {
+          this.pendingApprovalSnapshots.delete(request.id);
+          this.successMessage = `Demande #${request.id} approuvee par le responsable universitaire.`;
+          this.refreshRequestFromServer(request.id);
+          this.companyRequestRefresh.notifyChange();
+        } else {
+          this.restoreApprovalSnapshot(request.id);
+          this.errorMessage = this.extractErrorMessage(
+            error,
+            error?.name === 'TimeoutError'
+              ? 'Le serveur met trop de temps a repondre. Veuillez verifier et reessayer.'
+              : 'La validation a echoue. Verifiez la console pour plus de details.'
+          );
+        }
+        this.cdr.detectChanges();
+      },
+      complete: () => {
+        this.approvalsInFlight.delete(request.id);
+        this.setApprovalLoading(request.id, false);
       }
     });
   }
@@ -436,25 +472,21 @@ export class FacultyCompanyRequestsPageComponent implements OnInit {
       return;
     }
 
-    // Nouvelle référence objet → Angular détecte le changement même hors zone
     this.loadingReject = { ...this.loadingReject, [request.id]: true };
     this.errorMessage = '';
     this.successMessage = '';
     this.rejectValidationMessage = '';
 
     this.demandeStageService.refuserResponsableStages(request.id, comment).pipe(
-      timeout(API_TIMEOUT_MS),
-      finalize(() => {
-        this.loadingReject = { ...this.loadingReject, [request.id]: false };
-        this.cdr.markForCheck();
-      })
+      timeout(API_TIMEOUT_MS)
     ).subscribe({
       next: (updatedRequest) => {
         console.log('[FacultyRequests] reject success, id=', request.id);
         this.successMessage = `Demande #${request.id} refusee.`;
-        this.syncUpdatedRequest(updatedRequest);
+        this.applyLocalRequestUpdate(updatedRequest);
+        this.companyRequestRefresh.notifyChange();
         this.closeRejectModal();
-        this.cdr.markForCheck();
+        this.cdr.detectChanges();
       },
       error: (error) => {
         console.error('[FacultyRequests] reject error, id=', request.id, error);
@@ -464,7 +496,10 @@ export class FacultyCompanyRequestsPageComponent implements OnInit {
             ? 'Le serveur met trop de temps a repondre.'
             : 'Le refus a echoue. Verifiez la console pour plus de details.'
         );
-        this.cdr.markForCheck();
+        this.cdr.detectChanges();
+      },
+      complete: () => {
+        this.loadingReject = { ...this.loadingReject, [request.id]: false };
       }
     });
   }
@@ -472,12 +507,11 @@ export class FacultyCompanyRequestsPageComponent implements OnInit {
   // ── Logique métier ────────────────────────────────────────────────────────
 
   canAct(request: DemandeStage): boolean {
-    return request.statut === 'EN_ATTENTE'
-      && (request.statutValidationResponsableStages ?? StatutValidation.EN_ATTENTE) === StatutValidation.EN_ATTENTE;
+    return canResponsibleActOnRequest(request);
   }
 
   isFullyValidated(request: DemandeStage): boolean {
-    return (request.statutValidationResponsableStages ?? StatutValidation.EN_ATTENTE) === StatutValidation.APPROUVEE;
+    return isCompanyRequestFullyApproved(request);
   }
 
   countByResponsibleStatus(status: StatutValidation): number {
@@ -496,56 +530,81 @@ export class FacultyCompanyRequestsPageComponent implements OnInit {
 
   // ── Helpers privés ────────────────────────────────────────────────────────
 
-  /**
-   * Met à jour une demande dans la liste locale SANS recharger toute la liste.
-   * Garantit que l'interface se met à jour immédiatement après succès.
-   */
-  private syncUpdatedRequest(updatedRequest: DemandeStage | null | undefined): void {
+  private buildApprovedRequestSnapshot(request: DemandeStage): DemandeStage {
+    return {
+      ...request,
+      statutValidationResponsableStages: StatutValidation.APPROUVEE,
+      statut: StatutDemande.APPROUVEE,
+      misAJourLe: new Date().toISOString(),
+    };
+  }
+
+  private setApprovalLoading(requestId: number, loading: boolean): void {
+    this.loadingApprove = { ...this.loadingApprove, [requestId]: loading };
+  }
+
+  private restoreApprovalSnapshot(requestId: number): void {
+    const snapshot = this.pendingApprovalSnapshots.get(requestId);
+    if (snapshot) {
+      this.applyLocalRequestUpdate(snapshot);
+    }
+    this.pendingApprovalSnapshots.delete(requestId);
+  }
+
+  /** Met à jour immédiatement la liste locale et le panneau de détail. */
+  private applyLocalRequestUpdate(updatedRequest: DemandeStage | null | undefined): void {
     if (!updatedRequest || !Number.isFinite(updatedRequest.id) || updatedRequest.id <= 0) {
-      // Réponse inattendue (id absent ou 0) : rechargement silencieux en arrière-plan.
-      // On ne touche pas aux messages ni à isLoadingList pour éviter le clignotement
-      // et la perte du message de succès déjà positionné.
-      console.warn('[FacultyRequests] syncUpdatedRequest: réponse inattendue, rechargement silencieux', updatedRequest);
-      this.silentReload();
       return;
     }
 
-    const nextRequests = this.requests.map((item) =>
-      item.id === updatedRequest.id ? updatedRequest : item
-    );
-    this.requests = nextRequests;
-    this.selectedRequest = updatedRequest;
+    const exists = this.requests.some((item) => item.id === updatedRequest.id);
+    const nextRequests = exists
+      ? this.requests.map((item) => (item.id === updatedRequest.id ? { ...updatedRequest } : item))
+      : [{ ...updatedRequest }, ...this.requests];
+
+    this.requests = [...nextRequests];
+    if (this.selectedRequest?.id === updatedRequest.id) {
+      this.selectedRequest = { ...updatedRequest };
+    }
     this.applyFilters();
   }
 
-  /**
-   * Recharge la liste en arrière-plan sans modifier isLoadingList, errorMessage
-   * ni successMessage. Utilisé après une action dont la réponse ne contient pas
-   * un objet DemandeStage valide (ex. backend retourne null ou 204).
-   */
-  private silentReload(): void {
+  /** Recharge toute la liste depuis l'API (arrière-plan, après conflit 409 par ex.). */
+  private reloadRequestsAfterMutation(requestId: number, fallback: DemandeStage | null): void {
     this.demandeStageService.getToutesDemandes().pipe(
       timeout(API_TIMEOUT_MS)
     ).subscribe({
       next: (items) => {
         this.requests = [...items].sort((a, b) => b.id - a.id);
-        // Mettre à jour selectedRequest si elle fait encore partie de la liste
-        if (this.selectedRequest) {
-          const refreshed = this.requests.find((r) => r.id === this.selectedRequest!.id);
-          if (refreshed) this.selectedRequest = refreshed;
-        }
+        this.selectedRequest =
+          this.requests.find((item) => item.id === requestId)
+          ?? (fallback ? { ...fallback } : this.selectedRequest);
         this.applyFilters();
-        this.cdr.markForCheck();
+        this.cdr.detectChanges();
       },
-      error: (err) => {
-        // Rechargement silencieux : on n'écrase pas un éventuel message de succès
-        console.warn('[FacultyRequests] silentReload error (ignoré):', err);
+      error: () => {
+        if (fallback) {
+          this.applyLocalRequestUpdate(fallback);
+          this.cdr.detectChanges();
+        }
       }
     });
   }
 
+  private refreshRequestFromServer(requestId: number): void {
+    this.reloadRequestsAfterMutation(requestId, null);
+  }
+
   private matchesValidationFilter(filter: ValidationFilter, status: StatutValidation): boolean {
     return filter === 'ALL' || filter === status;
+  }
+
+  private isBenignApprovalConflict(error: any): boolean {
+    if (error?.status === 409) {
+      return true;
+    }
+    const message = this.extractErrorMessage(error, '').toLowerCase();
+    return message.includes('deja') && (message.includes('valide') || message.includes('approuv'));
   }
 
   private extractErrorMessage(error: any, fallback: string): string {

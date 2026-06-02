@@ -94,13 +94,13 @@
               <label class="profile-field">
                 <span class="profile-field-label">Nom</span>
                 <input class="input" type="text" formControlName="nom" placeholder="Votre nom" [readonly]="!isEditing" [class.readonly-input]="!isEditing" />
-                <span class="field-error" *ngIf="isInvalid('nom')">Le nom est requis et doit rester court.</span>
+                <span class="field-error" *ngIf="getFieldError('nom')">{{ getFieldError('nom') }}</span>
               </label>
 
               <label class="profile-field">
                 <span class="profile-field-label">Prénom</span>
                 <input class="input" type="text" formControlName="prenom" placeholder="Votre prénom" [readonly]="!isEditing" [class.readonly-input]="!isEditing" />
-                <span class="field-error" *ngIf="isInvalid('prenom')">Le prénom est requis et doit rester court.</span>
+                <span class="field-error" *ngIf="getFieldError('prenom')">{{ getFieldError('prenom') }}</span>
               </label>
 
               <label class="profile-field">
@@ -132,6 +132,7 @@
               <label class="profile-field">
                 <span class="profile-field-label">Date de naissance</span>
                 <input class="input" type="date" formControlName="dateNaiss" [readonly]="!isEditing" [class.readonly-input]="!isEditing" />
+                <span class="field-error" *ngIf="getFieldError('dateNaiss')">{{ getFieldError('dateNaiss') }}</span>
               </label>
 
               <label class="profile-field">

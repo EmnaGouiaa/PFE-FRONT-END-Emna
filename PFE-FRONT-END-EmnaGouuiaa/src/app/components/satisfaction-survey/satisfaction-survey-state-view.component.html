@@ -1,0 +1,75 @@
+<article class="enq-state-card" [ngClass]="cardModifier" role="status" aria-live="polite">
+
+  <div class="enq-state-card__header">
+    <div class="enq-state-card__icon" [ngClass]="'enq-state-card__icon--' + viewModel.visualState" aria-hidden="true">
+      <svg *ngIf="iconName === 'clipboard'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" width="28" height="28">
+        <path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/>
+        <path d="M9 5a3 3 0 0 1 6 0"/>
+        <path d="M9 12l2 2 4-4"/>
+      </svg>
+      <svg *ngIf="iconName === 'clock'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" width="28" height="28">
+        <circle cx="12" cy="12" r="10"/>
+        <polyline points="12 6 12 12 16 14"/>
+      </svg>
+      <svg *ngIf="iconName === 'lock'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" width="28" height="28">
+        <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+        <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+      </svg>
+      <svg *ngIf="iconName === 'pause'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" width="28" height="28">
+        <circle cx="12" cy="12" r="10"/>
+        <line x1="10" y1="15" x2="10" y2="9"/>
+        <line x1="14" y1="15" x2="14" y2="9"/>
+      </svg>
+      <svg *ngIf="iconName === 'alert'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" width="28" height="28">
+        <path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+        <line x1="12" y1="9" x2="12" y2="13"/>
+        <line x1="12" y1="17" x2="12.01" y2="17"/>
+      </svg>
+    </div>
+    <span class="enq-state-badge" [ngClass]="badgeModifier">{{ viewModel.badgeLabel }}</span>
+  </div>
+
+  <div class="enq-state-card__body">
+    <h2 class="enq-state-card__title">{{ viewModel.stateTitle }}</h2>
+    <p class="enq-state-card__desc">{{ viewModel.stateDescription }}</p>
+    <p class="enq-state-card__detail" *ngIf="viewModel.detailMessage">{{ viewModel.detailMessage }}</p>
+
+    <div class="enq-state-card__survey" *ngIf="viewModel.showSurveyDetails">
+      <h3 class="enq-state-card__survey-title">{{ viewModel.surveyTitle }}</h3>
+      <p class="enq-state-card__survey-desc" *ngIf="viewModel.surveyDescription">{{ viewModel.surveyDescription }}</p>
+    </div>
+  </div>
+
+  <div class="enq-state-card__action" *ngIf="viewModel.canRespond">
+    <button type="button" class="enq-btn enq-btn--primary" (click)="onRespond()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" width="18" height="18" aria-hidden="true">
+        <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
+        <polyline points="15 3 21 3 21 9"/>
+        <line x1="10" y1="14" x2="21" y2="3"/>
+      </svg>
+      Répondre à l'enquête
+    </button>
+    <p class="enq-hint">
+      Le formulaire s'ouvrira dans un <strong>nouvel onglet</strong>. Votre session dans l'application restera active.
+    </p>
+  </div>
+
+  <div class="enq-confirmation" *ngIf="formOpened && viewModel.canRespond" role="status">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" width="20" height="20" aria-hidden="true">
+      <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+      <polyline points="22 4 12 14.01 9 11.01"/>
+    </svg>
+    Le formulaire a bien été ouvert dans un nouvel onglet. Merci de répondre à l'enquête.
+  </div>
+
+</article>
+
+<div class="enq-info-block" *ngIf="showInfoBlock && viewModel.showInfoBlock">
+  <h3 class="enq-info-block__title">À propos de cette enquête</h3>
+  <ul class="enq-info-list">
+    <li>Vos réponses sont enregistrées dans le système externe lié à l'enquête.</li>
+    <li>L'ouverture du formulaire externe ne vous déconnecte pas de l'application.</li>
+    <li>Vous pouvez soumettre le formulaire à tout moment pendant la période d'ouverture.</li>
+    <li>En cas de problème technique, contactez le responsable des stages.</li>
+  </ul>
+</div>

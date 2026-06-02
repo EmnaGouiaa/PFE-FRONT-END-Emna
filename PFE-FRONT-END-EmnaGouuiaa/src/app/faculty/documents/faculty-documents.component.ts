@@ -1,9 +1,18 @@
-import { Component, HostListener, OnInit } from '@angular/core';
+import { Component, DestroyRef, HostListener, OnInit, inject } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
-import { forkJoin, of } from 'rxjs';
-import { catchError, timeout } from 'rxjs/operators';
+import { StageDocumentSignaturesBlockComponent } from '../../shared/stage-documents/stage-document-signatures-block.component';
+import { StageDocumentSignActionComponent } from '../../shared/stage-documents/stage-document-sign-action.component';
+import {
+  StageSignatureActorView,
+  signatoriesFromDocumentStatus,
+  stageSignatureCardSummary,
+} from '../../shared/stage-documents/stage-document-signatures.util';
+import { forkJoin, interval, merge, of } from 'rxjs';
+import { catchError, distinctUntilChanged, filter, startWith, switchMap, timeout } from 'rxjs/operators';
 import { FacultyPortalService } from '../../services/faculty/faculty-portal.service';
 import {
+  FacultyAgreement,
   FacultyEvaluation,
   FacultyInternship,
   FacultyMeeting,
@@ -12,6 +21,13 @@ import {
   FacultyStageDocumentsOverview
 } from '../../services/faculty/faculty.models';
 import { PdfWindowService } from '../../services/pdf-window.service';
+import { readApiErrorMessage } from '../../services/http-error.util';
+import { StageSignatureSyncService } from '../../services/stage-signature-sync.service';
+import {
+  StageDocumentSignButtonContext,
+  isStageDocumentSignButtonDisabled,
+  resolveConventionDocumentId,
+} from '../../shared/stage-documents/stage-document-sign-button.util';
 
 type DocumentType = 'convention' | 'fiche-evaluation' | 'cahier-stage';
 
@@ -24,7 +40,7 @@ interface DocModalEntry {
 @Component({
   selector: 'app-faculty-documents-page',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, StageDocumentSignaturesBlockComponent, StageDocumentSignActionComponent],
   template: `
     <div class="company-page">
       <header class="page-hero">
@@ -112,39 +128,33 @@ interface DocModalEntry {
                   <strong>{{ getAnneeUniversitaire(item.dateDebut) }}</strong>
                 </div>
                 <div class="doc-card-meta-item">
-                  <span class="label">Accès</span>
-                  <strong>{{ canAccessPdf(item, doc.type, doc.status) ? 'Autorisé' : 'En attente' }}</strong>
+                  <span class="label">Accès PDF</span>
+                  <strong>{{ canAccessPdf(item, doc.type, doc.status) ? 'Autorisé' : 'Indisponible' }}</strong>
                 </div>
               </div>
 
-              <div class="doc-card-actions">
+              <div class="doc-card-actions doc-card-actions--standard">
                 <button
                   type="button"
                   class="btn btn-secondary btn-sm"
                   (click)="openDocDetails(item.stageId, doc.type, doc.status)"
                 >
-                  Détails
+                  Détail
                 </button>
                 <button
                   type="button"
                   class="btn btn-secondary btn-sm"
                   (click)="openDocument(item.stageId, doc.type, doc.status.libelle)"
                   [disabled]="!canAccessPdf(item, doc.type, doc.status) || isActionPending(item.stageId, doc.type)"
-                  [title]="!canAccessPdf(item, doc.type, doc.status) ? getPdfBlockedTooltip(item, doc.type, doc.status) : 'Ouvrir le PDF'"
+                  [title]="!canAccessPdf(item, doc.type, doc.status) ? getPdfBlockedTooltip(item, doc.type, doc.status) : 'Télécharger le PDF'"
                 >
-                  Voir PDF
+                  PDF
                 </button>
-                <button
-                  *ngIf="doc.type === 'convention'"
-                  type="button"
-                  class="btn btn-sm"
-                  [class.btn-primary]="!doc.status.signeeParResponsableUniversitaire"
-                  [class.btn-secondary]="!!doc.status.signeeParResponsableUniversitaire"
-                  (click)="signConvention(item.stageId, doc.status)"
-                  [disabled]="!doc.status.documentId || doc.status.signeeParResponsableUniversitaire || isActionPending(item.stageId, doc.type)"
-                >
-                  {{ doc.status.signeeParResponsableUniversitaire ? '✓ Signé' : 'Signer' }}
-                </button>
+                <app-stage-document-sign-action
+                  [context]="buildSignContext(item, doc)"
+                  (sign)="onSignDocument(item, doc)"
+                  (initialize)="initializeConvention(item.stageId)"
+                />
               </div>
 
             </article>
@@ -192,40 +202,30 @@ interface DocModalEntry {
                 <span class="label">Conditions d'acces</span>
                 <span class="value">{{ getDocumentDescription(selectedDocModal.type, selectedDocModal.status) }}</span>
               </div>
-              <!-- Convention signing details -->
-              <div class="detail-item full-width" *ngIf="selectedDocModal.type === 'convention'">
-                <span class="label">Signature responsable universitaire</span>
-                <span class="value">
-                  <span class="status-pill" [ngClass]="selectedDocModal.status.signeeParResponsableUniversitaire ? 'status-positive' : 'status-warning'">
-                    {{ selectedDocModal.status.signeeParResponsableUniversitaire ? 'Signee' : 'En attente de signature' }}
-                  </span>
-                  <span *ngIf="selectedDocModal.status.dateSignatureResponsableUniversitaire" style="margin-left:0.5rem;font-size:0.9rem;color:#64748b">
-                    le {{ selectedDocModal.status.dateSignatureResponsableUniversitaire }}
-                  </span>
-                </span>
-              </div>
             </div>
 
-            <div class="inline-actions">
+            <app-stage-document-signatures-block
+              [actors]="getSignatureActors(selectedDocModal.status)"
+            />
+
+            <div class="inline-actions doc-card-actions--standard">
               <button type="button" class="btn btn-secondary" (click)="closeDocDetails()">Fermer</button>
               <button
                 type="button"
                 class="btn btn-secondary"
                 (click)="openDocument(selectedDocModal.stageId, selectedDocModal.type, selectedDocModal.status.libelle)"
                 [disabled]="!canAccessPdfModal() || isActionPending(selectedDocModal.stageId, selectedDocModal.type)"
-                [title]="!canAccessPdfModal() ? getPdfBlockedTooltipModal() : 'Ouvrir le PDF'"
+                [title]="!canAccessPdfModal() ? getPdfBlockedTooltipModal() : 'Télécharger le PDF'"
               >
-                Voir PDF
+                PDF
               </button>
-              <button
-                *ngIf="selectedDocModal.type === 'convention'"
-                type="button"
-                class="btn btn-secondary"
-                (click)="signConvention(selectedDocModal.stageId, selectedDocModal.status)"
-                [disabled]="!selectedDocModal.status.documentId || selectedDocModal.status.signeeParResponsableUniversitaire || isActionPending(selectedDocModal.stageId, selectedDocModal.type)"
-              >
-                {{ selectedDocModal.status.signeeParResponsableUniversitaire ? 'Convention deja signee' : 'Signer la convention' }}
-              </button>
+              <app-stage-document-sign-action
+                *ngIf="signContextModal() as signCtx"
+                buttonClass="btn btn-primary"
+                [context]="signCtx"
+                (sign)="onSignDocumentModal()"
+                (initialize)="initializeConvention(selectedDocModal!.stageId); closeDocDetails()"
+              />
             </div>
           </div>
         </div>
@@ -287,6 +287,9 @@ interface DocModalEntry {
   styleUrls: ['../../company/company-shared.css', '../faculty-shared.css']
 })
 export class FacultyDocumentsPageComponent implements OnInit {
+  private readonly destroyRef = inject(DestroyRef);
+  private readonly signatureSync = inject(StageSignatureSyncService);
+
   stageDocuments: FacultyStageDocumentsOverview[] = [];
   isLoading = false;
   errorMessage = '';
@@ -297,6 +300,7 @@ export class FacultyDocumentsPageComponent implements OnInit {
   private evaluationsByStageId = new Map<number, FacultyEvaluation>();
   private reportsByStageId = new Map<number, FacultyReport>();
   private internshipsByStageId = new Map<number, FacultyInternship>();
+  private agreementsByStageId = new Map<number, FacultyAgreement>();
 
   constructor(
     private facultyPortalService: FacultyPortalService,
@@ -319,18 +323,53 @@ export class FacultyDocumentsPageComponent implements OnInit {
 
   ngOnInit(): void {
     this.loadDocuments();
+    this.startLiveDocumentsSync();
+  }
+
+  private startLiveDocumentsSync(): void {
+    merge(interval(this.signatureSync.defaultPollIntervalMs).pipe(startWith(0)))
+      .pipe(
+        filter(() => typeof document === 'undefined' || document.visibilityState === 'visible'),
+        switchMap(() =>
+          forkJoin({
+            documents: this.facultyPortalService.listStageDocuments(),
+            agreements: this.facultyPortalService.listAgreements().pipe(catchError(() => of([] as FacultyAgreement[]))),
+          })
+        ),
+        distinctUntilChanged((prev, next) => JSON.stringify(prev) === JSON.stringify(next)),
+        takeUntilDestroyed(this.destroyRef)
+      )
+      .subscribe({
+        next: ({ documents, agreements }) => {
+          this.stageDocuments = documents;
+          this.agreementsByStageId = new Map(agreements.map((agreement) => [agreement.stageId, agreement]));
+          if (this.selectedDocModal) {
+            const item = documents.find((entry) => entry.stageId === this.selectedDocModal!.stageId);
+            if (item) {
+              const entry = this.getDocumentEntries(item).find((e) => e.type === this.selectedDocModal!.type);
+              if (entry) {
+                this.selectedDocModal = { stageId: item.stageId, type: entry.type, status: entry.status };
+              }
+            }
+          }
+        },
+      });
   }
 
   loadDocuments(): void {
     this.isLoading = true;
     this.errorMessage = '';
 
-    this.facultyPortalService.listStageDocuments().subscribe({
-      next: (items) => {
-        this.stageDocuments = items;
+    forkJoin({
+      documents: this.facultyPortalService.listStageDocuments(),
+      agreements: this.facultyPortalService.listAgreements().pipe(catchError(() => of([] as FacultyAgreement[]))),
+    }).subscribe({
+      next: ({ documents, agreements }) => {
+        this.stageDocuments = documents;
+        this.agreementsByStageId = new Map(agreements.map((agreement) => [agreement.stageId, agreement]));
         // Refresh modal reference if open
         if (this.selectedDocModal) {
-          const item = items.find((i) => i.stageId === this.selectedDocModal!.stageId);
+          const item = documents.find((i) => i.stageId === this.selectedDocModal!.stageId);
           if (item) {
             const entry = this.getDocumentEntries(item).find((e) => e.type === this.selectedDocModal!.type);
             if (entry) this.selectedDocModal = { stageId: item.stageId, type: entry.type, status: entry.status };
@@ -372,12 +411,18 @@ export class FacultyDocumentsPageComponent implements OnInit {
   // des stages n'a plus d'action manuelle de génération.
 
   openDocument(stageId: number, type: DocumentType, label: string): void {
-    if (type === 'fiche-evaluation') {
-      this.openEvaluationPdf(stageId);
-      return;
-    }
-    if (type === 'cahier-stage') {
-      this.openCahierPdf(stageId);
+    const overview = this.stageDocuments.find((item) => item.stageId === stageId);
+    const status =
+      type === 'convention'
+        ? overview?.convention
+        : type === 'fiche-evaluation'
+          ? overview?.ficheEvaluation
+          : overview?.cahierStage;
+    if (!overview || !status || !this.canAccessPdf(overview, type, status)) {
+      this.errorMessage =
+        status?.raisonAbsence?.trim() ||
+        this.getPdfBlockedTooltip(overview!, type, status!) ||
+        'Ce document PDF n\'est pas encore accessible.';
       return;
     }
     this.pendingActionKey = this.buildActionKey(stageId, type);
@@ -390,9 +435,9 @@ export class FacultyDocumentsPageComponent implements OnInit {
         this.pdfWindowService.showPdf(pdfWindow, blob, { title: label });
         this.pendingActionKey = '';
       },
-      error: (error) => {
+      error: async (error) => {
         pdfWindow?.close();
-        this.errorMessage = this.extractErrorMessage(error, `Impossible d'ouvrir le PDF ${label}.`);
+        this.errorMessage = await readApiErrorMessage(error, `Impossible d'ouvrir le PDF ${label}.`);
         this.pendingActionKey = '';
       }
     });
@@ -706,7 +751,7 @@ ${trelloSection}
     const fmt = (d: string) => d ? new Date(d).toLocaleDateString('fr-FR') : '—';
     const esc = (s: string) => (s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
     const val = (s: string) => esc(s || '—');
-    const noteFinale = ev.noteFinale != null ? Number(ev.noteFinale).toFixed(2) : '—';
+    const noteFinale = ev.noteFinale != null ? `${Number(ev.noteFinale).toFixed(1)} / 5` : '—';
     return `<!DOCTYPE html>
 <html lang="fr">
 <head>
@@ -803,8 +848,95 @@ ${trelloSection}
     return this.pendingActionKey === this.buildActionKey(stageId, type);
   }
 
+  buildSignContext(
+    item: FacultyStageDocumentsOverview,
+    doc: { type: DocumentType; status: FacultyStageDocumentStatus }
+  ): StageDocumentSignButtonContext {
+    const agreement = doc.type === 'convention' ? this.agreementsByStageId.get(item.stageId) : null;
+    const conventionId = agreement?.id ?? doc.status.documentId ?? null;
+    return {
+      documentType: doc.type,
+      userRole: 'RESPONSABLE_STAGE',
+      status: doc.status,
+      documentId: doc.type === 'convention' ? conventionId : doc.status.documentId,
+      conventionId: doc.type === 'convention' ? conventionId : null,
+      alreadySignedByMe: Boolean(doc.status.signeeParResponsableUniversitaire),
+      dateFin: item.dateFin,
+      dateDebut: item.dateDebut,
+      stageStatut: item.stageStatut ?? null,
+      generationAutorisee: doc.status.generationAutorisee,
+      evaluationReadyForSign: false,
+      isActing: this.isActionPending(item.stageId, doc.type),
+    };
+  }
+
+  initializeConvention(stageId: number): void {
+    this.pendingActionKey = this.buildActionKey(stageId, 'convention');
+    this.errorMessage = '';
+    this.facultyPortalService.generateStageDocument(stageId, 'convention').subscribe({
+      next: () => {
+        this.successMessage = 'Convention initialisee.';
+        this.loadDocuments();
+        this.pendingActionKey = '';
+      },
+      error: (error) => {
+        this.errorMessage = this.extractErrorMessage(error, 'Impossible d initialiser la convention.');
+        this.pendingActionKey = '';
+      },
+    });
+  }
+
+  onSignDocument(
+    item: FacultyStageDocumentsOverview,
+    doc: { type: DocumentType; status: FacultyStageDocumentStatus }
+  ): void {
+    if (isStageDocumentSignButtonDisabled(this.buildSignContext(item, doc))) {
+      return;
+    }
+    if (doc.type === 'convention') {
+      this.signConvention(item.stageId, doc.status);
+    }
+  }
+
+  signContextModal(): StageDocumentSignButtonContext | null {
+    if (!this.selectedDocModal) {
+      return null;
+    }
+    const item = this.stageDocuments.find((entry) => entry.stageId === this.selectedDocModal!.stageId);
+    if (!item) {
+      return null;
+    }
+    return this.buildSignContext(item, {
+      type: this.selectedDocModal.type,
+      status: this.selectedDocModal.status,
+    });
+  }
+
+  onSignDocumentModal(): void {
+    const ctx = this.signContextModal();
+    if (!ctx || isStageDocumentSignButtonDisabled(ctx)) {
+      return;
+    }
+    if (!this.selectedDocModal) {
+      return;
+    }
+    const item = this.stageDocuments.find((entry) => entry.stageId === this.selectedDocModal!.stageId);
+    if (!item) {
+      return;
+    }
+    this.onSignDocument(item, {
+      type: this.selectedDocModal.type,
+      status: this.selectedDocModal.status,
+    });
+  }
+
   signConvention(stageId: number, status: FacultyStageDocumentStatus): void {
-    if (!status.documentId) {
+    const ctx = this.buildSignContext(
+      this.stageDocuments.find((item) => item.stageId === stageId)!,
+      { type: 'convention', status }
+    );
+    const conventionId = resolveConventionDocumentId(ctx);
+    if (!conventionId) {
       this.errorMessage = 'La convention doit etre generee avant de pouvoir etre signee.';
       return;
     }
@@ -813,7 +945,7 @@ ${trelloSection}
     this.errorMessage = '';
     this.successMessage = '';
 
-    this.facultyPortalService.signAgreementAsResponsableUniversitaire(status.documentId).subscribe({
+    this.facultyPortalService.signAgreementAsResponsableUniversitaire(conventionId).subscribe({
       next: () => {
         this.facultyPortalService.getStageDocuments(stageId).subscribe({
           next: (updatedStageDocuments) => {
@@ -826,6 +958,7 @@ ${trelloSection}
               if (entry) this.selectedDocModal = { stageId, type: 'convention', status: entry.status };
             }
             this.successMessage = 'Convention signee avec succes.';
+            this.signatureSync.notifyStageUpdated(stageId);
             this.pendingActionKey = '';
           },
           error: (error) => {
@@ -851,6 +984,10 @@ ${trelloSection}
     return 'Cahier de stage';
   }
 
+  getSignatureActors(status: FacultyStageDocumentStatus): StageSignatureActorView[] {
+    return signatoriesFromDocumentStatus(status);
+  }
+
   getAnneeUniversitaire(dateDebut: string): string {
     if (!dateDebut) return '—';
     const d = new Date(dateDebut);
@@ -861,9 +998,10 @@ ${trelloSection}
   }
 
   getStatusLabel(status: FacultyStageDocumentStatus): string {
+    const apiStatut = String(status.statut ?? '').trim();
+    if (apiStatut === 'En préparation' || apiStatut === 'En preparation') return 'En preparation';
     if (status.disponible && status.genere) return 'Genere';
     if (status.disponible) return 'Signe';
-    if (status.generationAutorisee && !status.genere) return 'Pret a generer';
     if (status.documentId && !status.disponible) return 'En attente';
     return status.statut || 'A remplir';
   }
@@ -871,28 +1009,21 @@ ${trelloSection}
   getStatusBadgeClass(status: FacultyStageDocumentStatus): string {
     const label = this.getStatusLabel(status);
     if (label === 'Signe' || label === 'Genere') return 'status-positive';
-    if (label === 'Pret a generer') return 'status-info';
+    if (label === 'En preparation') return 'status-neutral';
     if (label === 'A remplir') return 'status-neutral';
     return 'status-warning';
   }
 
-  /** Short one-line summary shown in the card (never shows full raisonAbsence). */
-  getDocumentShortStatus(item: FacultyStageDocumentsOverview, type: DocumentType, status: FacultyStageDocumentStatus): string {
-    if (type === 'cahier-stage') {
-      if (status.disponible && this.isStageEnded(item.dateFin, item.stageStatut)) {
-        return 'Disponible — Téléchargement du cahier de clôture';
-      }
-      if (!status.disponible) return 'En attente des signatures obligatoires';
-      return 'Accessible après la fin du stage et les signatures complètes';
+  /** Résumé signatures affiché sur la carte (le détail est dans la modale Détail). */
+  getDocumentShortStatus(_item: FacultyStageDocumentsOverview, _type: DocumentType, status: FacultyStageDocumentStatus): string {
+    const actors = signatoriesFromDocumentStatus(status);
+    if (actors.length) {
+      return stageSignatureCardSummary(actors);
     }
-    if (type !== 'convention' && this.isSignaturesComplete(status) && !this.canAccessPdf(item, type, status)) {
-      return 'En attente de la fin du stage';
+    if (!status.genere) {
+      return 'Document non encore généré';
     }
-    if (this.isSignaturesComplete(status)) return 'Disponible au telechargement';
-    if (!status.genere) return 'Document non encore genere';
-    const raison = (status.raisonAbsence || '').toLowerCase();
-    if (raison.includes('signature')) return 'En attente de signatures';
-    return 'En cours de preparation';
+    return 'Signatures — chargement…';
   }
 
   /** Full description shown only inside the detail modal. */
@@ -909,24 +1040,12 @@ ${trelloSection}
     return "Le document n'est pas encore pret pour la consultation.";
   }
 
-  private isStageEnded(dateFin: string, stageStatut: string): boolean {
-    if (stageStatut === 'TERMINE') return true;
-    if (!dateFin) return false;
-    return new Date(dateFin) <= new Date();
+  private canAccessDocument(status: FacultyStageDocumentStatus): boolean {
+    return Boolean(status?.disponible);
   }
 
   canAccessPdf(item: FacultyStageDocumentsOverview, type: DocumentType, status: FacultyStageDocumentStatus): boolean {
-    if (type === 'fiche-evaluation') {
-      const allSigned = status.disponible
-        || status.statutDocument === 'SIGNATURES_COMPLETES'
-        || status.statutDocument === 'DISPONIBLE_IMPRESSION';
-      return allSigned && this.isStageEnded(item.dateFin, item.stageStatut);
-    }
-    if (type === 'convention') {
-      return !!status.disponible;
-    }
-    // cahier-stage : toutes les signatures obligatoires (disponible = true côté backend) + stage terminé.
-    return !!status.disponible && this.isStageEnded(item.dateFin, item.stageStatut);
+    return this.canAccessDocument(status);
   }
 
   canAccessPdfModal(): boolean {
@@ -943,19 +1062,6 @@ ${trelloSection}
   }
 
   getPdfBlockedTooltip(item: FacultyStageDocumentsOverview, type: DocumentType, status: FacultyStageDocumentStatus): string {
-    if (type === 'cahier-stage') {
-      if (!status.disponible) {
-        return 'Les 4 signatures obligatoires sont requises : encadrant professionnel, encadrant académique, responsable entreprise, stagiaire.';
-      }
-      return item.dateFin
-        ? `Accessible après la fin du stage le ${new Date(item.dateFin).toLocaleDateString('fr-FR')} et les signatures complètes`
-        : 'Accessible après la fin du stage et les signatures complètes.';
-    }
-    if (type !== 'convention' && this.isSignaturesComplete(status)) {
-      return item.dateFin
-        ? `Accessible après la fin du stage le ${new Date(item.dateFin).toLocaleDateString('fr-FR')}`
-        : 'Accessible après la fin du stage.';
-    }
     return status.raisonAbsence || 'Toutes les signatures obligatoires ne sont pas encore complètes.';
   }
 

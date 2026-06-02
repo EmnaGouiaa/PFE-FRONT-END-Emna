@@ -1,11 +1,22 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnInit } from '@angular/core';
+import { Component, DestroyRef, OnInit, inject } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { phoneValidator, strictEmailValidator } from '../../admin/admin-form-validators';
+import {
+  personNameErrorMessage,
+  personNameValidatorsWithMaxLength,
+} from '../../shared/validators/person-name.validators';
 import { AuthentificationService } from '../../services/authentification.service';
+import { CompanyRequestRefreshService } from '../../services/company-request-refresh.service';
 import { StudentCompanyRequest } from '../../services/student/student.models';
 import { StudentPortalService } from '../../services/student/student-portal.service';
 import { PhoneInputComponent } from '../../components/phone-input/phone-input.component';
+import {
+  formatStoredGlobalLabel,
+  formatStoredValidationLabel,
+} from '../../utils/company-request-state.util';
+import { StatutValidation } from '../../models/demande-stage.model';
 
 type FieldErrors = Record<string, string>;
 
@@ -97,6 +108,9 @@ type FieldErrors = Record<string, string>;
               <h2>Mes demandes envoyées</h2>
               <p class="panel-subtitle">Suivi des validations admin et responsable universitaire</p>
             </div>
+            <button type="button" class="btn btn-secondary" (click)="loadRequests()" [disabled]="isLoadingRequests">
+              {{ isLoadingRequests ? 'Actualisation...' : 'Actualiser' }}
+            </button>
           </div>
 
           <div class="empty-card" *ngIf="isLoadingRequests">Chargement des demandes...</div>
@@ -108,9 +122,9 @@ type FieldErrors = Record<string, string>;
               <div class="cell-sub">{{ request.adresse || 'Adresse non renseignée' }}</div>
 
               <div class="badge-stack">
-                <span class="status-pill" [ngClass]="statusClass(request.statut)">{{ formatStatus(request.statut) }}</span>
-                <span class="status-pill" [ngClass]="statusClass(request.statutAdmin)">Admin : {{ formatStatus(request.statutAdmin) }}</span>
-                <span class="status-pill" [ngClass]="statusClass(request.statutResponsableStages)">Responsable : {{ formatStatus(request.statutResponsableStages) }}</span>
+                <span class="status-pill" [ngClass]="statusClass(request.statut)">{{ formatGlobalStatus(request) }}</span>
+                <span class="status-pill" [ngClass]="statusClass(request.statutAdmin)">Admin : {{ formatValidationStatus(request.statutAdmin) }}</span>
+                <span class="status-pill" [ngClass]="statusClass(request.statutResponsableStages)">Responsable : {{ formatValidationStatus(request.statutResponsableStages) }}</span>
               </div>
 
               <div class="status-alert status-alert-rejected" *ngIf="isRejected(request)">
@@ -155,10 +169,18 @@ export class StudentCompanyRequestPageComponent implements OnInit {
   submitAttempted = false;
   readonly form;
 
+  private readonly destroyRef = inject(DestroyRef);
+  private readonly visibilityHandler = () => {
+    if (document.visibilityState === 'visible') {
+      this.loadRequests();
+    }
+  };
+
   constructor(
     private fb: FormBuilder,
     private authService: AuthentificationService,
-    private studentPortalService: StudentPortalService
+    private studentPortalService: StudentPortalService,
+    private companyRequestRefresh: CompanyRequestRefreshService
   ) {
     this.form = this.fb.group({
       nomEntreprise: ['', [Validators.required, Validators.maxLength(160)]],
@@ -166,8 +188,8 @@ export class StudentCompanyRequestPageComponent implements OnInit {
       telephoneEntreprise: ['', [Validators.required, phoneValidator()]],
       adresse: ['', [Validators.required, Validators.maxLength(255)]],
       secteurActivite: ['', [Validators.required, Validators.maxLength(160)]],
-      nomResponsable: ['', [Validators.required, Validators.maxLength(120)]],
-      prenomResponsable: ['', [Validators.required, Validators.maxLength(120)]],
+      nomResponsable: ['', personNameValidatorsWithMaxLength(120)],
+      prenomResponsable: ['', personNameValidatorsWithMaxLength(120)],
       emailResponsable: ['', [Validators.required, strictEmailValidator()]],
       telephoneResponsable: ['', [Validators.required, phoneValidator()]]
     });
@@ -181,6 +203,13 @@ export class StudentCompanyRequestPageComponent implements OnInit {
 
   ngOnInit(): void {
     this.loadRequests();
+    this.companyRequestRefresh.changed$.pipe(
+      takeUntilDestroyed(this.destroyRef)
+    ).subscribe(() => this.loadRequests());
+    document.addEventListener('visibilitychange', this.visibilityHandler);
+    this.destroyRef.onDestroy(() => {
+      document.removeEventListener('visibilitychange', this.visibilityHandler);
+    });
   }
 
   submit(): void {
@@ -218,6 +247,7 @@ export class StudentCompanyRequestPageComponent implements OnInit {
         this.form.reset();
         this.submitAttempted = false;
         this.isSubmitting = false;
+        this.companyRequestRefresh.notifyChange();
         this.loadRequests();
       },
       error: (error) => {
@@ -249,8 +279,12 @@ export class StudentCompanyRequestPageComponent implements OnInit {
     });
   }
 
-  formatStatus(value: string): string {
-    return String(value || 'INCONNU').replace(/_/g, ' ');
+  formatValidationStatus(value: string): string {
+    return formatStoredValidationLabel(value);
+  }
+
+  formatGlobalStatus(request: StudentCompanyRequest): string {
+    return formatStoredGlobalLabel(request.statut, request.statutResponsableStages);
   }
 
   statusClass(value: string): string {
@@ -265,7 +299,10 @@ export class StudentCompanyRequestPageComponent implements OnInit {
   }
 
   isRejected(request: StudentCompanyRequest): boolean {
-    return String(request.statut || '').toUpperCase() === 'REJETEE';
+    const global = String(request.statut || '').toUpperCase();
+    const responsible = String(request.statutResponsableStages || '').toUpperCase();
+    return global === 'REFUSEE' || global === 'REJETEE'
+      || responsible === StatutValidation.REJETEE || responsible === 'REFUSEE';
   }
 
   getProcessedAt(request: StudentCompanyRequest): string {
@@ -288,6 +325,9 @@ export class StudentCompanyRequestPageComponent implements OnInit {
       return '';
     }
 
+    const personNameMessage = personNameErrorMessage(control.errors);
+    if (personNameMessage) return personNameMessage;
+
     if (control.errors?.['required']) return 'Ce champ est obligatoire.';
     if (control.errors?.['maxlength']) return 'Cette valeur est trop longue.';
     if (control.errors?.['missingAt']) return "L'e-mail doit contenir @.";
@@ -301,13 +341,26 @@ export class StudentCompanyRequestPageComponent implements OnInit {
   }
 
   private applyBackendFieldError(error: any): void {
-    const field = typeof error?.error?.field === 'string' ? error.error.field : '';
-    const message = typeof error?.error?.message === 'string' ? error.error.message : '';
-    if (field && message && this.form.contains(field)) {
-      this.fieldErrors = {
-        ...this.fieldErrors,
-        [field]: message
-      };
+    const body = error?.error;
+    if (!body || typeof body !== 'object') {
+      return;
     }
+
+    const next: Record<string, string> = { ...this.fieldErrors };
+
+    if (typeof body.field === 'string' && typeof body.message === 'string' && this.form.contains(body.field)) {
+      next[body.field] = body.message;
+    }
+
+    for (const [key, value] of Object.entries(body)) {
+      if (key === 'message' || key === 'field' || key === 'details') {
+        continue;
+      }
+      if (typeof value === 'string' && value.trim() && this.form.contains(key)) {
+        next[key] = value.trim();
+      }
+    }
+
+    this.fieldErrors = next;
   }
 }

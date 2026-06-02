@@ -1,0 +1,30 @@
+.trello-columns {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.trello-column {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 0.75rem;
+}
+
+.trello-column h3 {
+  margin: 0 0 0.5rem;
+  font-size: 0.95rem;
+}
+
+.task-list {
+  margin: 0;
+  padding-left: 1rem;
+}
+
+.task-list li {
+  margin-bottom: 0.5rem;
+}
+
+.detail-item.full-width {
+  grid-column: 1 / -1;
+}

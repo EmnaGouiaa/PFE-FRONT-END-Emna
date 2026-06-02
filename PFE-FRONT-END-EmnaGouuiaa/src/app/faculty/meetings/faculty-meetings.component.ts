@@ -4,6 +4,12 @@ import { forkJoin, of } from 'rxjs';
 import { catchError } from 'rxjs/operators';
 import { FacultyPortalService } from '../../services/faculty/faculty-portal.service';
 import { FacultyMeeting } from '../../services/faculty/faculty.models';
+import {
+  meetingDisplayValue,
+  resolveMeetingCompanySupervisorName,
+  resolveMeetingCreatorName,
+  resolveMeetingCreatorTypeLabel
+} from '../../utils/meeting-display.util';
 
 @Component({
   selector: 'app-faculty-meetings-page',
@@ -164,11 +170,23 @@ import { FacultyMeeting } from '../../services/faculty/faculty.models';
               </div>
               <div class="detail-item">
                 <span class="label">Stagiaire</span>
-                <span class="value">{{ selectedMeeting.studentName || 'Non renseigné' }}</span>
+                <span class="value">{{ meetingLabel(selectedMeeting.studentName) }}</span>
               </div>
               <div class="detail-item">
                 <span class="label">Entreprise</span>
-                <span class="value">{{ selectedMeeting.companyName || 'Non renseignée' }}</span>
+                <span class="value">{{ meetingLabel(selectedMeeting.companyName) }}</span>
+              </div>
+              <div class="detail-item">
+                <span class="label">Créateur de la réunion</span>
+                <span class="value">{{ getMeetingCreatorName(selectedMeeting) }}</span>
+              </div>
+              <div class="detail-item">
+                <span class="label">Type de créateur</span>
+                <span class="value">{{ getMeetingCreatorTypeLabel(selectedMeeting) }}</span>
+              </div>
+              <div class="detail-item">
+                <span class="label">Responsable entreprise</span>
+                <span class="value">{{ getMeetingCompanySupervisorName(selectedMeeting) }}</span>
               </div>
               <div class="detail-item">
                 <span class="label">Date</span>
@@ -266,6 +284,22 @@ export class FacultyMeetingsPageComponent implements OnInit {
 
   getMeetingTypeLabel(meeting: FacultyMeeting): string {
     return meeting.source === 'FINALE' ? 'Réunion finale' : 'Réunion hebdomadaire';
+  }
+
+  getMeetingCreatorName(meeting: FacultyMeeting | null): string {
+    return meeting ? resolveMeetingCreatorName(meeting) : 'Non renseigné';
+  }
+
+  getMeetingCreatorTypeLabel(meeting: FacultyMeeting | null): string {
+    return meeting ? resolveMeetingCreatorTypeLabel(meeting.typeEncadrantCreateur) : 'Non renseigné';
+  }
+
+  getMeetingCompanySupervisorName(meeting: FacultyMeeting | null): string {
+    return meeting ? resolveMeetingCompanySupervisorName(meeting.companySupervisorName) : 'Non renseigné';
+  }
+
+  meetingLabel(value: string | null | undefined): string {
+    return meetingDisplayValue(value);
   }
 
   private extractErrorMessage(error: any, fallback: string): string {

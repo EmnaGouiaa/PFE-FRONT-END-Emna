@@ -68,9 +68,14 @@ export class CompanyEvaluationsService {
       dateSignatureRepresentantEntreprise: String(raw?.dateSignatureRepresentantEntreprise ?? ''),
       noteFinale: raw?.noteFinale ?? null,
       donneesCompletes: Boolean(raw?.donneesCompletes),
+      pretSignatureResponsableEntreprise: Boolean(raw?.pretSignatureResponsableEntreprise),
       signaturesCompletes: Boolean(raw?.signaturesCompletes),
       complete: Boolean(raw?.complete),
       verrouillee: Boolean(raw?.verrouillee),
+      evaluationAccessible: raw?.evaluationAccessible !== false,
+      evaluationIndisponibleMessage: String(
+        raw?.evaluationIndisponibleMessage ?? ''
+      ),
       notesAttribuees: Array.isArray(raw?.notesAttribuees)
         ? raw.notesAttribuees.map((n: any) => ({
             ficheEvaluationId: n?.ficheEvaluationId ?? null,

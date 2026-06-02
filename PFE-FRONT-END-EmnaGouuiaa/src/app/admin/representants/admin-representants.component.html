@@ -58,12 +58,21 @@
       <form [formGroup]="form" (ngSubmit)="submit()" class="form">
         <label>Prenom *</label>
         <input class="input" formControlName="prenom" autofocus />
+        <div class="field-error" *ngIf="getFieldError('prenom')">{{ getFieldError('prenom') }}</div>
 
         <label>Nom *</label>
         <input class="input" formControlName="nom" />
+        <div class="field-error" *ngIf="getFieldError('nom')">{{ getFieldError('nom') }}</div>
 
         <label>Email *</label>
-        <input class="input" type="email" formControlName="email" />
+        <input
+          class="input"
+          type="email"
+          formControlName="email"
+          [readonly]="isEditMode"
+          [class.readonly-input]="isEditMode"
+        />
+        <p class="field-hint" *ngIf="isEditMode">L'email ne peut pas etre modifie apres la creation.</p>
 
         <label>Telephone</label>
         <app-phone-input formControlName="telephone"></app-phone-input>

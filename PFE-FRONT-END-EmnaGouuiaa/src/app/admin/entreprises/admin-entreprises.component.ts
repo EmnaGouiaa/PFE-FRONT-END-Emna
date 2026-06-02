@@ -14,6 +14,7 @@ import {
   CreateEncadrantRequest
 } from '../../services/encadrants-professionnels.service';
 import { phoneValidator, strictEmailValidator } from '../admin-form-validators';
+import { personNameErrorMessage, personNameValidators } from '../../shared/validators/person-name.validators';
 import { PhoneInputComponent } from '../../components/phone-input/phone-input.component';
 
 type FieldErrors = Record<string, string>;
@@ -79,15 +80,15 @@ export class AdminEntreprisesComponent implements OnInit {
       telephoneEntreprise: ['', [phoneValidator()]],
       adresse: [''],
       secteurActivite: [''],
-      nomResponsable: ['', [Validators.required, Validators.minLength(2)]],
-      prenomResponsable: ['', [Validators.required, Validators.minLength(2)]],
+      nomResponsable: ['', personNameValidators()],
+      prenomResponsable: ['', personNameValidators()],
       emailResponsable: ['', [Validators.required, strictEmailValidator()]],
       telephoneResponsable: ['', [phoneValidator()]]
     });
 
     this.encadrantForm = this.fb.group({
-      nom: ['', [Validators.required, Validators.minLength(2)]],
-      prenom: ['', [Validators.required, Validators.minLength(2)]],
+      nom: ['', personNameValidators()],
+      prenom: ['', personNameValidators()],
       email: ['', [Validators.required, strictEmailValidator()]],
       telephone: ['', [phoneValidator()]],
       poste: [''],
@@ -113,6 +114,21 @@ export class AdminEntreprisesComponent implements OnInit {
     if (typeof error?.error === 'string' && error.error.trim()) return error.error;
     if (message) return message;
     if (error?.error && typeof error.error === 'object') {
+      const fieldOrder = [
+        'nomResponsable',
+        'prenomResponsable',
+        'emailResponsable',
+        'telephoneResponsable',
+        'nomEntreprise',
+        'emailEntreprise',
+        'telephoneEntreprise',
+      ];
+      for (const field of fieldOrder) {
+        const fieldMessage = error.error[field];
+        if (typeof fieldMessage === 'string' && fieldMessage.trim()) {
+          return fieldMessage.trim();
+        }
+      }
       const firstValue = Object.values(error.error).find(
         (value) => typeof value === 'string' && value.trim().length > 0
       );
@@ -260,6 +276,7 @@ export class AdminEntreprisesComponent implements OnInit {
       emailResponsable: '',
       telephoneResponsable: ''
     });
+    this.setCompanyEmailFieldsEditable(true);
   }
 
   openEdit(account: AdminCompanyAccount): void {
@@ -280,6 +297,7 @@ export class AdminEntreprisesComponent implements OnInit {
       emailResponsable: account.emailResponsable ?? '',
       telephoneResponsable: account.telephoneResponsable ?? ''
     });
+    this.setCompanyEmailFieldsEditable(false);
   }
 
   closeForm(): void {
@@ -290,11 +308,18 @@ export class AdminEntreprisesComponent implements OnInit {
     this.formSubmitAttempted = false;
     this.fieldErrors = {};
     this.form.reset();
+    this.setCompanyEmailFieldsEditable(true);
+  }
+
+  private setCompanyEmailFieldsEditable(editable: boolean): void {
+    const action = editable ? 'enable' : 'disable';
+    this.form.get('emailEntreprise')?.[action]({ emitEvent: false });
+    this.form.get('emailResponsable')?.[action]({ emitEvent: false });
   }
 
   private buildPayload(): AdminCompanyAccountRequest {
     const value = this.form.getRawValue();
-    return {
+    const payload: AdminCompanyAccountRequest = {
       representantId: this.selectedCompanyAccount?.representantId ?? null,
       nomEntreprise: String(value.nomEntreprise ?? '').trim(),
       emailEntreprise: String(value.emailEntreprise ?? '').trim(),
@@ -306,6 +331,13 @@ export class AdminEntreprisesComponent implements OnInit {
       emailResponsable: String(value.emailResponsable ?? '').trim(),
       telephoneResponsable: String(value.telephoneResponsable ?? '').trim()
     };
+
+    if (this.isEditMode && this.selectedCompanyAccount) {
+      payload.emailEntreprise = this.selectedCompanyAccount.emailEntreprise ?? '';
+      payload.emailResponsable = this.selectedCompanyAccount.emailResponsable ?? '';
+    }
+
+    return payload;
   }
 
   submit(): void {
@@ -386,6 +418,9 @@ export class AdminEntreprisesComponent implements OnInit {
     if (!control || !(control.touched || this.formSubmitAttempted)) {
       return '';
     }
+
+    const personNameMessage = personNameErrorMessage(control.errors);
+    if (personNameMessage) return personNameMessage;
 
     if (control.errors?.['required']) return 'Ce champ est obligatoire.';
     if (control.errors?.['minlength']) return 'Minimum 2 caracteres.';
@@ -577,6 +612,9 @@ export class AdminEntreprisesComponent implements OnInit {
     if (!control || !(control.touched || this.encadrantFormSubmitAttempted)) {
       return '';
     }
+
+    const personNameMessage = personNameErrorMessage(control.errors);
+    if (personNameMessage) return personNameMessage;
 
     if (control.errors?.['required']) return 'Ce champ est obligatoire.';
     if (control.errors?.['minlength']) return 'Minimum 2 caracteres.';

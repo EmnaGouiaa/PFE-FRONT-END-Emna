@@ -4,6 +4,10 @@ import { FormsModule } from '@angular/forms';
 import { finalize, timeout } from 'rxjs/operators';
 import { ServiceDemandeStageService } from '../../services/service-demande-stage.service';
 import { DemandeStage, StatutValidation } from '../../models/demande-stage.model';
+import {
+  formatResponsibleStatusLabel,
+  isCompanyRequestFullyApproved,
+} from '../../utils/company-request-state.util';
 
 type FiltreValidation = 'ALL' | 'EN_ATTENTE' | 'APPROUVEE' | 'REJETEE';
 
@@ -104,7 +108,11 @@ export class AdminDemandesStageComponent implements OnInit {
   }
 
   isFullyValidated(d: DemandeStage): boolean {
-    return (d.statutValidationResponsableStages ?? StatutValidation.EN_ATTENTE) === StatutValidation.APPROUVEE;
+    return isCompanyRequestFullyApproved(d);
+  }
+
+  formatValidationStatus(status: StatutValidation | undefined): string {
+    return formatResponsibleStatusLabel(status);
   }
 
   getGlobalStatusLabel(d: DemandeStage): string {

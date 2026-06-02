@@ -5,6 +5,11 @@ import { catchError, map, switchMap } from 'rxjs/operators';
 import { API_BASE_URL } from '../api.config';
 import { getJsonOptional$ } from '../http-optional-body';
 import {
+  deriveResponsibleValidationStatus,
+  mapBackendDemandeStatus,
+  mapBackendValidationStatus,
+} from '../../utils/company-request-state.util';
+import {
   StatutDocument,
   StudentAgreement,
   StudentCompanyRef,
@@ -17,12 +22,22 @@ import {
   StudentProfile,
   StudentProfileUpdateRequest,
   StudentReport,
-  StudentStageDocumentAction,
   StudentStageDocumentsOverview,
   StudentTrelloBoardInfo,
   StudentTrelloSummary,
   StudentUserRef
 } from './student.models';
+import { normalizeDocumentSignatoriesApi } from '../../shared/stage-documents/stage-document-signatures.util';
+import {
+  normalizeMeetingDate,
+  normalizeMeetingHeure,
+  resolveMeetingSourceFromApi
+} from '../../utils/meeting-schedule.util';
+import {
+  normalizeParticipantNames,
+  pickMeetingCompanySupervisorName,
+  pickMeetingCreatorFields
+} from '../../utils/meeting-display.util';
 
 @Injectable({ providedIn: 'root' })
 export class StudentPortalService {
@@ -265,16 +280,24 @@ export class StudentPortalService {
       .pipe(map((item) => this.normalizeReport(item)), catchError((error) => this.handleError(error)));
   }
 
-  generateLogbook(stageId: number): Observable<StudentStageDocumentAction> {
-    return this.http
-      .post<any>(`${this.internshipsUrl}/${stageId}/documents/cahier-stage/generer`, {})
-      .pipe(map((item) => this.normalizeStageDocumentAction(item, stageId)), catchError((error) => this.handleError(error)));
-  }
-
   getStageDocuments(stageId: number): Observable<StudentStageDocumentsOverview> {
     return this.http
       .get<any>(`${this.internshipsUrl}/${stageId}/documents`)
       .pipe(map((item) => this.normalizeStageDocumentsOverview(item)), catchError((error) => this.handleError(error)));
+  }
+
+  generateStageDocument(
+    stageId: number,
+    documentType: 'convention' | 'fiche-evaluation' | 'cahier-stage'
+  ): Observable<StudentStageDocumentsOverview> {
+    return this.http
+      .post<any>(`${this.internshipsUrl}/${stageId}/documents/${documentType}/generer`, {})
+      .pipe(
+        map((response) =>
+          this.normalizeStageDocumentsOverview(response?.stageDocuments ?? response)
+        ),
+        catchError((error) => this.handleError(error))
+      );
   }
 
   downloadStageDocumentPdf(stageId: number, type: 'convention' | 'fiche-evaluation' | 'cahier-stage'): Observable<Blob> {
@@ -402,9 +425,12 @@ export class StudentPortalService {
   }
 
   private normalizeCompanyRequest(raw: any): StudentCompanyRequest {
+    const statutResponsableStages = deriveResponsibleValidationStatus(raw);
+    const statutAdmin = mapBackendValidationStatus(raw?.statutAdmin ?? raw?.statutValidationAdmin);
+
     return {
       id: Number(raw?.id ?? 0),
-      statut: String(raw?.statut ?? ''),
+      statut: mapBackendDemandeStatus(raw?.statut),
       creeLe: String(raw?.creeLe ?? ''),
       misAJourLe: String(raw?.misAJourLe ?? ''),
       dateDemande: String(raw?.dateDemande ?? ''),
@@ -417,8 +443,8 @@ export class StudentPortalService {
       prenomResponsable: String(raw?.prenomResponsable ?? ''),
       emailResponsable: String(raw?.emailResponsable ?? ''),
       telephoneResponsable: String(raw?.telephoneResponsable ?? ''),
-      statutAdmin: String(raw?.statutAdmin ?? raw?.statutValidationAdmin ?? ''),
-      statutResponsableStages: String(raw?.statutResponsableStages ?? raw?.statutValidationResponsableStages ?? ''),
+      statutAdmin,
+      statutResponsableStages,
       commentaireAdmin: String(raw?.commentaireAdmin ?? raw?.motifRefusAdmin ?? ''),
       commentaireResponsableStages: String(raw?.commentaireResponsableStages ?? raw?.motifRefusResponsableStages ?? '')
     };
@@ -452,20 +478,20 @@ export class StudentPortalService {
   private normalizeMeeting(raw: any, fallback: 'HEBDOMADAIRE' | 'FINALE'): StudentMeeting {
     return {
       id: Number(raw?.id ?? 0),
-      source: this.resolveMeetingSource(raw, fallback),
+      source: resolveMeetingSourceFromApi(raw, fallback),
       numReunion: String(raw?.numReunion ?? ''),
-      date: String(raw?.date ?? ''),
-      heure: String(raw?.heure ?? ''),
+      date: normalizeMeetingDate(raw?.date),
+      heure: normalizeMeetingHeure(raw?.heure),
       observation: String(raw?.observation ?? ''),
       compteRendu: String(raw?.compteRendu ?? ''),
-      stageId: Number(raw?.stageId ?? 0),
+      stageId: Number(raw?.stageId ?? raw?.stage?.id ?? 0),
       stageTitre: String(raw?.stageTitre ?? ''),
       stagiaireNom: String(raw?.stagiaireNom ?? ''),
       entrepriseNom: String(raw?.entrepriseNom ?? ''),
-      typeEncadrantCreateur: String(raw?.typeEncadrantCreateur ?? ''),
-      nomEncadrantCreateur: String(raw?.nomEncadrantCreateur ?? ''),
-      encadrantCreateurId: this.normalizeId(raw?.encadrantCreateurId),
+      ...pickMeetingCreatorFields(raw),
+      companySupervisorName: pickMeetingCompanySupervisorName(raw),
       participantIds: Array.isArray(raw?.participantIds) ? raw.participantIds.map((item: unknown) => Number(item)) : [],
+      participantNames: normalizeParticipantNames(raw?.participantNoms ?? raw?.participantNames),
       note: this.normalizeNumber(raw?.note),
       urlFormSatisfaction: String(raw?.urlFormSatisfaction ?? '')
     };
@@ -542,16 +568,6 @@ export class StudentPortalService {
     };
   }
 
-  private normalizeStageDocumentAction(raw: any, fallbackStageId: number): StudentStageDocumentAction {
-    return {
-      stageId: Number(raw?.stageId ?? fallbackStageId),
-      documentType: String(raw?.documentType ?? raw?.type ?? 'CAHIER_STAGE'),
-      documentId: this.normalizeId(raw?.documentId ?? raw?.id),
-      message: String(raw?.message ?? 'Document généré.'),
-      generatedAt: String(raw?.generatedAt ?? raw?.dateGeneration ?? '')
-    };
-  }
-
   private normalizeStageDocumentsOverview(raw: any): StudentStageDocumentsOverview {
     return {
       stageId: Number(raw?.stageId ?? 0),
@@ -583,6 +599,7 @@ export class StudentPortalService {
       raisonAbsence: String(raw?.raisonAbsence ?? ''),
       signeeParResponsableUniversitaire: Boolean(raw?.signeeParResponsableUniversitaire),
       dateSignatureResponsableUniversitaire: String(raw?.dateSignatureResponsableUniversitaire ?? ''),
+      signataires: normalizeDocumentSignatoriesApi(raw?.signataires),
       statutDocument: (raw?.statutDocument ?? null) as StatutDocument | null
     };
   }

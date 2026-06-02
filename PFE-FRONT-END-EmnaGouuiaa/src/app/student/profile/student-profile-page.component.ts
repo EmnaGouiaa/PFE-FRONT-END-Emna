@@ -8,6 +8,8 @@ import { ServiceProfilService } from '../../services/service-profil.service';
 import { StudentProfile, StudentProfileUpdateRequest } from '../../services/student/student.models';
 import { StudentPortalService } from '../../services/student/student-portal.service';
 import { PhoneInputComponent } from '../../components/phone-input/phone-input.component';
+import { birthDateNotInFutureValidator, birthDateErrorMessage } from '../../shared/validators/birth-date.validators';
+import { personNameErrorMessage, personNameValidators } from '../../shared/validators/person-name.validators';
 
 @Component({
   selector: 'app-student-profile-page',
@@ -43,12 +45,12 @@ export class StudentProfilePageComponent implements OnInit {
 
   readonly profileForm = this.fb.nonNullable.group({
     email: ['', [Validators.required, Validators.email, Validators.maxLength(150)]],
-    nom: ['', [Validators.required, Validators.maxLength(100)]],
-    prenom: ['', [Validators.required, Validators.maxLength(100)]],
+    nom: ['', [...personNameValidators(), Validators.maxLength(100)]],
+    prenom: ['', [...personNameValidators(), Validators.maxLength(100)]],
     telephone: ['', [Validators.maxLength(30)]],
     adresse: ['', [Validators.maxLength(255)]],
     matricule: ['', [Validators.maxLength(100)]],
-    dateNaiss: [''],
+    dateNaiss: ['', [birthDateNotInFutureValidator()]],
     // Pas de limite de longueur : la valeur est une image encodée en Base-64.
     nomFichierSignature: ['']
   });
@@ -178,6 +180,32 @@ export class StudentProfilePageComponent implements OnInit {
   isInvalid(controlName: 'email' | 'nom' | 'prenom' | 'telephone' | 'adresse' | 'matricule' | 'dateNaiss'): boolean {
     const control = this.profileForm.controls[controlName];
     return control.invalid && (control.touched || control.dirty);
+  }
+
+  getFieldError(controlName: 'email' | 'nom' | 'prenom' | 'telephone' | 'adresse' | 'matricule' | 'dateNaiss'): string {
+    if (!this.isInvalid(controlName)) {
+      return '';
+    }
+    const control = this.profileForm.controls[controlName];
+    if (controlName === 'nom' || controlName === 'prenom') {
+      return personNameErrorMessage(control.errors);
+    }
+    if (controlName === 'dateNaiss') {
+      return birthDateErrorMessage(control.errors);
+    }
+    if (controlName === 'email') {
+      return 'Saisissez une adresse e-mail valide.';
+    }
+    if (controlName === 'telephone') {
+      return 'Numéro de téléphone invalide.';
+    }
+    if (controlName === 'adresse') {
+      return "L'adresse est trop longue.";
+    }
+    if (controlName === 'matricule') {
+      return 'Le matricule est trop long.';
+    }
+    return '';
   }
 
   isConfirmationInvalid(): boolean {

@@ -1,7 +1,7 @@
 <div class="company-page">
   <header class="page-hero">
     <div>
-      <h1>Journal de bord</h1>
+      <h1>Cahier de stage</h1>
       <p *ngIf="stageId">Stage #{{ stageId }}</p>
     </div>
     <div class="hero-actions">
@@ -12,57 +12,149 @@
       <button
         type="button"
         class="btn btn-primary"
-        *ngIf="cahier && peutSigner()"
+        *ngIf="cahier && role"
         (click)="signer()"
-        [disabled]="signatureEnCours"
+        [disabled]="signatureEnCours || !peutSigner()"
+        [title]="peutSigner() ? 'Signer le cahier de stage' : logbookSignBlockedReason"
       >
         {{ signatureEnCours ? 'Signature…' : 'Signer' }}
+      </button>
+      <button
+        type="button"
+        class="btn btn-primary"
+        *ngIf="contenu?.pdfDisponible"
+        (click)="telechargerPdf()"
+        [disabled]="pdfEnCours"
+      >
+        {{ pdfEnCours ? 'Téléchargement…' : 'Télécharger le PDF' }}
       </button>
     </div>
   </header>
 
   <div *ngIf="messageErreur" class="alert alert-error">{{ messageErreur }}</div>
   <div *ngIf="messageSucces" class="alert alert-success">{{ messageSucces }}</div>
-  <div *ngIf="chargement" class="loading">Chargement du journal de bord…</div>
+  <div *ngIf="chargement" class="loading">Chargement du cahier de stage…</div>
 
-  <section class="content-grid" *ngIf="!chargement">
+  <section class="content-grid" *ngIf="!chargement && contenu">
     <article class="panel" *ngIf="!cahier">
-      <div class="empty-card">Aucun journal de bord disponible pour ce stage.</div>
+      <div class="empty-card">Aucun cahier de stage n'a encore été initialisé pour ce stage.</div>
+      <p class="form-hint" *ngIf="contenu.raisonsPdfIndisponible.length">
+        {{ contenu.raisonsPdfIndisponible.join(' ') }}
+      </p>
     </article>
 
     <article class="panel" *ngIf="cahier">
       <div class="panel-header">
-        <div>
-          <h2>Détails</h2>
-          <div class="panel-subtitle">{{ cahier.stageTitre || ('Stage #' + cahier.stageId) }}</div>
-        </div>
+        <h2>Informations générales</h2>
       </div>
-
       <div class="detail-grid">
-        <div class="detail-item">
-          <span class="label">Date de génération</span>
-          <span class="value">{{ cahier.dateGeneration || '—' }}</span>
-        </div>
-        <div class="detail-item">
-          <span class="label">Date de signature</span>
-          <span class="value">{{ cahier.dateSignature || '—' }}</span>
-        </div>
-        <div class="detail-item">
-          <span class="label">Statut</span>
-          <span class="value">
-            <span class="status-pill" [ngClass]="cahier.estSigne ? 'status-positive' : 'status-warning'">
-              {{ cahier.estSigne ? 'Signé' : 'En attente de signatures' }}
-            </span>
-          </span>
+        <div class="detail-item"><span class="label">Titre</span><span class="value">{{ contenu.informationsGenerales.titre || '—' }}</span></div>
+        <div class="detail-item"><span class="label">Sujet</span><span class="value">{{ contenu.informationsGenerales.sujet || '—' }}</span></div>
+        <div class="detail-item"><span class="label">Date de début</span><span class="value">{{ contenu.informationsGenerales.dateDebut || '—' }}</span></div>
+        <div class="detail-item"><span class="label">Date de fin</span><span class="value">{{ contenu.informationsGenerales.dateFin || '—' }}</span></div>
+        <div class="detail-item"><span class="label">Stagiaire</span><span class="value">{{ contenu.informationsGenerales.stagiaireNom || '—' }}</span></div>
+        <div class="detail-item"><span class="label">Encadrant académique</span><span class="value">{{ contenu.informationsGenerales.encadrantAcademiqueNom || '—' }}</span></div>
+        <div class="detail-item"><span class="label">Encadrant professionnel</span><span class="value">{{ contenu.informationsGenerales.encadrantProfessionnelNom || '—' }}</span></div>
+        <div class="detail-item full-width"><span class="label">Entreprise</span><span class="value">{{ contenu.informationsGenerales.entrepriseNom || '—' }}</span></div>
+      </div>
+    </article>
+
+    <article class="panel" *ngIf="cahier">
+      <div class="panel-header"><h2>Signatures</h2></div>
+      <div class="detail-card" *ngIf="cahier.signatures?.length; else legacySignatures">
+        <div class="info-meta" *ngFor="let sig of cahier.signatures">
+          {{ signatureLabel(sig.roleSignature) }} :
+          <strong>{{ sig.dateSignature ? 'Signé le ' + formatSignatureDate(sig.dateSignature) : 'En attente' }}</strong>
         </div>
       </div>
+      <ng-template #legacySignatures>
+        <div class="detail-card">
+          <div class="info-meta">Stagiaire : {{ cahier.signeeStagiaire ? 'Signé' : 'En attente' }}</div>
+          <div class="info-meta">Encadrant académique : {{ cahier.signeeEncAcad ? 'Signé' : 'En attente' }}</div>
+          <div class="info-meta">Encadrant professionnel : {{ cahier.signeeEncPro ? 'Signé' : 'En attente' }}</div>
+          <div class="info-meta">Responsable entreprise : {{ cahier.signeeRespEntreprise ? 'Signé' : 'En attente' }}</div>
+        </div>
+      </ng-template>
+      <p class="form-hint" *ngIf="!contenu.pdfDisponible && contenu.raisonsPdfIndisponible.length">
+        PDF indisponible : {{ contenu.raisonsPdfIndisponible.join(' ') }}
+      </p>
+    </article>
 
-      <div class="detail-card">
-        <div class="info-title">Signatures</div>
-        <div class="info-meta">Stagiaire : {{ cahier.signeeStagiaire ? 'Signé' : 'En attente' }}</div>
-        <div class="info-meta">Encadrant académique : {{ cahier.signeeEncAcad ? 'Signé' : 'En attente' }}</div>
-        <div class="info-meta">Encadrant professionnel : {{ cahier.signeeEncPro ? 'Signé' : 'En attente' }}</div>
-        <div class="info-meta">Responsable entreprise : {{ cahier.signeeRespEntreprise ? 'Signé' : 'En attente' }}</div>
+    <article class="panel">
+      <div class="panel-header">
+        <h2>Réunions hebdomadaires</h2>
+        <span class="pill soft">{{ contenu.reunionsHebdomadaires.length || 0 }}</span>
+      </div>
+      <div class="empty-inline" *ngIf="!contenu.reunionsHebdomadaires.length">Aucune réunion hebdomadaire.</div>
+      <div class="table-wrap" *ngIf="contenu.reunionsHebdomadaires.length">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>N°</th>
+              <th>Date</th>
+              <th>Heure</th>
+              <th>Observation encadrant</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let reunion of contenu.reunionsHebdomadaires">
+              <td>{{ reunion.numReunion || '—' }}</td>
+              <td>{{ reunion.date || '—' }}</td>
+              <td>{{ reunion.heure || '—' }}</td>
+              <td>{{ reunion.observationEncadrant || '—' }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </article>
+
+    <article class="panel">
+      <div class="panel-header">
+        <h2>Tâches Trello</h2>
+        <span class="pill soft">{{ contenu.trelloSynchronise ? 'Synchronisé' : 'Non synchronisé' }}</span>
+      </div>
+      <div class="trello-columns" *ngIf="contenu.trelloSynchronise">
+        <div class="trello-column" *ngFor="let col of trelloColumns">
+          <h3>{{ col }}</h3>
+          <div class="empty-inline" *ngIf="!(contenu.tachesTrelloParColonne[col]?.length)">Aucune tâche</div>
+          <ul class="task-list" *ngIf="contenu.tachesTrelloParColonne[col]?.length">
+            <li *ngFor="let task of contenu.tachesTrelloParColonne[col]">
+              <strong>{{ task.nom }}</strong>
+              <span *ngIf="task.description">{{ task.description }}</span>
+            </li>
+          </ul>
+        </div>
+      </div>
+      <div class="empty-inline" *ngIf="!contenu.trelloSynchronise">Tableau Trello non synchronisé.</div>
+    </article>
+
+    <article class="panel">
+      <div class="panel-header">
+        <h2>Absences</h2>
+        <span class="pill soft">{{ contenu.absences.length || 0 }}</span>
+      </div>
+      <div class="empty-inline" *ngIf="!contenu.absences.length">Aucune absence enregistrée.</div>
+      <div class="table-wrap" *ngIf="contenu.absences.length">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Jours</th>
+              <th>Statut</th>
+              <th>Justification</th>
+              <th>Commentaire</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let absence of contenu.absences">
+              <td>{{ absence.date || '—' }}</td>
+              <td>{{ absence.nombreJours != null ? absence.nombreJours : '—' }}</td>
+              <td>{{ absence.statut || '—' }}</td>
+              <td>{{ absence.justification || '—' }}</td>
+              <td>{{ absence.commentaire || '—' }}</td>
+            </tr>
+          </tbody>
+        </table>
       </div>
     </article>
   </section>

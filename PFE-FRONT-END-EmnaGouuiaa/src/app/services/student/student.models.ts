@@ -115,7 +115,9 @@ export interface StudentMeeting {
   typeEncadrantCreateur: string;
   nomEncadrantCreateur: string;
   encadrantCreateurId: number | null;
+  companySupervisorName: string;
   participantIds: number[];
+  participantNames: string[];
   note: number | null;
   urlFormSatisfaction: string;
 }
@@ -204,6 +206,7 @@ export interface StudentStageDocumentStatus {
   raisonAbsence: string;
   signeeParResponsableUniversitaire: boolean;
   dateSignatureResponsableUniversitaire: string;
+  signataires?: { role?: string; libelle: string; signe: boolean }[];
   /** Cycle de vie typé du document, calculé automatiquement. */
   statutDocument: StatutDocument | null;
 }

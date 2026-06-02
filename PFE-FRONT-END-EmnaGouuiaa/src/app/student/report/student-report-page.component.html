@@ -82,7 +82,7 @@
       </div>
 
       <div class="button-row" style="margin-top: 16px;" *ngIf="report">
-        <button type="button" class="btn btn-primary" [disabled]="report.signeeStagiaire || isSigning" (click)="signReport()">
+        <button type="button" class="btn btn-primary" [disabled]="!canSignReport() || isSigning" [title]="getReportSignTooltip()" (click)="signReport()">
           {{ isSigning ? 'Signature...' : 'Signer le cahier' }}
         </button>
       </div>

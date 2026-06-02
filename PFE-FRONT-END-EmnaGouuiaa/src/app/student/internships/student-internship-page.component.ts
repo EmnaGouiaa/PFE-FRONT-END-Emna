@@ -3,6 +3,7 @@ import { Component, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { StudentInternship } from '../../services/student/student.models';
+import { formatStageStatutLabel } from '../../shared/stage-status.util';
 import { StudentPortalService } from '../../services/student/student-portal.service';
 
 @Component({
@@ -165,7 +166,7 @@ export class StudentInternshipPageComponent implements OnInit {
   }
 
   formatStatus(value: string): string {
-    return String(value || 'INCONNU').replace(/_/g, ' ');
+    return formatStageStatutLabel(value);
   }
 
   statusClass(value: string): string {

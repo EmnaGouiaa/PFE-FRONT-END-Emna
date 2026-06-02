@@ -1,0 +1,160 @@
+<div class="company-page internships-dashboard">
+  <header class="page-hero">
+    <div>
+      <h1>Suivi des stages</h1>
+      <p>Vue d'ensemble des stages avec filtres rapides et accès aux détails en un clic.</p>
+    </div>
+    <div class="hero-actions">
+      <button mat-stroked-button type="button" (click)="loadInternships()" [disabled]="isLoading">
+        <mat-icon>refresh</mat-icon>
+        Actualiser
+      </button>
+    </div>
+  </header>
+
+  <div *ngIf="errorMessage" class="alert alert-error">{{ errorMessage }}</div>
+
+  <section class="stats-row" *ngIf="!isLoading">
+    <article class="stat-card">
+      <mat-icon>work</mat-icon>
+      <div>
+        <span class="stat-value">{{ internships.length }}</span>
+        <span class="stat-label">Stages au total</span>
+      </div>
+    </article>
+    <article class="stat-card">
+      <mat-icon>filter_list</mat-icon>
+      <div>
+        <span class="stat-value">{{ filteredInternships.length }}</span>
+        <span class="stat-label">Résultats affichés</span>
+      </div>
+    </article>
+    <article class="stat-card">
+      <mat-icon>supervisor_account</mat-icon>
+      <div>
+        <span class="stat-value">{{ missingSupervisorCount }}</span>
+        <span class="stat-label">Sans encadrant académique</span>
+      </div>
+    </article>
+  </section>
+
+  <section class="toolbar filters-panel">
+    <mat-form-field appearance="outline" class="toolbar-field toolbar-search filter-field">
+      <mat-label>Rechercher</mat-label>
+      <mat-icon matPrefix>search</mat-icon>
+      <input
+        matInput
+        type="text"
+        placeholder="Étudiant, entreprise, sujet…"
+        [(ngModel)]="searchQuery"
+        (input)="applyFilters()"
+      />
+    </mat-form-field>
+
+    <mat-form-field appearance="outline" class="toolbar-field filter-field">
+      <mat-label>Statut</mat-label>
+      <mat-select
+        panelClass="internships-filter-select-panel"
+        [(ngModel)]="statusFilter"
+        (selectionChange)="onStatusFilterChange()"
+      >
+        <mat-option *ngFor="let option of stageStatusFilters" [value]="option.value">
+          {{ option.label }}
+        </mat-option>
+      </mat-select>
+    </mat-form-field>
+
+    <mat-form-field appearance="outline" class="toolbar-field filter-field">
+      <mat-label>Encadrant académique</mat-label>
+      <mat-select
+        panelClass="internships-filter-select-panel"
+        [(ngModel)]="supervisorFilter"
+        (selectionChange)="applyFilters()"
+      >
+        <mat-option value="ALL">Tous les encadrants</mat-option>
+        <mat-option value="MISSING">Sans encadrant académique</mat-option>
+        <mat-option value="ASSIGNED">Avec encadrant académique</mat-option>
+      </mat-select>
+    </mat-form-field>
+  </section>
+
+  <div *ngIf="isLoading" class="loading-state">
+    <mat-spinner diameter="48"></mat-spinner>
+    <span>Chargement des stages…</span>
+  </div>
+
+  <section *ngIf="!isLoading && filteredInternships.length === 0" class="empty-state">
+    <mat-icon>inbox</mat-icon>
+    <h2>Aucun stage trouvé</h2>
+    <p>Modifiez vos filtres ou actualisez la liste.</p>
+  </section>
+
+  <section class="cards-grid" *ngIf="!isLoading && filteredInternships.length > 0">
+    <article
+      class="stage-card"
+      *ngFor="let internship of filteredInternships; trackBy: trackByInternshipId"
+    >
+      <div class="stage-card__top">
+        <div class="stage-card__title-block">
+          <h2>{{ internship.titre || ('Stage #' + internship.id) }}</h2>
+          <p>{{ internship.sujet || 'Sujet non renseigné' }}</p>
+        </div>
+        <mat-chip-set>
+          <mat-chip [class]="statusClass(internship.statutSuivi)">
+            {{ formatStatusLabel(internship.statutSuivi) }}
+          </mat-chip>
+        </mat-chip-set>
+      </div>
+
+      <div class="stage-card__body">
+        <div class="info-row">
+          <mat-icon>person</mat-icon>
+          <div>
+            <span class="info-label">Étudiant</span>
+            <strong>{{ internship.student.fullName || '—' }}</strong>
+            <span class="info-meta">{{ internship.student.email || '—' }}</span>
+          </div>
+        </div>
+        <div class="info-row">
+          <mat-icon>business</mat-icon>
+          <div>
+            <span class="info-label">Entreprise</span>
+            <strong>{{ internship.company.nom || '—' }}</strong>
+            <span class="info-meta">{{ internship.company.secteurActivite || internship.company.email || '—' }}</span>
+          </div>
+        </div>
+        <div class="info-row">
+          <mat-icon>school</mat-icon>
+          <div>
+            <span class="info-label">Encadrant académique</span>
+            <strong>{{ internship.academicSupervisor.fullName || 'Non affecté' }}</strong>
+            <span class="info-meta">{{ internship.academicSupervisor.email || '—' }}</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="stage-card__footer">
+        <ng-container *ngIf="getAgreement(internship.id) as agreement; else noAgreement">
+          <mat-chip
+            class="convention-chip"
+            [class]="agreement.statutSignatures ? 'status-chip--positive' : 'status-chip--warning'"
+          >
+            <mat-icon matChipAvatar>{{ agreement.statutSignatures ? 'verified' : 'pending' }}</mat-icon>
+            Convention {{ agreement.statutSignatures ? 'complète' : 'incomplète' }}
+          </mat-chip>
+        </ng-container>
+        <ng-template #noAgreement>
+          <mat-chip class="convention-chip status-chip--neutral">
+            <mat-icon matChipAvatar>description</mat-icon>
+            Convention absente
+          </mat-chip>
+        </ng-template>
+
+        <button mat-flat-button color="primary" type="button" (click)="openDetails(internship)">
+          <mat-icon>visibility</mat-icon>
+          Voir détails
+        </button>
+      </div>
+    </article>
+  </section>
+</div>

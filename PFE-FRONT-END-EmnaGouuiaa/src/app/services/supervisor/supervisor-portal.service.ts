@@ -11,6 +11,7 @@ import {
   SupervisorEvaluation,
   SupervisorInternship,
   SupervisorLogbook,
+  MeetingEligibleParticipant,
   SupervisorMeeting,
   SupervisorMeetingPayload,
   SupervisorRole,
@@ -18,6 +19,17 @@ import {
   SupervisorTrelloSummary,
   SupervisorUserRef
 } from './supervisor.models';
+import { normalizeDocumentSignatoriesApi } from '../../shared/stage-documents/stage-document-signatures.util';
+import {
+  normalizeMeetingDate,
+  normalizeMeetingHeure,
+  resolveMeetingSourceFromApi
+} from '../../utils/meeting-schedule.util';
+import {
+  normalizeParticipantNames,
+  pickMeetingCompanySupervisorName,
+  pickMeetingCreatorFields
+} from '../../utils/meeting-display.util';
 
 @Injectable({ providedIn: 'root' })
 export class SupervisorPortalService {
@@ -61,10 +73,8 @@ export class SupervisorPortalService {
       .pipe(map((item) => this.normalizeInternship(item)));
   }
 
-  rejectSubject(stageId: number): Observable<SupervisorInternship> {
-    return this.http
-      .put<any>(`${this.stagesUrl}/${stageId}/refuser-sujet-connecte`, {})
-      .pipe(map((item) => this.normalizeInternship(item)));
+  rejectSubject(stageId: number): Observable<void> {
+    return this.http.put<void>(`${this.stagesUrl}/${stageId}/refuser-sujet-connecte`, {});
   }
 
   getTrelloSummary(stageId: number): Observable<SupervisorTrelloSummary> {
@@ -91,6 +101,23 @@ export class SupervisorPortalService {
         trelloBoardId: String(raw?.trelloBoardId ?? '')
       }))
     );
+  }
+
+  getEligibleMeetingParticipants(stageId: number): Observable<MeetingEligibleParticipant[]> {
+    return this.http
+      .get<MeetingEligibleParticipant[]>(`${this.meetingsUrl}/stage/${stageId}/eligible-participants`)
+      .pipe(
+        map((items) =>
+          (items ?? []).map((item) => ({
+            id: Number(item.id),
+            fullName: String(item.fullName ?? '').trim(),
+            email: String(item.email ?? '').trim(),
+            role: String(item.role ?? '').trim(),
+            roleLabel: String(item.roleLabel ?? '').trim()
+          }))
+        ),
+        catchError(() => of([]))
+      );
   }
 
   listMeetingsForInternships(internships: SupervisorInternship[]): Observable<SupervisorMeeting[]> {
@@ -127,18 +154,22 @@ export class SupervisorPortalService {
    * - Sinon on retombe sur la combinaison source/id/date/heure/stage.
    */
   private dedupeMeetings(meetings: SupervisorMeeting[]): SupervisorMeeting[] {
-    const seen = new Set<string>();
-    return meetings.filter((meeting) => {
+    const byKey = new Map<string, SupervisorMeeting>();
+    for (const meeting of meetings) {
       const num = (meeting.numReunion ?? '').trim();
       const key = num
         ? `num:${num.toUpperCase()}|stage:${meeting.stageId}`
         : `id:${meeting.source}-${meeting.id}|${meeting.date}|${meeting.heure}|stage:${meeting.stageId}`;
-      if (seen.has(key)) {
-        return false;
+      const existing = byKey.get(key);
+      if (!existing) {
+        byKey.set(key, meeting);
+        continue;
       }
-      seen.add(key);
-      return true;
-    });
+      if (meeting.source === 'FINALE' && existing.source !== 'FINALE') {
+        byKey.set(key, meeting);
+      }
+    }
+    return Array.from(byKey.values());
   }
 
   saveMeeting(payload: SupervisorMeetingPayload): Observable<SupervisorMeeting> {
@@ -150,10 +181,31 @@ export class SupervisorPortalService {
     return request$.pipe(map((item) => this.normalizeMeeting(item)));
   }
 
-  saveReport(meetingId: number, compteRendu: string): Observable<SupervisorMeeting> {
+  /** Réunion finale : seule l'heure est modifiable (payload minimal pour éviter les rejets policy). */
+  saveFinalMeetingSchedule(
+    payload: SupervisorMeetingPayload
+  ): Observable<SupervisorMeeting> {
+    const body = {
+      id: payload.id,
+      heure: this.formatMeetingHeure(payload.heure),
+    };
     return this.http
-      .patch<any>(`${this.meetingsUrl}/${meetingId}/compte-rendu`, compteRendu.trim())
+      .put<any>(`${this.finalMeetingsUrl}/${payload.id}`, body)
       .pipe(map((item) => this.normalizeMeeting(item)));
+  }
+
+  /** Observation du créateur (encadrant académique ou professionnel) sur sa réunion hebdomadaire. */
+  saveObservation(meetingId: number, observation: string): Observable<SupervisorMeeting> {
+    return this.http
+      .put<any>(`${this.meetingsUrl}/${meetingId}/observation`, JSON.stringify(observation.trim()), {
+        headers: { 'Content-Type': 'application/json' },
+      })
+      .pipe(map((item) => this.normalizeMeeting(item)));
+  }
+
+  /** @deprecated Utiliser {@link saveObservation} pour les encadrants. */
+  saveReport(meetingId: number, observation: string): Observable<SupervisorMeeting> {
+    return this.saveObservation(meetingId, observation);
   }
 
   deleteMeeting(meetingId: number): Observable<void> {
@@ -246,8 +298,17 @@ export class SupervisorPortalService {
     );
   }
 
-  generateLogbook(stageId: number): Observable<unknown> {
-    return this.http.post(`${this.stagesUrl}/${stageId}/documents/cahier-stage/generer`, {});
+  generateStageDocument(
+    stageId: number,
+    documentType: 'convention' | 'fiche-evaluation' | 'cahier-stage'
+  ): Observable<SupervisorStageDocumentsOverview> {
+    return this.http
+      .post<any>(`${this.stagesUrl}/${stageId}/documents/${documentType}/generer`, {})
+      .pipe(
+        map((response) =>
+          this.normalizeStageDocumentsOverview(response?.stageDocuments ?? response)
+        )
+      );
   }
 
   getStageDocuments(stageId: number): Observable<SupervisorStageDocumentsOverview> {
@@ -286,21 +347,29 @@ export class SupervisorPortalService {
   }
 
   private normalizeMeeting(raw: any): SupervisorMeeting {
+    const participantIdsRaw = raw?.participantIds;
+    const participantIds = Array.isArray(participantIdsRaw)
+      ? participantIdsRaw.map((item: unknown) => Number(item)).filter((id) => Number.isFinite(id) && id > 0)
+      : participantIdsRaw && typeof participantIdsRaw === 'object'
+        ? Object.values(participantIdsRaw).map((item) => Number(item)).filter((id) => Number.isFinite(id) && id > 0)
+        : [];
+
     return {
       id: Number(raw?.id ?? 0),
-      source: String(raw?.typeReunion ?? '').toUpperCase().includes('FIN') ? 'FINALE' : 'HEBDOMADAIRE',
+      source: resolveMeetingSourceFromApi(raw, 'HEBDOMADAIRE'),
       numReunion: String(raw?.numReunion ?? ''),
-      date: String(raw?.date ?? ''),
-      heure: String(raw?.heure ?? ''),
+      date: normalizeMeetingDate(raw?.date),
+      heure: normalizeMeetingHeure(raw?.heure),
       observation: String(raw?.observation ?? ''),
       compteRendu: String(raw?.compteRendu ?? ''),
-      stageId: Number(raw?.stageId ?? 0),
+      stageId: Number(raw?.stageId ?? raw?.stage?.id ?? 0),
       stageTitre: String(raw?.stageTitre ?? ''),
       studentName: String(raw?.stagiaireNom ?? ''),
       companyName: String(raw?.entrepriseNom ?? ''),
-      typeEncadrantCreateur: String(raw?.typeEncadrantCreateur ?? ''),
-      nomEncadrantCreateur: String(raw?.nomEncadrantCreateur ?? ''),
-      participantIds: Array.isArray(raw?.participantIds) ? raw.participantIds.map((item: unknown) => Number(item)) : [],
+      ...pickMeetingCreatorFields(raw),
+      companySupervisorName: pickMeetingCompanySupervisorName(raw),
+      participantIds,
+      participantNames: normalizeParticipantNames(raw?.participantNoms ?? raw?.participantNames),
       note: this.normalizeNullableNumber(raw?.note),
       urlFormSatisfaction: String(raw?.urlFormSatisfaction ?? '')
     };
@@ -366,9 +435,12 @@ export class SupervisorPortalService {
       dateSignatureRepresentantEntreprise: String(raw?.dateSignatureRepresentantEntreprise ?? ''),
       noteFinale: this.normalizeNullableNumber(raw?.noteFinale),
       donneesCompletes: Boolean(raw?.donneesCompletes),
+      pretSignatureEncadrantProfessionnel: Boolean(raw?.pretSignatureEncadrantProfessionnel),
       signaturesCompletes: Boolean(raw?.signaturesCompletes),
       complete: Boolean(raw?.complete),
       verrouillee: Boolean(raw?.verrouillee),
+      evaluationAccessible: raw?.evaluationAccessible !== false,
+      evaluationIndisponibleMessage: String(raw?.evaluationIndisponibleMessage ?? ''),
       notesAttribuees: Array.isArray(raw?.notesAttribuees)
         ? raw.notesAttribuees.map((n: any) => ({
             ficheEvaluationId: this.normalizeNullableNumber(n?.ficheEvaluationId),
@@ -415,7 +487,8 @@ export class SupervisorPortalService {
       statut: String(raw?.statut ?? ''),
       raisonAbsence: String(raw?.raisonAbsence ?? ''),
       signeeParResponsableUniversitaire: Boolean(raw?.signeeParResponsableUniversitaire),
-      dateSignatureResponsableUniversitaire: String(raw?.dateSignatureResponsableUniversitaire ?? '')
+      dateSignatureResponsableUniversitaire: String(raw?.dateSignatureResponsableUniversitaire ?? ''),
+      signataires: normalizeDocumentSignatoriesApi(raw?.signataires)
     };
   }
 
@@ -433,27 +506,31 @@ export class SupervisorPortalService {
     };
   }
 
-  private toMeetingPayload(payload: SupervisorMeetingPayload): SupervisorMeetingPayload {
-    // Ensure `heure` is sent as "HH:mm" or "HH:mm:ss" properly
-    let formattedHeure = payload.heure;
-    if (formattedHeure && formattedHeure.split(':').length === 2) {
-      formattedHeure = `${formattedHeure}:00`;
+
+  private formatMeetingHeure(heure: string | null | undefined): string {
+    let formatted = String(heure ?? '').trim();
+    if (formatted && formatted.split(':').length === 2) {
+      formatted = `${formatted}:00`;
     }
-  
-    const result: any = {
-      ...payload,
+    return formatted;
+  }
+
+  private toMeetingPayload(payload: SupervisorMeetingPayload): Record<string, unknown> {
+    const body: Record<string, unknown> = {
+      stageId: Number(payload.stageId),
+      date: payload.date,
+      heure: this.formatMeetingHeure(payload.heure),
       typeReunion: 'HEBDOMADAIRE',
-      heure: formattedHeure,
-      observation: payload.observation.trim(),
       compteRendu: payload.compteRendu?.trim() || '',
-      participantIds: payload.participantIds ?? []
     };
-    if (payload.numReunion) {
-      result.numReunion = payload.numReunion.trim();
-    } else {
-      delete result.numReunion;
+
+    if (payload.id) {
+      body['id'] = payload.id;
     }
-    return result;
+    if (payload.numReunion?.trim()) {
+      body['numReunion'] = payload.numReunion.trim();
+    }
+    return body;
   }
 
   private normalizeNullableNumber(value: unknown): number | null {

@@ -3,7 +3,12 @@ import { HttpClient } from '@angular/common/http';
 import { Observable, throwError } from 'rxjs';
 import { catchError, map } from 'rxjs/operators';
 import { API_BASE_URL } from './api.config';
-import { DemandeStage, StatutDemande, StatutValidation } from '../models/demande-stage.model';
+import { DemandeStage, StatutValidation } from '../models/demande-stage.model';
+import {
+  deriveResponsibleValidationStatus,
+  mapBackendDemandeStatus,
+  mapBackendValidationStatus,
+} from '../utils/company-request-state.util';
 
 export interface DemandeStageDTO {
   nomEntreprise: string;
@@ -58,47 +63,15 @@ export class ServiceDemandeStageService {
     return this.unwrapAny(response) as T;
   }
 
-  private normalizeValidationStatus(value: unknown): StatutValidation {
-    const status = String(value ?? '').trim().toUpperCase();
-
-    switch (status) {
-      case 'VALIDEE':
-        return StatutValidation.APPROUVEE;
-      case 'REFUSEE':
-        return StatutValidation.REJETEE;
-      default:
-        return status === StatutValidation.REJETEE
-          ? StatutValidation.REJETEE
-          : status === StatutValidation.APPROUVEE
-            ? StatutValidation.APPROUVEE
-            : StatutValidation.EN_ATTENTE;
-    }
-  }
-
-  private normalizeDemandeStatus(value: unknown): StatutDemande {
-    const status = String(value ?? '').trim().toUpperCase();
-
-    switch (status) {
-      case 'VALIDEE':
-        return StatutDemande.APPROUVEE;
-      case 'REFUSEE':
-        return StatutDemande.REJETEE;
-      default:
-        return (Object.values(StatutDemande) as string[]).includes(status)
-          ? status as StatutDemande
-          : StatutDemande.EN_ATTENTE;
-    }
-  }
-
   private normalizeDemande(raw: any): DemandeStage {
     const etudiant = raw?.etudiant ?? raw?.stagiaire ?? null;
     const nomResponsable = [raw?.prenomResponsable, raw?.nomResponsable]
       .filter((part) => typeof part === 'string' && part.trim().length > 0)
       .join(' ')
       .trim();
+    const statutValidationResponsableStages = deriveResponsibleValidationStatus(raw);
 
     return {
-      ...(raw as DemandeStage),
       id: Number(raw?.id ?? 0),
       nomEntreprise: raw?.nomEntreprise ?? raw?.entreprise?.nomEntreprise ?? '',
       adresseEntreprise: raw?.adresseEntreprise ?? raw?.adresse ?? raw?.entreprise?.adresseEntreprise ?? raw?.entreprise?.adresse ?? '',
@@ -112,15 +85,13 @@ export class ServiceDemandeStageService {
       descriptionStage: raw?.descriptionStage ?? raw?.description ?? '',
       dateDebut: raw?.dateDebut ?? undefined,
       dateFin: raw?.dateFin ?? undefined,
-      statut: this.normalizeDemandeStatus(raw?.statut),
-      statutValidationAdmin: this.normalizeValidationStatus(raw?.statutValidationAdmin ?? raw?.statutAdmin),
-      statutValidationResponsableStages: this.normalizeValidationStatus(
-        raw?.statutValidationResponsableStages ?? raw?.statutResponsableStages
-      ),
-      statutValidationEncadrant: this.normalizeValidationStatus(
+      statut: mapBackendDemandeStatus(raw?.statut),
+      statutValidationAdmin: mapBackendValidationStatus(raw?.statutValidationAdmin ?? raw?.statutAdmin),
+      statutValidationResponsableStages,
+      statutValidationEncadrant: mapBackendValidationStatus(
         raw?.statutValidationEncadrant ?? raw?.statutValidationProf
       ),
-      statutValidationAcademique: this.normalizeValidationStatus(
+      statutValidationAcademique: mapBackendValidationStatus(
         raw?.statutValidationAcademique ?? raw?.statutValidationAcad
       ),
       commentaireAdmin: raw?.commentaireAdmin ?? raw?.motifRefusAdmin ?? undefined,

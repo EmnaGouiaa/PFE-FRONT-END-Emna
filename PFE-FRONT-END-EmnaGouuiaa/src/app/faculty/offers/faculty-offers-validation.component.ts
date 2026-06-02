@@ -7,6 +7,12 @@ import { AuthentificationService } from '../../services/authentification.service
 import { Entreprise, EntreprisesService } from '../../services/entreprises.service';
 import { FacultyPortalService } from '../../services/faculty/faculty-portal.service';
 import { FacultyOffer } from '../../services/faculty/faculty.models';
+import {
+  canFacultyEditOffer,
+  canShowFacultyOfferEditActions,
+  isFacultyOfferLockedForEdit,
+} from './faculty-offer-actions.util';
+import { validateStagePeriod } from '../../shared/validators/stage-period.validation';
 
 interface FacultyOfferDraft {
   titre: string;
@@ -120,11 +126,41 @@ interface OfferEditDraft {
               </div>
 
               <div class="offer-card-foot">
+                <span class="status-pill status-warning" *ngIf="isOfferLockedByTerminatedStage(offer)">
+                  Offre verrouillée (stage terminé)
+                </span>
                 <span class="status-pill status-warning" *ngIf="offer.statut === 'EN_ATTENTE'">Validation en attente</span>
                 <span class="status-pill status-VALIDEE" *ngIf="offer.statut === 'VALIDEE'">Deja validee</span>
               </div>
 
-              <div class="inline-actions">
+              <div class="inline-actions" *ngIf="offer.statut === 'EN_ATTENTE'">
+                <button
+                  type="button"
+                  class="btn btn-secondary"
+                  (click)="selectOffer(offer); $event.stopPropagation()"
+                >
+                  Voir details
+                </button>
+                <button
+                  type="button"
+                  class="btn btn-success"
+                  (click)="selectOffer(offer); approveSelectedOffer(); $event.stopPropagation()"
+                  [disabled]="isActing || isOfferLockedByTerminatedStage(offer)"
+                  [title]="getApproveButtonTooltip(offer)"
+                >
+                  Approuver
+                </button>
+                <button
+                  type="button"
+                  class="btn btn-danger"
+                  (click)="selectOffer(offer); rejectSelectedOffer(); $event.stopPropagation()"
+                  [disabled]="isActing || isOfferLockedByTerminatedStage(offer)"
+                  [title]="getRejectButtonTooltip(offer)"
+                >
+                  Refuser la demande
+                </button>
+              </div>
+              <div class="inline-actions" *ngIf="canShowOfferCardActions(offer)">
                 <button
                   type="button"
                   class="btn btn-secondary"
@@ -136,29 +172,10 @@ interface OfferEditDraft {
                   type="button"
                   class="btn btn-primary"
                   (click)="openEditModal(offer); $event.stopPropagation()"
-                  [disabled]="isLockedOffer(offer)"
-                  [title]="isLockedOffer(offer) ? 'Cette offre ne peut plus être modifiée' : 'Modifier les informations de cette offre'"
+                  [disabled]="!canEditOffer(offer)"
+                  [title]="getOfferLockTooltip(offer) || 'Modifier les informations de cette offre'"
                 >
                   Modifier
-                </button>
-                <button
-                  type="button"
-                  class="btn btn-success"
-                  *ngIf="offer.statut === 'EN_ATTENTE'"
-                  (click)="selectOffer(offer); approveSelectedOffer(); $event.stopPropagation()"
-                  [disabled]="isActing"
-                >
-                  Approuver
-                </button>
-                <button
-                  type="button"
-                  class="btn btn-danger"
-                  *ngIf="offer.statut === 'EN_ATTENTE'"
-                  (click)="selectOffer(offer); rejectSelectedOffer(); $event.stopPropagation()"
-                  [disabled]="isActing"
-                  title="Refuser la demande d'offre de stage"
-                >
-                  Refuser la demande
                 </button>
               </div>
             </article>
@@ -230,25 +247,28 @@ interface OfferEditDraft {
               <button
                 type="button"
                 class="btn btn-primary"
-                (click)="selectedOffer && openEditModal(selectedOffer); closeOfferDetails()"
-                [disabled]="!selectedOffer || isLockedOffer(selectedOffer)"
-                [title]="selectedOffer && isLockedOffer(selectedOffer) ? 'Cette offre ne peut plus être modifiée' : 'Modifier les informations de cette offre'"
+                *ngIf="selectedOffer && canShowOfferCardActions(selectedOffer)"
+                (click)="openEditModal(selectedOffer); closeOfferDetails()"
+                [disabled]="!canEditOffer(selectedOffer)"
+                [title]="getOfferLockTooltip(selectedOffer) || 'Modifier les informations de cette offre'"
               >
                 Modifier
               </button>
               <button
                 type="button"
                 class="btn btn-success"
+                *ngIf="selectedOffer.statut === 'EN_ATTENTE'"
                 (click)="approveSelectedOffer()"
-                [disabled]="isActing || !selectedOffer || !canApproveSelectedOffer()"
+                [disabled]="isActing || !canApproveSelectedOffer()"
               >
                 {{ isActing && pendingAction === 'approve' ? 'Approbation...' : "Approuver l'offre" }}
               </button>
               <button
                 type="button"
                 class="btn btn-danger"
+                *ngIf="selectedOffer.statut === 'EN_ATTENTE'"
                 (click)="rejectSelectedOffer()"
-                [disabled]="isActing || !selectedOffer"
+                [disabled]="isActing"
               >
                 {{ isActing && pendingAction === 'reject' ? 'Refus en cours...' : 'Refuser la demande' }}
               </button>
@@ -279,7 +299,7 @@ interface OfferEditDraft {
                  placeholder="Compétences, niveau requis..." />
 
           <label>Durée (mois)</label>
-          <input class="input" type="number" [(ngModel)]="editDraft.duree" min="1" max="24" />
+          <input class="input" type="number" [(ngModel)]="editDraft.duree" min="1" max="3" />
 
           <label>Date de début prévue</label>
           <input class="input" type="date" [(ngModel)]="editDraft.dateDebutPrevue" />
@@ -326,8 +346,8 @@ interface OfferEditDraft {
           <label for="profilRecherche">Profil recherche</label>
           <input id="profilRecherche" class="input" [(ngModel)]="draftOffer.profilRecherche" name="profilRecherche" />
 
-          <label for="duree">Duree (mois)</label>
-          <input id="duree" class="input" type="number" [(ngModel)]="draftOffer.duree" name="duree" />
+          <label for="duree">Duree (mois : 1-3 periode 1, 1-2 periode 2)</label>
+          <input id="duree" class="input" type="number" [(ngModel)]="draftOffer.duree" name="duree" min="1" max="3" />
 
           <label for="dateDebutPrevue">Date de debut prevue</label>
           <input id="dateDebutPrevue" class="input" type="date" [(ngModel)]="draftOffer.dateDebutPrevue" name="dateDebutPrevue" />
@@ -486,6 +506,12 @@ export class FacultyOffersValidationPageComponent implements OnInit {
       return;
     }
 
+    const periodCheck = validateStagePeriod(this.draftOffer.dateDebutPrevue, this.draftOffer.duree);
+    if (!periodCheck.valid) {
+      this.errorMessage = periodCheck.message ?? 'Période de stage invalide.';
+      return;
+    }
+
     this.isCreatingOffer = true;
     this.errorMessage = '';
     this.successMessage = '';
@@ -592,13 +618,57 @@ export class FacultyOffersValidationPageComponent implements OnInit {
     return this.selectedOffer?.statut === 'EN_ATTENTE';
   }
 
+  isOfferLockedByTerminatedStage(offer: FacultyOffer): boolean {
+    return offer.stageTermine === true;
+  }
+
+  canShowOfferCardActions(offer: FacultyOffer): boolean {
+    return canShowFacultyOfferEditActions(offer);
+  }
+
+  canEditOffer(offer: FacultyOffer): boolean {
+    return canFacultyEditOffer(offer);
+  }
+
   isLockedOffer(offer: FacultyOffer): boolean {
-    return offer.stageCree || offer.statut === 'AFFECTEE';
+    return isFacultyOfferLockedForEdit(offer);
+  }
+
+  getOfferLockMessage(offer: FacultyOffer): string {
+    if (this.isOfferLockedByTerminatedStage(offer)) {
+      return 'Modification impossible : stage terminé';
+    }
+    if (offer.stageCree || offer.statut === 'AFFECTEE') {
+      return "Cette offre ne peut plus être modifiée car elle est déjà affectée ou liée à un stage.";
+    }
+    return '';
+  }
+
+  getOfferLockTooltip(offer: FacultyOffer): string {
+    return this.getOfferLockMessage(offer);
+  }
+
+  getApproveButtonTooltip(offer: FacultyOffer): string {
+    if (this.isOfferLockedByTerminatedStage(offer)) {
+      return this.getOfferLockTooltip(offer);
+    }
+    return "Approuver l'offre";
+  }
+
+  getRejectButtonTooltip(offer: FacultyOffer): string {
+    if (this.isOfferLockedByTerminatedStage(offer)) {
+      return this.getOfferLockTooltip(offer);
+    }
+    return "Refuser la demande d'offre de stage";
   }
 
   openEditModal(offer: FacultyOffer): void {
-    if (this.isLockedOffer(offer)) {
-      this.errorMessage = "Cette offre ne peut plus être modifiée car elle est déjà affectée ou liée à un stage.";
+    if (!this.canShowOfferCardActions(offer)) {
+      this.errorMessage = 'Seules les offres approuvées peuvent être modifiées.';
+      return;
+    }
+    if (!this.canEditOffer(offer)) {
+      this.errorMessage = this.getOfferLockMessage(offer);
       return;
     }
     this.editTargetOffer = offer;
@@ -633,6 +703,12 @@ export class FacultyOffersValidationPageComponent implements OnInit {
     }
     if (!this.editDraft.dateDebutPrevue) {
       this.errorMessage = "La date de début est requise.";
+      return;
+    }
+
+    const periodCheck = validateStagePeriod(this.editDraft.dateDebutPrevue, this.editDraft.duree);
+    if (!periodCheck.valid) {
+      this.errorMessage = periodCheck.message ?? 'Période de stage invalide.';
       return;
     }
 
@@ -672,7 +748,9 @@ export class FacultyOffersValidationPageComponent implements OnInit {
     return !!this.draftOffer.entrepriseId
       && this.draftOffer.titre.trim().length >= 3
       && this.draftOffer.descriptionMissions.trim().length >= 10
-      && this.draftOffer.dateDebutPrevue.trim().length > 0;
+      && this.draftOffer.dateDebutPrevue.trim().length > 0
+      && Number.isFinite(Number(this.draftOffer.duree))
+      && Number(this.draftOffer.duree) >= 1;
   }
 
   private removeOfferFromList(offerId: number): void {

@@ -26,7 +26,7 @@
   <div class="support-banner" [class.warning-banner]="!isCreationPeriodOpen" [class.success-banner]="isCreationPeriodOpen">
     <strong>{{ isCreationPeriodOpen ? '✓ Période ouverte' : '⚠ Création fermée' }}</strong>
     — {{ periodBannerText }}
-    <span style="margin-left:8px;opacity:0.7;font-size:0.85em">Durée autorisée : 1 à 4 mois.</span>
+    <span style="margin-left:8px;opacity:0.7;font-size:0.85em">Durée : 1 à 3 mois (période 1) ou 1 à 2 mois (période 2).</span>
   </div>
 
   <div class="support-banner">
@@ -72,6 +72,10 @@
             </div>
           </div>
 
+          <div class="offer-card-foot" *ngIf="isOfferLockedByTerminatedStage(offer)">
+            <span class="status-pill status-warning">Offre verrouillée (stage terminé)</span>
+          </div>
+
           <div class="inline-actions">
             <button
               type="button"
@@ -94,6 +98,8 @@
               class="btn btn-secondary"
               *ngIf="offer.statut === 'PUBLIEE' || offer.statut === 'VALIDEE'"
               (click)="close(offer); $event.stopPropagation()"
+              [disabled]="!canCloseOffer(offer)"
+              [title]="!canCloseOffer(offer) ? getEditDisabledReason(offer) : 'Fermer l\'offre'"
             >
               Fermer
             </button>
@@ -154,6 +160,10 @@
             </div>
           </div>
 
+          <div class="offer-card-foot" *ngIf="isOfferLockedByTerminatedStage(offer)">
+            <span class="status-pill status-warning">Offre verrouillée (stage terminé)</span>
+          </div>
+
           <div class="inline-actions">
             <button
               type="button"
@@ -161,6 +171,15 @@
               (click)="openOfferDetails(offer); $event.stopPropagation()"
             >
               Voir details
+            </button>
+            <button
+              type="button"
+              class="btn btn-secondary"
+              (click)="openEdit(offer); $event.stopPropagation()"
+              [disabled]="!canEdit(offer)"
+              [title]="getEditDisabledReason(offer) || 'Modifier l\'offre'"
+            >
+              Modifier
             </button>
             <button
               type="button"
@@ -223,6 +242,10 @@
               <span class="label">Motif de refus</span>
               <span class="value">{{ selectedOffer.motifRefus }}</span>
             </div>
+            <div class="detail-item full-width" *ngIf="isOfferLockedByTerminatedStage(selectedOffer)">
+              <span class="label">Etat</span>
+              <span class="value">Offre verrouillée (stage terminé)</span>
+            </div>
             <div class="detail-item full-width" *ngIf="selectedOffer.stageCree || selectedOffer.statut === 'AFFECTEE'">
               <span class="label">Etat de l'offre</span>
               <span class="value">Cette offre a deja ete pourvue. Le suivi se fait maintenant depuis le stage cree.</span>
@@ -256,6 +279,8 @@
             class="btn btn-secondary"
             *ngIf="selectedOffer.statut === 'PUBLIEE' || selectedOffer.statut === 'VALIDEE'"
             (click)="closeOfferDetails(); close(selectedOffer)"
+            [disabled]="!canCloseOffer(selectedOffer)"
+            [title]="!canCloseOffer(selectedOffer) ? getEditDisabledReason(selectedOffer) : 'Fermer l\'offre'"
           >
             Fermer l'offre
           </button>
@@ -290,7 +315,8 @@
 
       <!-- Rappel des règles dans le formulaire -->
       <div class="support-banner" style="margin:0 0 12px;border-radius:10px;font-size:0.87rem" *ngIf="!isEditMode">
-        <strong>Règles :</strong> Durée entre 1 et 4 mois.
+        <strong>Règles :</strong> Période 1 (fév.–mai) : 1 à 3 mois, fin au plus tard le 01/06.
+        Période 2 (juin–août) : 1 à 2 mois, fin au plus tard le 01/09.
         Périodes autorisées : <strong>1er fév → 1er juin</strong> et <strong>1er juin → 30 août</strong>.
       </div>
 
@@ -328,18 +354,18 @@
         </div>
 
         <label>Duree (mois) <span style="color:#e53e3e">*</span></label>
-        <input class="input" type="number" formControlName="duree" min="1" max="4"
-               placeholder="Entre 1 et 4 mois" />
+        <input class="input" type="number" formControlName="duree" [min]="1" [max]="maxDureeForForm"
+               [attr.placeholder]="'Entre 1 et ' + maxDureeForForm + ' mois'" />
         <div *ngIf="offerForm.get('duree')?.invalid && offerForm.get('duree')?.touched"
              style="color:#e53e3e;font-size:0.85rem;margin-top:2px;">
           <span *ngIf="offerForm.get('duree')?.errors?.['required']
                        || offerForm.get('duree')?.errors?.['min']
                        || offerForm.get('duree')?.errors?.['max']">
-            La durée du stage doit être comprise entre 1 et 4 mois maximum.
+            La durée doit respecter la période choisie (3 mois max en période 1, 2 mois max en période 2).
           </span>
         </div>
         <div style="margin-top:4px;font-size:0.82rem;color:#64748b">
-          Durée minimale : 1 mois — Durée maximale : 4 mois (Période 1) / 2 mois (Période 2).
+          Durée minimale : 1 mois — Maximale : {{ maxDureeForForm }} mois selon la date de début.
         </div>
 
         <!-- Erreur de validation période (combinaison date de début + durée incompatible). -->

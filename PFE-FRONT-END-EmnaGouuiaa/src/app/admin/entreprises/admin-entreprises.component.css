@@ -369,6 +369,18 @@
   font-weight: 600;
 }
 
+.field-hint {
+  margin-top: 6px;
+  color: var(--text-muted, #64748b);
+  font-size: 0.78rem;
+  line-height: 1.4;
+}
+
+.readonly-input {
+  background: rgba(15, 23, 42, 0.04);
+  cursor: default;
+}
+
 .info-banner {
   padding: 14px 16px;
   border-radius: 18px;

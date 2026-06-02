@@ -1012,6 +1012,10 @@
   margin-top: auto;
 }
 
+.doc-card-actions--standard .btn-sm {
+  min-width: 4.5rem;
+}
+
 @media (max-width: 640px) {
   .doc-cards-row { flex-direction: column; }
   .doc-mini-card { max-width: 100%; }

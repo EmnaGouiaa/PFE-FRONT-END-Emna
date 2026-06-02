@@ -1,33 +1,44 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
-import { forkJoin, of } from 'rxjs';
+import { ActivatedRoute } from '@angular/router';
+import { FormArray, FormBuilder, FormControl, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
+import { forkJoin, of, Subscription } from 'rxjs';
 import { catchError, map } from 'rxjs/operators';
 import { timeout } from 'rxjs/operators';
 import { CompanyContextService } from '../../services/company/company-context.service';
 import { CompanyInternshipsService } from '../../services/company/company-internships.service';
 import { CompanyEvaluationsService } from '../../services/company/company-evaluations.service';
 import { CompanyMeetingsService } from '../../services/company/company-meetings.service';
-import { CompanyContext, CompanyEvaluation, CompanyInternship, CompanyMeeting, EvaluationNoteDto } from '../../services/company/company.models';
-import { isStagePeriodOpen, getStagePeriodOpenDate } from '../../services/stage-period.utils';
-
-interface RpNoteDraft {
-  critereLibelle: string;
-  critereEvaluationId: number | null;
-  note: number;
-  poids: number;
-  bareme: number;
-  commentaire: string;
-}
+import { CompanyContext, CompanyEvaluation, CompanyInternship, CompanyMeeting } from '../../services/company/company.models';
+import {
+  EVALUATION_UNAVAILABLE_MESSAGE,
+  getStagePeriodOpenDate,
+  isEvaluationAccessible
+} from '../../services/stage-period.utils';
+import {
+  areAllCriteriaScoresValid,
+  EVALUATION_SIGN_INCOMPLETE_MESSAGE,
+  isResponsableEntreprisePartReadyForSign,
+  buildNotesPayloadFromDrafts,
+  buildRoleCriteriaDrafts,
+  countScoredCriteriaForRole,
+  finalScoreOnFiveFromNotes,
+  formatFinalScoreOnFive,
+  mergeRoleDraftsWithFicheNotes,
+  RESPONSABLE_ENTREPRISE_CRITERIA,
+  RoleCriterionDraft
+} from '../../utils/evaluation-criteria.util';
 
 @Component({
   selector: 'app-company-evaluations-page',
   standalone: true,
   imports: [CommonModule, ReactiveFormsModule, FormsModule],
   templateUrl: './company-evaluations.component.html',
-  styleUrls: ['../company-shared.css', './company-evaluations.component.css']
+  styleUrls: ['../company-shared.css', '../../supervisor/supervisor-shared.css', './company-evaluations.component.css']
 })
 export class CompanyEvaluationsPageComponent implements OnInit {
+  readonly EVALUATION_UNAVAILABLE_MESSAGE = EVALUATION_UNAVAILABLE_MESSAGE;
+  readonly EVALUATION_SIGN_INCOMPLETE_MESSAGE = EVALUATION_SIGN_INCOMPLETE_MESSAGE;
   context: CompanyContext | null = null;
   internships: CompanyInternship[] = [];
   meetings: CompanyMeeting[] = [];
@@ -38,18 +49,63 @@ export class CompanyEvaluationsPageComponent implements OnInit {
   isSaving = false;
   errorMessage = '';
   successMessage = '';
+  showSubmitConfirm = false;
+  showEvaluationModal = false;
+  searchTerm = '';
+  statusFilter = 'ALL';
+  readonly fixedCriteriaLabels = [...RESPONSABLE_ENTREPRISE_CRITERIA];
+  fixedCriteriaDrafts: RoleCriterionDraft[] = this.createEmptyFixedCriteria();
+  fixedCriteriaFormArray = new FormArray<FormControl<number | null>>([]);
+  private fixedCriteriaFormArraySub?: Subscription;
 
-  // Critère Ponctualité (géré uniquement par le RE)
-  noteDraftRE: RpNoteDraft = this.defaultNotePonctualite();
+  get modalFinalScoreOnFive(): number {
+    return finalScoreOnFiveFromNotes(
+      mergeRoleDraftsWithFicheNotes(
+        this.fixedCriteriaDrafts,
+        this.selectedEvaluation?.notesAttribuees ?? [],
+        this.fixedCriteriaLabels
+      )
+    );
+  }
 
-  get scorePondereRE(): number {
-    const n = this.noteDraftRE;
-    return n.bareme > 0 ? Math.round((n.note / n.bareme) * n.poids * 100) / 100 : 0;
+  formatEvaluationFinalScore(score: number | null | undefined): string {
+    return formatFinalScoreOnFive(score);
+  }
+
+  formatEvaluationCardFinalScore(evaluation: CompanyEvaluation): string {
+    return formatFinalScoreOnFive(evaluation.noteFinale);
+  }
+
+  countResponsableCriteriaScored(evaluation: CompanyEvaluation): number {
+    return countScoredCriteriaForRole(this.fixedCriteriaLabels, evaluation.notesAttribuees ?? []);
   }
 
   /** Vrai si au moins un stage est rattaché à l'entreprise. */
   get hasInternships(): boolean {
     return this.internships.length > 0;
+  }
+
+  get filteredInternships(): CompanyInternship[] {
+    const query = this.normalize(this.searchTerm);
+    return this.internships.filter((internship) => {
+      const evaluation = this.getEvaluationForStage(internship.id);
+      const completion = evaluation ? this.getCompletionLabel(evaluation) : 'Non commencée';
+      const statusMatches = this.statusFilter === 'ALL' || completion === this.statusFilter;
+      const haystack = this.normalize([
+        internship.stagiaireNom,
+        internship.stagiaireEmail,
+        internship.titre,
+        internship.sujet,
+        internship.statut,
+        internship.encadrantProfessionnelNom,
+        internship.tuteurEntrepriseNom
+      ].join(' '));
+      return statusMatches && (!query || haystack.includes(query));
+    });
+  }
+
+  get uniqueStatuses(): string[] {
+    return ['Non commencée', 'En cours', 'Complétée', 'Signée (partielle)', 'Signée'];
   }
 
   /** Identifiant du stage actuellement sélectionné dans le formulaire. */
@@ -73,13 +129,15 @@ export class CompanyEvaluationsPageComponent implements OnInit {
   /** Vrai si la saisie est verrouillée (période fermée OU fiche déjà signée/verrouillée). */
   get isCurrentLocked(): boolean {
     if (!this.currentPeriodOpen) return true;
-    return this.selectedEvaluation ? this.isReadOnly(this.selectedEvaluation) : false;
+    // Tant que la fiche n'est pas initialisée (selectedEvaluation = null),
+    // on bloque la saisie pour éviter un enregistrement impossible côté backend.
+    if (!this.selectedEvaluation) return true;
+    return this.isReadOnly(this.selectedEvaluation);
   }
 
-  /** Affichage de la note finale (sur 20) ou message si non calculée. */
+  /** Affichage de la note finale (sur 5) ou message si non calculée. */
   get noteFinaleDisplay(): string {
-    const note = this.selectedEvaluation?.noteFinale;
-    return note != null ? `${note}/20` : 'Non calculée';
+    return formatFinalScoreOnFive(this.selectedEvaluation?.noteFinale ?? null);
   }
 
   /** Libellé de signature réutilisable. */
@@ -89,7 +147,7 @@ export class CompanyEvaluationsPageComponent implements OnInit {
 
   /** Note finale d'une fiche pour la liste (évite un ternaire inline). */
   noteFinaleListLabel(evaluation: CompanyEvaluation): string {
-    return evaluation.noteFinale != null ? String(evaluation.noteFinale) : '—';
+    return formatFinalScoreOnFive(evaluation.noteFinale);
   }
 
   /** Titre lisible d'un stage (évite un ternaire inline dans le template). */
@@ -104,6 +162,7 @@ export class CompanyEvaluationsPageComponent implements OnInit {
 
   constructor(
     private fb: FormBuilder,
+    private route: ActivatedRoute,
     private companyContextService: CompanyContextService,
     private companyInternshipsService: CompanyInternshipsService,
     private companyEvaluationsService: CompanyEvaluationsService,
@@ -113,8 +172,8 @@ export class CompanyEvaluationsPageComponent implements OnInit {
   ngOnInit(): void {
     this.evaluationForm = this.fb.group({
       stageId: [null, Validators.required],
-      pointFortResponsableEntreprise: ['', [Validators.required, Validators.minLength(3)]],
-      axeAmeliorationResponsableEntreprise: ['', [Validators.required, Validators.minLength(3)]]
+      pointFortResponsableEntreprise: ['', [Validators.required, Validators.minLength(4)]],
+      axeAmeliorationResponsableEntreprise: ['']
     });
 
     this.evaluationForm.get('stageId')?.valueChanges.subscribe((stageId) => {
@@ -125,7 +184,8 @@ export class CompanyEvaluationsPageComponent implements OnInit {
       if (existing) {
         this.fillForm(existing);
       } else {
-        this.noteDraftRE = this.defaultNotePonctualite();
+        this.fixedCriteriaDrafts = this.createEmptyFixedCriteria();
+        this.syncFixedCriteriaFormArrayFromDrafts();
         this.setReadOnlyMode(!this.isEvaluationPeriodOpen(stageIdNumber));
         this.evaluationForm.patchValue(
           {
@@ -137,6 +197,7 @@ export class CompanyEvaluationsPageComponent implements OnInit {
       }
     });
 
+    this.syncFixedCriteriaFormArrayFromDrafts();
     this.loadEvaluations();
   }
 
@@ -187,9 +248,13 @@ export class CompanyEvaluationsPageComponent implements OnInit {
               .subscribe({
                 next: (evaluations) => {
                   this.evaluations = evaluations;
-                  // Auto-sélection : on cible la fiche existante si elle existe,
-                  // sinon le premier (ou unique) stage rattaché à l'entreprise.
-                  const stageToSelect = evaluations[0]?.stageId ?? this.internships[0]?.id ?? null;
+                  const fromQuery = Number(this.route.snapshot.queryParamMap.get('stageId'));
+                  const queryStage =
+                    Number.isFinite(fromQuery) && fromQuery > 0 && internships.some((i) => i.id === fromQuery)
+                      ? fromQuery
+                      : null;
+                  const stageToSelect =
+                    queryStage ?? evaluations[0]?.stageId ?? this.internships[0]?.id ?? null;
                   if (stageToSelect != null) {
                     // patchValue déclenche valueChanges qui remplit/réinitialise le formulaire.
                     this.evaluationForm.patchValue({ stageId: stageToSelect });
@@ -217,14 +282,17 @@ export class CompanyEvaluationsPageComponent implements OnInit {
     });
   }
 
-  /**
-   * True si la période d'évaluation est ouverte pour le stage donné :
-   *   sysdate >= dateRéunionFinale  OU  sysdate >= dateFinStage
-   */
+  /** True si la date du jour est >= date de fin du stage. */
   isEvaluationPeriodOpen(stageId: number): boolean {
     const internship = this.internships.find((i) => i.id === stageId);
-    const finaleMeeting = this.meetings.find((m) => m.stageId === stageId && m.source === 'FINALE');
-    return isStagePeriodOpen(internship?.dateFin ?? null, finaleMeeting?.date ?? null);
+    return isEvaluationAccessible(internship?.statut ?? null, internship?.dateFin ?? null);
+  }
+
+  isEvaluationContentVisible(evaluation: CompanyEvaluation | null | undefined): boolean {
+    if (!evaluation || evaluation.evaluationAccessible === false) {
+      return false;
+    }
+    return this.isEvaluationPeriodOpen(evaluation.stageId);
   }
 
   /**
@@ -241,37 +309,72 @@ export class CompanyEvaluationsPageComponent implements OnInit {
     this.fillForm(evaluation);
   }
 
-  isReadOnly(evaluation: CompanyEvaluation | null = this.selectedEvaluation): boolean {
-    if (!evaluation) return false;
-    // Fiche verrouillée ou déjà signée par le RE
-    if (Boolean(evaluation.verrouillee) || Boolean(evaluation.dateSignatureRepresentantEntreprise)) {
-      return true;
+  selectStageForEvaluation(stageId: number): void {
+    const existing = this.evaluations.find((item) => item.stageId === stageId) ?? null;
+    this.selectedEvaluation = existing;
+    if (existing) {
+      this.fillForm(existing);
+    } else {
+      this.fixedCriteriaDrafts = this.createEmptyFixedCriteria();
+      this.setReadOnlyMode(!this.isEvaluationPeriodOpen(stageId));
+      this.evaluationForm.patchValue(
+        {
+          stageId,
+          pointFortResponsableEntreprise: '',
+          axeAmeliorationResponsableEntreprise: ''
+        },
+        { emitEvent: false }
+      );
     }
-    // Données déjà enregistrées une première fois → lecture seule, signature possible
-    return (
-      Boolean(evaluation.pointFortResponsableEntreprise?.trim()) &&
-      Boolean(evaluation.axeAmeliorationResponsableEntreprise?.trim())
-    );
+    this.showEvaluationModal = true;
   }
 
-  /** True si le RE peut signer (données enregistrées, pas encore signé, non verrouillé). */
-  canSign(evaluation: CompanyEvaluation): boolean {
-    if (evaluation.verrouillee) return false;
-    if (evaluation.dateSignatureRepresentantEntreprise) return false;
-    return (
-      Boolean(evaluation.pointFortResponsableEntreprise?.trim()) &&
-      Boolean(evaluation.axeAmeliorationResponsableEntreprise?.trim())
-    );
+  closeEvaluationModal(): void {
+    this.showEvaluationModal = false;
+    this.showSubmitConfirm = false;
+  }
+
+  isReadOnly(evaluation: CompanyEvaluation | null = this.selectedEvaluation): boolean {
+    if (!evaluation) return false;
+    // Une fois soumise/signée par le RE, la partie devient définitivement en lecture seule.
+    return Boolean(evaluation.verrouillee) || Boolean(evaluation.dateSignatureRepresentantEntreprise);
+  }
+
+  /** True si le RE peut signer (fiche complète, enregistrée, pas encore signée). */
+  canSign(evaluation: CompanyEvaluation | null | undefined): boolean {
+    if (!evaluation || evaluation.verrouillee || evaluation.dateSignatureRepresentantEntreprise) {
+      return false;
+    }
+    const drafts =
+      this.selectedEvaluation?.id === evaluation.id ? this.fixedCriteriaDrafts : undefined;
+    return isResponsableEntreprisePartReadyForSign(evaluation, drafts);
+  }
+
+  canShowSignAction(evaluation: CompanyEvaluation | null | undefined): boolean {
+    return !!evaluation && !evaluation.verrouillee && !evaluation.dateSignatureRepresentantEntreprise;
   }
 
   saveEvaluation(): void {
     if (!this.context) return;
+    const stageId = Number(this.evaluationForm.get('stageId')?.value);
+    if (!this.isEvaluationPeriodOpen(stageId)) {
+      this.errorMessage = this.EVALUATION_UNAVAILABLE_MESSAGE;
+      return;
+    }
     if (this.evaluationForm.invalid) {
       this.evaluationForm.markAllAsTouched();
+      this.errorMessage = 'Minimum 4 caractères requis';
+      return;
+    }
+    if (!this.areAllCriteriaValid()) {
+      this.errorMessage = 'Toutes les notes doivent être renseignées entre 0 et 5.';
       return;
     }
 
     const payload = this.evaluationForm.getRawValue();
+    payload.axeAmeliorationResponsableEntreprise =
+      String(payload.axeAmeliorationResponsableEntreprise ?? '').trim()
+      || String(payload.pointFortResponsableEntreprise ?? '').trim();
     const existing = this.evaluations.find((item) => item.stageId === payload.stageId);
 
     if (existing && this.isReadOnly(existing)) {
@@ -284,7 +387,32 @@ export class CompanyEvaluationsPageComponent implements OnInit {
     this.successMessage = '';
 
     if (!existing) {
-      this.errorMessage = "Aucune fiche d'évaluation n'a encore été créée pour ce stage. L'encadrant professionnel doit d'abord initialiser la fiche.";
+      this.companyEvaluationsService.getByStageId(payload.stageId).pipe(timeout(15000)).subscribe({
+        next: (created) => {
+          if (!created) {
+            this.errorMessage =
+              "La fiche d'évaluation n'est pas encore disponible pour ce stage (période non ouverte ou stage introuvable).";
+            this.isSaving = false;
+            return;
+          }
+          this.persistResponsableEvaluation(created, payload);
+        },
+        error: (error) => {
+          this.errorMessage = error?.error?.message ?? "Impossible d'initialiser la fiche d'évaluation.";
+          this.isSaving = false;
+        }
+      });
+      return;
+    }
+
+    this.persistResponsableEvaluation(existing, payload);
+  }
+
+  private persistResponsableEvaluation(
+    existing: CompanyEvaluation,
+    payload: ReturnType<typeof this.evaluationForm.getRawValue>
+  ): void {
+    if (!this.context) {
       this.isSaving = false;
       return;
     }
@@ -293,43 +421,20 @@ export class CompanyEvaluationsPageComponent implements OnInit {
 
     request$.pipe(timeout(15000)).subscribe({
       next: (evaluation) => {
-        const isNew = !existing;
-        const label = isNew ? 'Évaluation créée avec succès.' : 'Évaluation mise à jour avec succès.';
-
-        // Étape 2 : enregistrer la note Ponctualité si elle a été saisie
-        const shouldSaveNote =
-          this.noteDraftRE.note > 0 || this.noteDraftRE.critereEvaluationId !== null;
-
-        if (!shouldSaveNote) {
-          this.successMessage = label;
-          this.isSaving = false;
-          this.selectedEvaluation = evaluation;
-          this.loadEvaluations();
-          return;
-        }
-
-        const notePayload: EvaluationNoteDto[] = [{
-          critereEvaluationId: this.noteDraftRE.critereEvaluationId,
-          critereLibelle: this.noteDraftRE.critereLibelle,
-          note: this.noteDraftRE.note,
-          poids: this.noteDraftRE.poids,
-          bareme: this.noteDraftRE.bareme,
-          commentaire: this.noteDraftRE.commentaire
-        }];
+        const notePayload = buildNotesPayloadFromDrafts(this.fixedCriteriaDrafts);
 
         this.companyEvaluationsService
           .enregistrerNotePonctualite(evaluation.id, this.context!.userId, notePayload)
           .pipe(timeout(15000))
           .subscribe({
             next: (updated) => {
-              this.successMessage = label;
+              this.successMessage = 'Brouillon enregistré avec succès.';
               this.isSaving = false;
               this.selectedEvaluation = updated;
               this.loadEvaluations();
             },
             error: (error) => {
-              this.successMessage = label + ' (note Ponctualité non enregistrée)';
-              this.errorMessage = error?.error?.message ?? "Impossible d'enregistrer la note de ponctualité.";
+              this.errorMessage = error?.error?.message ?? "Impossible d'enregistrer les notes d'évaluation.";
               this.isSaving = false;
               this.selectedEvaluation = evaluation;
               this.loadEvaluations();
@@ -341,6 +446,98 @@ export class CompanyEvaluationsPageComponent implements OnInit {
         this.isSaving = false;
       }
     });
+  }
+
+  requestSubmitEvaluation(): void {
+    if (!this.showEvaluationModal) {
+      return;
+    }
+    if (this.selectedEvaluation && this.isReadOnly(this.selectedEvaluation)) {
+      this.errorMessage = "L'évaluation est déjà soumise : consultation en lecture seule.";
+      return;
+    }
+    this.showSubmitConfirm = true;
+  }
+
+  cancelSubmitEvaluation(): void {
+    this.showSubmitConfirm = false;
+  }
+
+  getEvaluationForStage(stageId: number): CompanyEvaluation | null {
+    return this.evaluations.find((item) => item.stageId === stageId) ?? null;
+  }
+
+  getEvaluationActionLabel(internship: CompanyInternship): string {
+    const evaluation = this.getEvaluationForStage(internship.id);
+    if (!evaluation) return 'Évaluer';
+    return this.isReadOnly(evaluation) ? 'Consulter' : 'Évaluer';
+  }
+
+  confirmSubmitEvaluation(): void {
+    this.showSubmitConfirm = false;
+    if (!this.selectedEvaluation || !this.context) return;
+    if (!this.isEvaluationPeriodOpen(this.selectedEvaluation.stageId)) {
+      this.errorMessage = this.EVALUATION_UNAVAILABLE_MESSAGE;
+      return;
+    }
+    if (!this.canSign(this.selectedEvaluation)) {
+      this.errorMessage = this.EVALUATION_SIGN_INCOMPLETE_MESSAGE;
+      return;
+    }
+    if (this.isReadOnly(this.selectedEvaluation)) {
+      this.errorMessage = "L'évaluation est déjà soumise : modification impossible.";
+      return;
+    }
+    if (this.evaluationForm.invalid || !this.areAllCriteriaValid()) {
+      this.evaluationForm.markAllAsTouched();
+      this.errorMessage = 'Veuillez compléter la fiche avant soumission.';
+      return;
+    }
+
+    const payload = this.evaluationForm.getRawValue();
+    payload.axeAmeliorationResponsableEntreprise =
+      String(payload.axeAmeliorationResponsableEntreprise ?? '').trim()
+      || String(payload.pointFortResponsableEntreprise ?? '').trim();
+    const notePayload = buildNotesPayloadFromDrafts(this.fixedCriteriaDrafts);
+
+    this.isSaving = true;
+    this.errorMessage = '';
+    this.successMessage = '';
+
+    this.companyEvaluationsService.fillResponsableSection(this.selectedEvaluation.id, this.context.userId, payload)
+      .pipe(timeout(15000))
+      .subscribe({
+        next: (evaluation) => {
+          this.companyEvaluationsService.enregistrerNotePonctualite(evaluation.id, this.context!.userId, notePayload)
+            .pipe(timeout(15000))
+            .subscribe({
+              next: () => {
+                this.companyEvaluationsService.sign(evaluation.id, this.context!.userId)
+                  .pipe(timeout(15000))
+                  .subscribe({
+                    next: () => {
+                      this.isSaving = false;
+                      this.successMessage = 'Évaluation soumise et signée avec succès.';
+                      this.loadEvaluations();
+                    },
+                    error: (error) => {
+                      this.isSaving = false;
+                      this.errorMessage = error?.error?.message ?? 'Brouillon enregistré mais soumission impossible.';
+                      this.loadEvaluations();
+                    }
+                  });
+              },
+              error: (error) => {
+                this.isSaving = false;
+                this.errorMessage = error?.error?.message ?? "Impossible d'enregistrer les notes d'évaluation.";
+              }
+            });
+        },
+        error: (error) => {
+          this.isSaving = false;
+          this.errorMessage = error?.error?.message ?? "Impossible d'enregistrer l'évaluation.";
+        }
+      });
   }
 
   signEvaluation(evaluation: CompanyEvaluation): void {
@@ -362,6 +559,9 @@ export class CompanyEvaluationsPageComponent implements OnInit {
   }
 
   getCompletionLabel(evaluation: CompanyEvaluation): string {
+    if (!this.isEvaluationContentVisible(evaluation)) {
+      return 'Indisponible';
+    }
     if (evaluation.signaturesCompletes) return 'Signée';
     if (evaluation.dateSignatureRepresentantEntreprise) return 'Signée (partielle)';
     if (evaluation.donneesCompletes || evaluation.complete) return 'Complétée';
@@ -396,24 +596,38 @@ export class CompanyEvaluationsPageComponent implements OnInit {
       { emitEvent: false }
     );
 
-    // Charger la note Ponctualité existante
-    const existing = (evaluation.notesAttribuees ?? []).find(
-      (n) => n.critereLibelle === 'Ponctualité'
-    );
-    this.noteDraftRE = existing
-      ? {
-          critereLibelle: 'Ponctualité',
-          critereEvaluationId: existing.critereEvaluationId ?? null,
-          note: existing.note ?? 0,
-          poids: existing.poids ?? 2,
-          bareme: existing.bareme ?? 5,
-          commentaire: existing.commentaire ?? ''
-        }
-      : this.defaultNotePonctualite();
+    // Charger uniquement le critère Ponctualité (RE)
+    this.fixedCriteriaDrafts = buildRoleCriteriaDrafts(this.fixedCriteriaLabels, evaluation.notesAttribuees ?? []);
+    this.syncFixedCriteriaFormArrayFromDrafts();
   }
 
-  private defaultNotePonctualite(): RpNoteDraft {
-    return { critereLibelle: 'Ponctualité', critereEvaluationId: null, note: 0, poids: 2, bareme: 5, commentaire: '' };
+  private areAllCriteriaValid(): boolean {
+    return areAllCriteriaScoresValid(this.fixedCriteriaDrafts);
+  }
+
+  private createEmptyFixedCriteria(): RoleCriterionDraft[] {
+    return buildRoleCriteriaDrafts(this.fixedCriteriaLabels);
+  }
+
+  private syncFixedCriteriaFormArrayFromDrafts(): void {
+    this.fixedCriteriaFormArraySub?.unsubscribe();
+    this.fixedCriteriaFormArraySub = undefined;
+
+    this.fixedCriteriaFormArray.clear();
+
+    for (const item of this.fixedCriteriaDrafts) {
+      this.fixedCriteriaFormArray.push(new FormControl<number | null>(item.note ?? null));
+    }
+
+    this.fixedCriteriaFormArraySub = this.fixedCriteriaFormArray.valueChanges.subscribe((values) => {
+      values.forEach((rawValue, index) => {
+        if (!this.fixedCriteriaDrafts[index]) return;
+        const parsed = rawValue == null ? NaN : Number(rawValue);
+        this.fixedCriteriaDrafts[index].note = Number.isFinite(parsed)
+          ? Math.min(5, Math.max(0, parsed))
+          : null;
+      });
+    });
   }
 
   private setReadOnlyMode(readOnly: boolean): void {
@@ -427,5 +641,13 @@ export class CompanyEvaluationsPageComponent implements OnInit {
         control.enable({ emitEvent: false });
       }
     }
+  }
+
+  private normalize(value: string): string {
+    return String(value ?? '')
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[̀-ͯ]/g, '')
+      .trim();
   }
 }

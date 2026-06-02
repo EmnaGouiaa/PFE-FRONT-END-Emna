@@ -1,6 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { RouterModule } from '@angular/router';
 import { forkJoin, of } from 'rxjs';
 import { catchError } from 'rxjs/operators';
 import {
@@ -13,18 +14,21 @@ import {
 import { PdfWindowService } from '../../services/pdf-window.service';
 import { StudentPortalService } from '../../services/student/student-portal.service';
 import { isStageFinishedByCalendarEndDate } from '../../utils/stage-fin.util';
+import {
+  canSignLogbook,
+  getLogbookSignBlockedReason,
+} from '../../shared/stage-documents/stage-document-signature-eligibility.util';
 
 @Component({
   selector: 'app-student-follow-up-page',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, RouterModule],
   templateUrl: './student-follow-up-page.component.html',
   styleUrls: ['../../admin/dashboard/admin-dashboard.css', '../student-shared.css']
 })
 export class StudentFollowUpPageComponent implements OnInit {
   isLoadingInternships = true;
   isLoadingData = false;
-  isGeneratingLogbook = false;
   isOpeningTrello = false;
   errorMessage = '';
   successMessage = '';
@@ -110,37 +114,64 @@ export class StudentFollowUpPageComponent implements OnInit {
     return this.stageDocuments?.cahierStage ?? null;
   }
 
-  get canGenerateLogbook(): boolean {
-    return Boolean(this.logbookStatus?.generationAutorisee);
-  }
-
   get canOpenLogbookPdf(): boolean {
-    return Boolean(this.logbookStatus?.disponible);
+    return this.canAccessDocument(this.logbookStatus);
   }
 
   get logbookBlockingMessage(): string {
     return this.logbookStatus?.raisonAbsence || '';
   }
 
-  generateLogbook(): void {
-    if (!this.selectedInternship) return;
-    if (!this.canGenerateLogbook) {
-      this.errorMessage = this.logbookBlockingMessage || 'Le cahier de stage ne peut pas etre genere pour le moment.';
-      return;
+  private canAccessDocument(status: { disponible?: boolean } | null | undefined): boolean {
+    return Boolean(status?.disponible);
+  }
+
+  getLogbookPillLabel(): string {
+    const statut = String(this.logbookStatus?.statut ?? '').trim();
+    if (statut === 'En préparation' || statut === 'En preparation') return 'En preparation';
+    if (this.canOpenLogbookPdf) return 'Disponible';
+    return statut || 'En preparation';
+  }
+
+  canSignStudentLogbook(): boolean {
+    const internship = this.selectedInternship;
+    return canSignLogbook({
+      dateFin: internship?.dateFin,
+      dateDebut: internship?.dateDebut,
+      dureeMonths: internship?.duree ?? null,
+      alreadySigned: Boolean(this.report?.signeeStagiaire),
+      hasDocument: Boolean(this.report?.id),
+    });
+  }
+
+  getStudentLogbookSignTooltip(): string {
+    if (this.report?.signeeStagiaire) {
+      return 'Vous avez déjà signé ce cahier';
     }
-    this.isGeneratingLogbook = true;
+    const internship = this.selectedInternship;
+    if (this.canSignStudentLogbook()) {
+      return 'Signer le cahier de stage';
+    }
+    return (
+      getLogbookSignBlockedReason(internship?.dateFin, internship?.dateDebut, internship?.duree) ||
+      'La signature du cahier de stage n\'est pas encore autorisee.'
+    );
+  }
+
+  signLogbook(): void {
+    if (!this.report?.id || this.report.signeeStagiaire || !this.canSignStudentLogbook()) return;
+    if (!window.confirm('Confirmer la signature du cahier de stage ?')) return;
     this.errorMessage = '';
     this.successMessage = '';
-
-    this.studentPortalService.generateLogbook(this.selectedInternship.id).subscribe({
-      next: (result) => {
-        this.successMessage = result.message || 'Cahier de stage généré.';
-        this.isGeneratingLogbook = false;
-        this.loadDataForStage(this.selectedInternship!.id);
+    this.studentPortalService.signReportAsStudent(this.report.id).subscribe({
+      next: () => {
+        this.successMessage = 'Cahier de stage signe.';
+        if (this.selectedInternship) {
+          this.loadDataForStage(this.selectedInternship.id);
+        }
       },
       error: (error) => {
-        this.errorMessage = this.studentPortalService.describeError(error, 'Impossible de générer le cahier de stage.');
-        this.isGeneratingLogbook = false;
+        this.errorMessage = this.studentPortalService.describeError(error, 'Impossible de signer le cahier de stage.');
       }
     });
   }

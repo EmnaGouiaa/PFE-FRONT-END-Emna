@@ -7,6 +7,7 @@ import { CompanyContext } from '../../services/company/company.models';
 import { CurrentUserProfileService } from '../../services/current-user-profile.service';
 import { EntreprisesService } from '../../services/entreprises.service';
 import { PhoneInputComponent } from '../../components/phone-input/phone-input.component';
+import { personNameErrorMessage, personNameValidators } from '../../shared/validators/person-name.validators';
 
 @Component({
   selector: 'app-company-profile-page',
@@ -49,8 +50,8 @@ export class CompanyProfilePageComponent implements OnInit {
   ngOnInit(): void {
     this.profileForm = this.fb.group({
       email: ['', [Validators.required, Validators.email, Validators.maxLength(150)]],
-      prenom: ['', [Validators.required, Validators.minLength(2)]],
-      nom: ['', [Validators.required, Validators.minLength(2)]],
+      prenom: ['', personNameValidators()],
+      nom: ['', personNameValidators()],
       telephone: [''],
       poste: [''],
       service: [''],
@@ -345,8 +346,12 @@ export class CompanyProfilePageComponent implements OnInit {
     this.errorMessage = '';
     this.successMessage = '';
 
+    const companyValues = this.companyForm.getRawValue();
     this.entreprisesService
-      .update(entrepriseId, this.companyForm.getRawValue())
+      .update(entrepriseId, {
+        ...companyValues,
+        emailEntreprise: this.context?.entreprise?.emailEntreprise ?? companyValues.emailEntreprise
+      })
       .pipe(timeout(15000))
       .subscribe({
         next: () => {
@@ -365,6 +370,24 @@ export class CompanyProfilePageComponent implements OnInit {
   isProfileInvalid(controlName: string): boolean {
     const control = this.profileForm.get(controlName);
     return Boolean(control && control.invalid && (control.touched || control.dirty));
+  }
+
+  getProfileFieldError(controlName: string): string {
+    const control = this.profileForm.get(controlName);
+    if (!this.isProfileInvalid(controlName) || !control) {
+      return '';
+    }
+    const personNameMessage = personNameErrorMessage(control.errors);
+    if (personNameMessage) {
+      return personNameMessage;
+    }
+    if (control.errors?.['required']) {
+      return 'Ce champ est obligatoire.';
+    }
+    if (control.errors?.['email']) {
+      return 'Saisissez une adresse e-mail valide.';
+    }
+    return '';
   }
 
   isCompanyInvalid(controlName: string): boolean {

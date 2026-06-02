@@ -516,6 +516,58 @@
   gap: 8px;
 }
 
+.signature-admin-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 16px;
+  border-radius: 16px;
+  background: rgba(16, 71, 120, 0.04);
+  border: 1px solid rgba(16, 71, 120, 0.12);
+}
+
+.signature-admin-status {
+  display: grid;
+  gap: 4px;
+}
+
+.signature-admin-status strong {
+  font-size: 0.92rem;
+  color: var(--primary-color);
+}
+
+.signature-admin-status span {
+  font-size: 0.82rem;
+  color: var(--text-muted);
+}
+
+.signature-admin-status.has-signature strong {
+  color: var(--secondary-color);
+}
+
+.btn-delete-signature {
+  min-height: 38px;
+  padding: 0 12px;
+  border: 1px solid transparent;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: var(--transition);
+  background: rgba(220, 38, 38, 0.1);
+  color: #b91c1c;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.btn-delete-signature:hover:not([disabled]) {
+  background: rgba(220, 38, 38, 0.18);
+}
+
+.btn-delete-signature[disabled] {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
 .form-group label {
   font-size: 0.84rem;
   font-weight: 700;
@@ -637,6 +689,11 @@
 
   .form-row {
     grid-template-columns: 1fr;
+  }
+
+  .signature-admin-card {
+    flex-direction: column;
+    align-items: stretch;
   }
 
   .modal-overlay {

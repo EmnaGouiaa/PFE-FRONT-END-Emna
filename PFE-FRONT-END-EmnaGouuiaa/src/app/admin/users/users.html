@@ -107,29 +107,16 @@
               </td>
               <td>
                 <div class="action-buttons">
-                  <button class="btn-edit" (click)="openEditForm(user)" title="Modifier" [disabled]="isSubmitting || isChangingRole">
+                  <button class="btn-edit" (click)="openEditForm(user)" title="Modifier" [disabled]="isSubmitting">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                       <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
                       <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
                     </svg>
                   </button>
                   <button
-                    class="btn-role-change"
-                    (click)="openRoleChangeModal(user)"
-                    [disabled]="isLoading || isSubmitting || isChangingRole"
-                    title="Changer le role"
-                  >
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                      <polyline points="17 1 21 5 17 9"/>
-                      <path d="M3 11V9a4 4 0 0 1 4-4h14"/>
-                      <polyline points="7 23 3 19 7 15"/>
-                      <path d="M21 13v2a4 4 0 0 1-4 4H3"/>
-                    </svg>
-                  </button>
-                  <button
                     class="btn-toggle"
                     (click)="toggleActivation(user)"
-                    [disabled]="isLoading || isSubmitting || isChangingRole || deletingUserId !== null"
+                    [disabled]="isLoading || isSubmitting || deletingUserId !== null"
                     [title]="user.actif ? 'Desactiver' : 'Activer'"
                   >
                     {{ user.actif ? 'Desactiver' : 'Activer' }}
@@ -137,7 +124,7 @@
                   <button
                     class="btn-delete"
                     (click)="deleteUser(user)"
-                    [disabled]="isLoading || isSubmitting || isChangingRole || deletingUserId !== null"
+                    [disabled]="isLoading || isSubmitting || deletingUserId !== null"
                     title="Supprimer l'utilisateur"
                   >
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -162,60 +149,6 @@
           <button class="btn-primary" (click)="openCreateForm()" [disabled]="isLoading || isSubmitting">Ajouter</button>
         </div>
       </ng-template>
-    </div>
-
-    <!-- Role change modal -->
-    <div class="modal-overlay" *ngIf="showRoleChangeModal" (click)="cancelRoleChange()">
-      <div class="modal-content" (click)="$event.stopPropagation()">
-        <div class="modal-header">
-          <div>
-            <h2>Changer le role</h2>
-            <p class="modal-subtitle">Selectionnez le nouveau role a attribuer a cet utilisateur.</p>
-          </div>
-          <button class="btn-close" (click)="cancelRoleChange()" [disabled]="isChangingRole" aria-label="Fermer">x</button>
-        </div>
-
-        <div class="role-change-modal-body">
-          <div class="user-summary" *ngIf="roleChangeUser">
-            <div class="avatar">
-              {{ (roleChangeUser.prenom || '').slice(0, 1) }}{{ (roleChangeUser.nom || '').slice(0, 1) }}
-            </div>
-            <div class="user-summary-info">
-              <div class="user-summary-name">{{ roleChangeUser.prenom }} {{ roleChangeUser.nom }}</div>
-              <div class="user-summary-email">{{ roleChangeUser.email }}</div>
-            </div>
-            <span [class]="'role-badge ' + getRoleBadgeClass(roleChangeUser.role)">
-              {{ getRoleLabel(roleChangeUser.role) }}
-            </span>
-          </div>
-
-          <div class="form-group">
-            <label>Nouveau role *</label>
-            <select [(ngModel)]="selectedNewRole" [disabled]="isChangingRole">
-              <option *ngFor="let role of assignableRoles" [value]="role.value">{{ role.label }}</option>
-            </select>
-          </div>
-
-          <div class="form-note" *ngIf="selectedNewRole === roleChangeOriginalRole">
-            Ce role est deja celui de cet utilisateur. Aucune modification ne sera effectuee.
-          </div>
-
-          <div class="form-actions">
-            <button type="button" class="btn-cancel" (click)="cancelRoleChange()" [disabled]="isChangingRole">
-              Annuler
-            </button>
-            <button
-              type="button"
-              class="btn-submit"
-              (click)="confirmRoleChange()"
-              [disabled]="isChangingRole || !selectedNewRole || selectedNewRole === roleChangeOriginalRole"
-            >
-              <span class="btn-spinner" *ngIf="isChangingRole"></span>
-              {{ isChangingRole ? 'Modification...' : 'Confirmer' }}
-            </button>
-          </div>
-        </div>
-      </div>
     </div>
 
     <div class="modal-overlay" *ngIf="showForm" (click)="closeForm()">
@@ -267,13 +200,49 @@
             </div>
           </div>
 
-          <div class="form-group">
+          <div class="form-group" *ngIf="!isEditMode">
             <label>Role *</label>
             <select formControlName="role">
               <option *ngFor="let role of assignableRoles" [value]="role.value">{{ role.label }}</option>
             </select>
-            <div class="form-note" *ngIf="isReadonlyInEditMode('role')">
-              Le role d'un utilisateur existant reste verrouille pour proteger les affectations en cours.
+            <div class="form-note">
+              Le role est defini a la creation du compte et ne peut plus etre modifie par la suite.
+            </div>
+          </div>
+
+          <div class="form-group" *ngIf="isEditMode && selectedUser">
+            <label>Role</label>
+            <span [class]="'role-badge ' + getRoleBadgeClass(selectedUser.role)">
+              {{ getRoleLabel(selectedUser.role) }}
+            </span>
+            <div class="form-note">Le role est fixe et ne peut pas etre modifie.</div>
+          </div>
+
+          <div class="form-group" *ngIf="isEditMode && selectedUser as editedUser">
+            <label>Signature</label>
+            <div class="signature-admin-card">
+              <div class="signature-admin-status" [class.has-signature]="hasSignature(editedUser)">
+                <strong>{{ hasSignature(editedUser) ? 'Signature enregistrée' : 'Aucune signature' }}</strong>
+                <span *ngIf="hasSignature(editedUser)">
+                  L'utilisateur devra televerser une nouvelle signature apres suppression.
+                </span>
+                <span *ngIf="!hasSignature(editedUser)">
+                  Aucun fichier de signature n'est actuellement associe a ce compte.
+                </span>
+              </div>
+
+              <button
+                type="button"
+                class="btn-delete-signature"
+                (click)="deleteUserSignature(editedUser)"
+                [disabled]="!hasSignature(editedUser) || isSubmitting || deletingSignatureUserId !== null"
+              >
+                {{ deletingSignatureUserId === editedUser.id ? 'Suppression...' : 'Supprimer la signature' }}
+              </button>
+            </div>
+            <div class="form-note">
+              Un utilisateur ne peut ni modifier ni supprimer sa propre signature depuis l'application.
+              Pour toute modification, il doit passer par l'administrateur.
             </div>
           </div>
 

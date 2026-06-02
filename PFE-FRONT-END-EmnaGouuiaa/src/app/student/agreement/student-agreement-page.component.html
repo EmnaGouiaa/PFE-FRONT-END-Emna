@@ -78,7 +78,7 @@
         <button
           type="button"
           class="btn btn-primary"
-          [disabled]="agreement.signeeStagiaire || isSigning"
+          [disabled]="!canSignAgreement() || isSigning"
           (click)="signAgreement()"
         >
           {{ agreement.signeeStagiaire ? 'Vous avez déjà signé' : (isSigning ? 'Signature...' : 'Signer la convention') }}

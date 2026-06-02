@@ -1,5 +1,13 @@
 import { Injectable } from '@angular/core';
 
+
+// 1. openPlaceholder()  →  Ouvre un onglet vide avec "Chargement du PDF..."
+//                          (pendant que le fichier se télécharge)
+//
+// 2. showPdf()          →  Quand le PDF arrive, remplace le "Chargement..."
+//                          par une vraie visionneuse avec boutons Imprimer / Fermer
+//
+// 3. escapeHtml()       →  Sécurité : évite les injections HTML dans le titre
 export interface PdfWindowOptions {
   title: string;
   autoPrint?: boolean;

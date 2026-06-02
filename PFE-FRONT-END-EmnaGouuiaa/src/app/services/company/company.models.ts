@@ -32,6 +32,12 @@ export interface CompanyOffer {
   affectationActive: boolean;
   /** Statut de validation du sujet du stage lie (EN_ATTENTE | VALIDEE | REFUSEE) ou null. */
   statutSujet: string | null;
+  /** Date de fin du stage lie (si existant). */
+  dateFinStage: string | null;
+  /** Vrai si le stage associe est termine (date du jour >= date de fin). */
+  stageTermine: boolean;
+  /** Annulation affectation autorisee (sujet non valide + debut strictement futur). */
+  annulationAffectationAutorisee?: boolean;
 }
 
 export interface CompanyOfferPayload {
@@ -128,7 +134,12 @@ export interface CompanyMeeting {
   stageTitre: string;
   stagiaireNom: string;
   entrepriseNom: string;
+  typeEncadrantCreateur: string;
+  nomEncadrantCreateur: string;
+  encadrantCreateurId: number | null;
+  companySupervisorName: string;
   participantIds: number[];
+  participantNames: string[];
   note: number | null;
   urlFormSatisfaction: string;
 }
@@ -160,9 +171,12 @@ export interface CompanyEvaluation {
   dateSignatureRepresentantEntreprise: string;
   noteFinale: number | null;
   donneesCompletes: boolean;
+  pretSignatureResponsableEntreprise: boolean;
   signaturesCompletes: boolean;
   complete: boolean;
   verrouillee: boolean;
+  evaluationAccessible: boolean;
+  evaluationIndisponibleMessage: string;
   notesAttribuees: EvaluationNoteDto[];
 }
 

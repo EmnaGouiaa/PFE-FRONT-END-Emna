@@ -354,7 +354,8 @@ export const routes: Routes = [
         RoleUtilisateur.ADMINISTRATEUR,
         RoleUtilisateur.STAGIAIRE,
         RoleUtilisateur.ENCADRANT_PROFESSIONNEL,
-        RoleUtilisateur.ENCADRANT_ACADEMIQUE
+        RoleUtilisateur.ENCADRANT_ACADEMIQUE,
+        RoleUtilisateur.RESPONSABLE_ENTREPRISE
       ]
     }
   },
@@ -366,7 +367,8 @@ export const routes: Routes = [
       roles: [
         RoleUtilisateur.STAGIAIRE,
         RoleUtilisateur.ENCADRANT_PROFESSIONNEL,
-        RoleUtilisateur.ENCADRANT_ACADEMIQUE
+        RoleUtilisateur.ENCADRANT_ACADEMIQUE,
+        RoleUtilisateur.RESPONSABLE_ENTREPRISE
       ]
     }
   },

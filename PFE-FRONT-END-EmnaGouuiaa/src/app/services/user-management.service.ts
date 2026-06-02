@@ -31,6 +31,7 @@ export interface User {
     adresse?: string;
     secteurActivite?: string;
     telephone?: string;
+    urlSignature?: string;
     nomFichierSignature?: string;
     emailSent?: boolean | null;
     message?: string;
@@ -147,6 +148,7 @@ export class UserManagementService {
             adresse: raw?.adresse,
             secteurActivite: raw?.secteurActivite,
             telephone: raw?.telephone,
+            urlSignature: raw?.urlSignature,
             nomFichierSignature: raw?.nomFichierSignature,
             emailSent: typeof raw?.emailSent === 'boolean' ? raw.emailSent : null,
             message: typeof raw?.message === 'string' ? raw.message : ''
@@ -214,13 +216,6 @@ export class UserManagementService {
         return this.http.patch(`${this.API_URL}/${id}/activer`, {});
     }
 
-    changeUserRole(id: number, role: string): Observable<User> {
-        return this.http.patch<any>(`${this.API_URL}/${id}/role`, { role }).pipe(
-            map((response) => this.normalizeUser(this.unwrapObject<any>(response))),
-            catchError((error: HttpErrorResponse) => throwError(() => error))
-        );
-    }
-
     /**
      * Supprime un utilisateur (DELETE /utilisateurs/{id}). Reserve a l'administrateur.
      * Backend : soft-delete (supprime=true) + anonymisation des champs uniques.
@@ -229,6 +224,13 @@ export class UserManagementService {
      */
     deleteUser(id: number): Observable<void> {
         return this.http.delete<void>(`${this.API_URL}/${id}`).pipe(
+            catchError((error: HttpErrorResponse) => throwError(() => error))
+        );
+    }
+
+    deleteUserSignature(id: number): Observable<User> {
+        return this.http.delete<any>(`${this.API_URL}/${id}/signature`).pipe(
+            map((response) => this.normalizeUser(this.unwrapObject<any>(response))),
             catchError((error: HttpErrorResponse) => throwError(() => error))
         );
     }

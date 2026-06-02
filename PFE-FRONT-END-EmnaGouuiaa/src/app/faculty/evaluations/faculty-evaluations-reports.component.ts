@@ -113,7 +113,7 @@ import { FacultyAgreement, FacultyEvaluation, FacultyReport } from '../../servic
 
             <div class="detail-card">
               <div class="info-title">Détails de l'évaluation</div>
-              <div class="info-meta" *ngIf="selectedEvaluation">Note finale : {{ selectedEvaluation.noteFinale ?? 'N/D' }}</div>
+              <div class="info-meta" *ngIf="selectedEvaluation">Note finale : {{ selectedEvaluation.noteFinale != null ? (selectedEvaluation.noteFinale | number:'1.1-1') + ' / 5' : 'N/D' }}</div>
               <div class="info-meta" *ngIf="selectedEvaluation">Commentaire encadrant pro : {{ selectedEvaluation.pointFortEncadrantPro || 'Aucun' }}</div>
               <div class="info-meta" *ngIf="!selectedEvaluation">Aucune fiche d'évaluation accessible pour ce stage.</div>
             </div>

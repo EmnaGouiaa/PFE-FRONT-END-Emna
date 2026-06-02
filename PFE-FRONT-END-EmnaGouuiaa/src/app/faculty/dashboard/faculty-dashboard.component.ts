@@ -1,4 +1,5 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, DestroyRef, OnInit, inject } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { forkJoin, of } from 'rxjs';
@@ -6,7 +7,9 @@ import { catchError } from 'rxjs/operators';
 import { DemandeStage, StatutValidation } from '../../models/demande-stage.model';
 import { CurrentUserProfileService } from '../../services/current-user-profile.service';
 import { ProfileCompletionService } from '../../services/profile-completion.service';
+import { CompanyRequestRefreshService } from '../../services/company-request-refresh.service';
 import { ServiceDemandeStageService } from '../../services/service-demande-stage.service';
+import { isCompanyRequestFullyApproved } from '../../utils/company-request-state.util';
 import { FacultyPortalService } from '../../services/faculty/faculty-portal.service';
 import {
   FacultyAgreement,
@@ -641,10 +644,13 @@ export class FacultyDashboardPageComponent implements OnInit {
   lastUpdatedAt: Date | null = null;
   profileCompletionMissingFields: string[] = [];
 
+  private readonly destroyRef = inject(DestroyRef);
+
   constructor(
     private demandeStageService: ServiceDemandeStageService,
     private facultyPortalService: FacultyPortalService,
     private currentUserProfileService: CurrentUserProfileService,
+    private companyRequestRefresh: CompanyRequestRefreshService,
     public profileCompletionService: ProfileCompletionService
   ) {}
 
@@ -853,6 +859,9 @@ export class FacultyDashboardPageComponent implements OnInit {
       }
     });
     this.loadDashboard();
+    this.companyRequestRefresh.changed$.pipe(
+      takeUntilDestroyed(this.destroyRef)
+    ).subscribe(() => this.loadDashboard());
   }
 
   loadDashboard(): void {
@@ -1011,8 +1020,7 @@ export class FacultyDashboardPageComponent implements OnInit {
   }
 
   private isCompanyRequestFullyValidated(item: DemandeStage): boolean {
-    const responsibleStatus = item.statutValidationResponsableStages ?? StatutValidation.EN_ATTENTE;
-    return item.statutValidationAdmin === StatutValidation.APPROUVEE && responsibleStatus === StatutValidation.APPROUVEE;
+    return isCompanyRequestFullyApproved(item);
   }
 
   private isRejectedRequest(item: DemandeStage): boolean {

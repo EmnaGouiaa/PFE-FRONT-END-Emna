@@ -7,6 +7,7 @@ import { CompanyContextService } from '../../services/company/company-context.se
 import { ProfessionalSupervisorsService } from '../../services/company/professional-supervisors.service';
 import { CompanyContext, ProfessionalSupervisor, ProfessionalSupervisorPayload } from '../../services/company/company.models';
 import { phoneValidator, strictEmailValidator } from '../../admin/admin-form-validators';
+import { personNameErrorMessage, personNameValidators } from '../../shared/validators/person-name.validators';
 import { PhoneInputComponent } from '../../components/phone-input/phone-input.component';
 
 type FieldErrors = Record<string, string>;
@@ -26,7 +27,6 @@ export class CompanySupervisorsPageComponent implements OnInit {
   isLoading = false;
   isSaving = false;
   showForm = false;
-  isEditMode = false;
   errorMessage = '';
   successMessage = '';
   submitAttempted = false;
@@ -41,8 +41,8 @@ export class CompanySupervisorsPageComponent implements OnInit {
 
   ngOnInit(): void {
     this.supervisorForm = this.fb.group({
-      nom: ['', [Validators.required, Validators.minLength(2)]],
-      prenom: ['', [Validators.required, Validators.minLength(2)]],
+      nom: ['', personNameValidators()],
+      prenom: ['', personNameValidators()],
       email: ['', [Validators.required, strictEmailValidator()]],
       telephone: ['', [Validators.required, phoneValidator()]],
       poste: [''],
@@ -134,7 +134,6 @@ export class CompanySupervisorsPageComponent implements OnInit {
   }
 
   openCreate(): void {
-    this.isEditMode = false;
     this.showForm = true;
     this.submitAttempted = false;
     this.clearFeedback();
@@ -148,25 +147,8 @@ export class CompanySupervisorsPageComponent implements OnInit {
     });
   }
 
-  openEdit(supervisor: ProfessionalSupervisor): void {
-    this.selectedSupervisor = supervisor;
-    this.isEditMode = true;
-    this.showForm = true;
-    this.submitAttempted = false;
-    this.clearFeedback();
-    this.supervisorForm.reset({
-      nom: supervisor.nom,
-      prenom: supervisor.prenom,
-      email: supervisor.email,
-      telephone: supervisor.telephone,
-      poste: supervisor.poste,
-      service: supervisor.service
-    });
-  }
-
   closeForm(): void {
     this.showForm = false;
-    this.isEditMode = false;
     this.submitAttempted = false;
     this.fieldErrors = {};
     this.supervisorForm.reset();
@@ -191,16 +173,14 @@ export class CompanySupervisorsPageComponent implements OnInit {
 
     this.isSaving = true;
 
-    const request$ = this.isEditMode && this.selectedSupervisor
-      ? this.professionalSupervisorsService.update(this.selectedSupervisor.id, payload)
-      : this.professionalSupervisorsService.createByResponsable(this.context.responsable.id, payload);
-
-    request$.pipe(timeout(15000)).subscribe({
+    this.professionalSupervisorsService
+      .createByResponsable(this.context.responsable.id, payload)
+      .pipe(timeout(15000))
+      .subscribe({
       next: () => {
         try {
-          this.successMessage = this.isEditMode
-            ? 'Encadrant professionnel mis a jour avec succes.'
-            : "Encadrant professionnel cree avec succes. Les identifiants ont ete envoyes par email.";
+          this.successMessage =
+            "Encadrant professionnel cree avec succes. Les identifiants ont ete envoyes par email.";
           this.snackBar.open(this.successMessage, 'Fermer', { duration: 4000 });
           this.showForm = false;
           this.loadSupervisors();
@@ -229,6 +209,9 @@ export class CompanySupervisorsPageComponent implements OnInit {
     if (!control || !(control.touched || this.submitAttempted)) {
       return '';
     }
+
+    const personNameMessage = personNameErrorMessage(control.errors);
+    if (personNameMessage) return personNameMessage;
 
     if (control.errors?.['required']) return 'Ce champ est obligatoire.';
     if (control.errors?.['minlength']) return 'Minimum 2 caracteres.';

@@ -1,12 +1,22 @@
 import { CommonModule } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
-import { Component, OnInit } from '@angular/core';
+import { Component, DestroyRef, OnInit, inject } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { forkJoin, of } from 'rxjs';
+import { catchError } from 'rxjs/operators';
 import { ActivatedRoute, RouterModule } from '@angular/router';
 import { ConventionStage } from '../../models/convention-stage.model';
 import { API_BASE_URL } from '../../services/api.config';
 import { AuthentificationService, RoleUtilisateur } from '../../services/authentification.service';
 import { PdfWindowService } from '../../services/pdf-window.service';
 import { ServiceConventionService } from '../../services/service-convention.service';
+import {
+  canAccessStageDocumentPdf,
+  FinalStageDocumentStatus,
+  getConventionPdfBlockReason,
+} from '../../services/final-stage-document-access.util';
+import { StageSignatureSyncService } from '../../services/stage-signature-sync.service';
+import { isConventionSigningPermitted } from '../../shared/stage-documents/stage-document-signature-eligibility.util';
 
 @Component({
   selector: 'app-agreement-detail',
@@ -16,6 +26,9 @@ import { ServiceConventionService } from '../../services/service-convention.serv
   styleUrls: ['./agreement-detail.component.css', '../../company/company-shared.css']
 })
 export class AgreementDetailComponent implements OnInit {
+  private readonly destroyRef = inject(DestroyRef);
+  private readonly signatureSync = inject(StageSignatureSyncService);
+
   convention: ConventionStage | null = null;
   stage: any | null = null;
 
@@ -23,6 +36,8 @@ export class AgreementDetailComponent implements OnInit {
   signatureEnCours = false;
   messageErreur = '';
   messageSucces = '';
+  pdfConventionStatus: FinalStageDocumentStatus | null = null;
+  private liveSyncStageId: number | null = null;
 
   constructor(
     private route: ActivatedRoute,
@@ -57,6 +72,14 @@ export class AgreementDetailComponent implements OnInit {
 
   get conventionSignee(): boolean {
     return this.convention?.statutSignatures ?? false;
+  }
+
+  canDownloadConventionPdf(): boolean {
+    return canAccessStageDocumentPdf(this.pdfConventionStatus);
+  }
+
+  get conventionPdfBlockReason(): string {
+    return getConventionPdfBlockReason(this.pdfConventionStatus);
   }
 
   get titreConvention(): string {
@@ -150,22 +173,19 @@ export class AgreementDetailComponent implements OnInit {
   // ── Actions ───────────────────────────────────────────────────────────────
 
   imprimer(): void {
-    if (!this.convention?.id) {
-      this.messageErreur = "Impossible d'imprimer cette convention.";
+    if (!this.convention?.stageId || !this.canDownloadConventionPdf()) {
+      this.messageErreur = this.conventionPdfBlockReason || "Impossible d'imprimer cette convention.";
       return;
     }
-    if (!this.conventionSignee) {
-      this.messageErreur = "Le PDF n'est disponible qu'une fois toutes les signatures recueillies.";
-      return;
-    }
-
     const printWindow = this.pdfWindowService.openPlaceholder('Convention de stage');
     if (!printWindow) {
       this.messageErreur = "La fenêtre d'impression a été bloquée par le navigateur.";
       return;
     }
 
-    this.http.get(`${API_BASE_URL}/conventions-stage/${this.convention.id}/pdf`, { responseType: 'blob' }).subscribe({
+    this.http
+      .get(`${API_BASE_URL}/stages/${this.convention.stageId}/documents/convention/pdf`, { responseType: 'blob' })
+      .subscribe({
       next: (blob) => {
         this.pdfWindowService.showPdf(printWindow, blob, {
           title: 'Convention de stage',
@@ -185,6 +205,16 @@ export class AgreementDetailComponent implements OnInit {
 
   get peutSigner(): boolean {
     if (!this.convention || !this.role) {
+      return false;
+    }
+
+    if (
+      !isConventionSigningPermitted({
+        stageStatut: this.stage?.statut,
+        dateDebut: this.stage?.dateDebut ?? this.convention.dateDebut,
+        allSignaturesComplete: this.convention.statutSignatures,
+      })
+    ) {
       return false;
     }
 
@@ -241,6 +271,9 @@ export class AgreementDetailComponent implements OnInit {
     request$.subscribe({
       next: (updated) => {
         this.convention = this.normalizeConvention(updated);
+        if (this.convention.stageId) {
+          this.signatureSync.notifyStageUpdated(this.convention.stageId);
+        }
         this.messageSucces = 'Convention signee avec succes.';
         this.signatureEnCours = false;
       },
@@ -269,17 +302,35 @@ export class AgreementDetailComponent implements OnInit {
   }
 
   private chargerStage(stageId: number): void {
-    // Le backend expose deja `GET /api/stages/{id}` et la page peut rendre la convention meme sans ces details.
-    this.http.get<any>(`${API_BASE_URL}/stages/${stageId}`).subscribe({
-      next: (stage) => {
-        this.stage = stage;
-        this.chargement = false;
-      },
-      error: () => {
-        this.stage = null;
-        this.chargement = false;
-      }
+    forkJoin({
+      stage: this.http.get<any>(`${API_BASE_URL}/stages/${stageId}`).pipe(catchError(() => of(null))),
+      documents: this.signatureSync.fetchDocumentsOverview(stageId),
+    }).subscribe(({ stage, documents }) => {
+      this.stage = stage;
+      this.pdfConventionStatus = documents?.convention ?? null;
+      this.chargement = false;
+      this.startLiveSignatureSync(stageId);
     });
+  }
+
+  /** Polling + invalidation : reflète les signatures des autres utilisateurs en quasi temps réel. */
+  private startLiveSignatureSync(stageId: number): void {
+    if (this.liveSyncStageId === stageId) {
+      return;
+    }
+    this.liveSyncStageId = stageId;
+
+    this.signatureSync
+      .watchSignatureBundle(stageId)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((bundle) => {
+        if (bundle.convention) {
+          this.convention = this.normalizeConvention(bundle.convention);
+        }
+        if (bundle.documents) {
+          this.pdfConventionStatus = bundle.documents.convention ?? null;
+        }
+      });
   }
 
   private normalizeConvention(raw: any): ConventionStage {

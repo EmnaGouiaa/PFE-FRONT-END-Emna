@@ -1,0 +1,119 @@
+<div class="dialog-header">
+  <div class="dialog-header__text">
+    <h2 mat-dialog-title>{{ internship.titre || ('Stage #' + internship.id) }}</h2>
+    <p class="dialog-subtitle">{{ internship.sujet || 'Sujet non renseigné' }}</p>
+  </div>
+  <button type="button" mat-icon-button (click)="close()" aria-label="Fermer">
+    <mat-icon>close</mat-icon>
+  </button>
+</div>
+
+<mat-dialog-content class="dialog-body">
+  <div *ngIf="detailLoading" class="dialog-loading">
+    <mat-spinner diameter="40"></mat-spinner>
+    <span>Mise à jour des détails…</span>
+  </div>
+
+  <div class="dialog-chips" [class.dialog-chips--dimmed]="detailLoading">
+    <mat-chip-set>
+      <mat-chip [class]="statusClass(internship.statutSuivi)">
+        {{ formatStatusLabel(internship.statutSuivi) }}
+      </mat-chip>
+      <mat-chip class="status-chip--subject">
+        Sujet : {{ formatSubjectStatusLabel(internship.statutSujet) }}
+      </mat-chip>
+      <mat-chip
+        *ngIf="agreement; else noAgreementChip"
+        [class]="agreement.statutSignatures ? 'status-chip--positive' : 'status-chip--warning'"
+      >
+        Convention {{ agreement.statutSignatures ? 'complète' : 'incomplète' }}
+      </mat-chip>
+      <ng-template #noAgreementChip>
+        <mat-chip class="status-chip--neutral">Convention absente</mat-chip>
+      </ng-template>
+    </mat-chip-set>
+  </div>
+
+  <section class="detail-section" [class.detail-section--dimmed]="detailLoading">
+    <h3>
+      <mat-icon>groups</mat-icon>
+      Intervenants
+    </h3>
+    <div class="detail-grid">
+      <div class="detail-cell">
+        <span class="detail-label">Étudiant</span>
+        <strong>{{ internship.student.fullName || '—' }}</strong>
+        <span class="detail-meta">{{ internship.student.email || '—' }}</span>
+      </div>
+      <div class="detail-cell">
+        <span class="detail-label">Entreprise</span>
+        <strong>{{ internship.company.nom || '—' }}</strong>
+        <span class="detail-meta">{{ internship.company.secteurActivite || internship.company.email || '—' }}</span>
+      </div>
+      <div class="detail-cell">
+        <span class="detail-label">Encadrant académique</span>
+        <strong>{{ internship.academicSupervisor.fullName || 'Non affecté' }}</strong>
+        <span class="detail-meta">{{ internship.academicSupervisor.secondary || internship.academicSupervisor.email || '—' }}</span>
+      </div>
+      <div class="detail-cell">
+        <span class="detail-label">Encadrant professionnel</span>
+        <strong>{{ internship.professionalSupervisor.fullName || 'Non renseigné' }}</strong>
+        <span class="detail-meta">{{ internship.professionalSupervisor.email || '—' }}</span>
+      </div>
+    </div>
+  </section>
+
+  <mat-divider></mat-divider>
+
+  <section class="detail-section" [class.detail-section--dimmed]="detailLoading">
+    <h3>
+      <mat-icon>event</mat-icon>
+      Période & convention
+    </h3>
+    <div class="detail-grid">
+      <div class="detail-cell">
+        <span class="detail-label">Période</span>
+        <strong>{{ internship.dateDebut || '—' }} → {{ internship.dateFin || '—' }}</strong>
+      </div>
+      <div class="detail-cell">
+        <span class="detail-label">Convention de stage</span>
+        <ng-container *ngIf="agreement; else noAgreementDetail">
+          <strong>#{{ agreement.numConv || agreement.id }}</strong>
+          <span class="detail-meta">
+            {{ agreement.statutSignatures ? 'Signatures complètes' : 'Signatures incomplètes' }}
+          </span>
+        </ng-container>
+        <ng-template #noAgreementDetail>
+          <strong>Aucune convention associée</strong>
+        </ng-template>
+      </div>
+    </div>
+  </section>
+
+  <mat-divider></mat-divider>
+
+  <section class="detail-section" [class.detail-section--dimmed]="detailLoading">
+    <h3>
+      <mat-icon>dashboard</mat-icon>
+      Suivi
+    </h3>
+    <div class="trello-panel" *ngIf="internship.trelloBoardUrl; else noTrello">
+      <mat-icon>view_kanban</mat-icon>
+      <div>
+        <strong>Tableau Trello</strong>
+        <p>Un tableau de suivi est associé à ce stage.</p>
+        <a mat-stroked-button color="primary" [href]="internship.trelloBoardUrl" target="_blank" rel="noreferrer">
+          <mat-icon>open_in_new</mat-icon>
+          Ouvrir Trello
+        </a>
+      </div>
+    </div>
+    <ng-template #noTrello>
+      <p class="trello-empty">Aucun tableau Trello lié à ce stage.</p>
+    </ng-template>
+  </section>
+</mat-dialog-content>
+
+<mat-dialog-actions align="end">
+  <button mat-button type="button" (click)="close()">Fermer</button>
+</mat-dialog-actions>

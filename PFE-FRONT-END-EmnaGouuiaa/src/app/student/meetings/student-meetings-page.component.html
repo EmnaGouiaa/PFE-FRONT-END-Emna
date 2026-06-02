@@ -54,7 +54,7 @@
             <span class="meeting-meta-label">Nom de l'encadrant</span>
             <strong>{{ getSupervisorName(meeting) }}</strong>
           </div>
-          <div class="cell-sub">{{ meeting.observation || 'Aucune observation renseignée.' }}</div>
+          <div class="cell-sub" *ngIf="showsMeetingObservation(meeting)">{{ meeting.observation || 'Aucune observation renseignée.' }}</div>
 
           <button type="button" class="btn btn-ghost" (click)="selectMeeting(meeting)">Détails</button>
         </article>
@@ -86,7 +86,10 @@
             <span class="meeting-meta-label">Nom de l'encadrant</span>
             <strong>{{ getSupervisorName(meeting) }}</strong>
           </div>
-          <div class="cell-sub">{{ meeting.compteRendu || meeting.observation || 'Sans détail supplémentaire.' }}</div>
+          <div class="cell-sub">
+            <ng-container *ngIf="showsMeetingObservation(meeting)">{{ meeting.compteRendu || meeting.observation || 'Sans détail supplémentaire.' }}</ng-container>
+            <ng-container *ngIf="!showsMeetingObservation(meeting)">{{ meeting.compteRendu || 'Réunion finale' }}</ng-container>
+          </div>
 
           <button type="button" class="btn btn-ghost" (click)="selectMeeting(meeting)">Détails</button>
         </article>
@@ -132,13 +135,21 @@
           </div>
           <div class="detail-item">
             <span class="label">Stage</span>
-            <span class="value">{{ selectedMeeting.stageTitre || 'Non renseigné' }}</span>
+            <span class="value">{{ meetingLabel(selectedMeeting.stageTitre) }}</span>
           </div>
           <div class="detail-item">
             <span class="label">Entreprise</span>
-            <span class="value">{{ selectedMeeting.entrepriseNom || 'Non renseignée' }}</span>
+            <span class="value">{{ meetingLabel(selectedMeeting.entrepriseNom) }}</span>
           </div>
-          <div class="detail-item full-width">
+          <div class="detail-item">
+            <span class="label">Créateur de la réunion</span>
+            <span class="value">{{ getSupervisorName(selectedMeeting) }}</span>
+          </div>
+          <div class="detail-item">
+            <span class="label">Responsable entreprise</span>
+            <span class="value">{{ getCompanySupervisorName(selectedMeeting) }}</span>
+          </div>
+          <div class="detail-item full-width" *ngIf="showsMeetingObservation(selectedMeeting)">
             <span class="label">Observation</span>
             <span class="value">{{ selectedMeeting.observation || 'Aucune observation.' }}</span>
           </div>

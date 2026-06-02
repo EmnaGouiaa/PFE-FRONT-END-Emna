@@ -9,6 +9,7 @@ import {
   UpdateResponsableEntrepriseRequest
 } from '../../services/responsables-entreprise.service';
 import { PhoneInputComponent } from '../../components/phone-input/phone-input.component';
+import { personNameErrorMessage, personNameValidators } from '../../shared/validators/person-name.validators';
 
 @Component({
   selector: 'app-admin-representants',
@@ -20,6 +21,7 @@ import { PhoneInputComponent } from '../../components/phone-input/phone-input.co
 export class AdminRepresentantsComponent implements OnInit {
   representants: ResponsableEntreprise[] = [];
   filtered: ResponsableEntreprise[] = [];
+  editingRepresentant: ResponsableEntreprise | null = null;
   isLoading = false;
   errorMessage = '';
   successMessage = '';
@@ -29,13 +31,14 @@ export class AdminRepresentantsComponent implements OnInit {
   isEditMode = false;
   editingId: number | null = null;
   form!: FormGroup;
+  formSubmitAttempted = false;
 
   constructor(private service: ResponsablesEntrepriseService, private fb: FormBuilder) {}
 
   ngOnInit(): void {
     this.form = this.fb.group({
-      prenom: ['', [Validators.required, Validators.minLength(2)]],
-      nom: ['', [Validators.required, Validators.minLength(2)]],
+      prenom: ['', personNameValidators()],
+      nom: ['', personNameValidators()],
       email: ['', [Validators.required, Validators.email]],
       telephone: [''],
       entrepriseId: ['']
@@ -110,16 +113,20 @@ export class AdminRepresentantsComponent implements OnInit {
     console.log('[AdminRepresentants] openCreate');
     this.isEditMode = false;
     this.editingId = null;
+    this.editingRepresentant = null;
     this.showForm = true;
+    this.formSubmitAttempted = false;
     this.errorMessage = '';
     this.successMessage = '';
     this.form.reset({ prenom: '', nom: '', email: '', telephone: '', entrepriseId: '' });
+    this.form.get('email')?.enable({ emitEvent: false });
   }
 
   openEdit(r: ResponsableEntreprise): void {
     console.log('[AdminRepresentants] openEdit', r?.id);
     this.isEditMode = true;
     this.editingId = r.id;
+    this.editingRepresentant = { ...r };
     this.showForm = true;
     this.errorMessage = '';
     this.successMessage = '';
@@ -130,6 +137,7 @@ export class AdminRepresentantsComponent implements OnInit {
       telephone: r.telephone ?? '',
       entrepriseId: r.entrepriseId ?? ''
     });
+    this.form.get('email')?.disable({ emitEvent: false });
   }
 
   closeForm(): void {
@@ -137,10 +145,31 @@ export class AdminRepresentantsComponent implements OnInit {
     this.showForm = false;
     this.isEditMode = false;
     this.editingId = null;
+    this.editingRepresentant = null;
+    this.form.get('email')?.enable({ emitEvent: false });
+  }
+
+  getFieldError(fieldName: string): string {
+    const control = this.form.get(fieldName);
+    if (!control || !(control.touched || this.formSubmitAttempted)) {
+      return '';
+    }
+    const personNameMessage = personNameErrorMessage(control.errors);
+    if (personNameMessage) {
+      return personNameMessage;
+    }
+    if (control.errors?.['required']) {
+      return 'Ce champ est obligatoire.';
+    }
+    if (control.errors?.['email']) {
+      return 'Format e-mail invalide.';
+    }
+    return '';
   }
 
   submit(): void {
     console.log('[AdminRepresentants] submit', { isEditMode: this.isEditMode, editingId: this.editingId });
+    this.formSubmitAttempted = true;
     if (this.form.invalid) {
       this.form.markAllAsTouched();
       return;
@@ -149,14 +178,14 @@ export class AdminRepresentantsComponent implements OnInit {
     this.isLoading = true;
     this.errorMessage = '';
     this.successMessage = '';
-    const v = this.form.value;
+    const v = this.form.getRawValue();
     const entrepriseId = v.entrepriseId ? Number(v.entrepriseId) : undefined;
 
     if (this.isEditMode && this.editingId !== null) {
       const payload: UpdateResponsableEntrepriseRequest = {
         prenom: v.prenom,
         nom: v.nom,
-        email: v.email,
+        email: this.editingRepresentant?.email ?? v.email,
         telephone: v.telephone,
         entrepriseId
       };

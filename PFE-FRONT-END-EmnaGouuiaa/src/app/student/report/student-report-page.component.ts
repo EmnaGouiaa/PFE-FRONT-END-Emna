@@ -3,6 +3,10 @@ import { Component, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { StudentInternship, StudentReport } from '../../services/student/student.models';
 import { StudentPortalService } from '../../services/student/student-portal.service';
+import {
+  canSignLogbook,
+  getLogbookSignBlockedReason,
+} from '../../shared/stage-documents/stage-document-signature-eligibility.util';
 
 @Component({
   selector: 'app-student-report-page',
@@ -52,8 +56,33 @@ export class StudentReportPageComponent implements OnInit {
     }
   }
 
+  canSignReport(): boolean {
+    const internship = this.selectedInternship;
+    return canSignLogbook({
+      dateFin: internship?.dateFin,
+      dateDebut: internship?.dateDebut,
+      dureeMonths: internship?.duree ?? null,
+      alreadySigned: Boolean(this.report?.signeeStagiaire),
+      hasDocument: Boolean(this.report?.id),
+    });
+  }
+
+  getReportSignTooltip(): string {
+    if (this.report?.signeeStagiaire) {
+      return 'Vous avez déjà signé ce cahier';
+    }
+    const internship = this.selectedInternship;
+    if (this.canSignReport()) {
+      return 'Signer le cahier de stage';
+    }
+    return (
+      getLogbookSignBlockedReason(internship?.dateFin, internship?.dateDebut, internship?.duree) ||
+      'La signature du cahier de stage n\'est pas encore autorisee.'
+    );
+  }
+
   signReport(): void {
-    if (!this.report || this.report.signeeStagiaire) return;
+    if (!this.report || this.report.signeeStagiaire || !this.canSignReport()) return;
     if (!window.confirm('Confirmer la signature du cahier de stage ?')) return;
 
     this.isSigning = true;

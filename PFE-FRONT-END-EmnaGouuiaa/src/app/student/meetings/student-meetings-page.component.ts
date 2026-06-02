@@ -5,6 +5,17 @@ import { Subscription, interval } from 'rxjs';
 import { startWith } from 'rxjs/operators';
 import { StudentInternship, StudentMeeting } from '../../services/student/student.models';
 import { StudentPortalService } from '../../services/student/student-portal.service';
+import {
+  getMeetingTimestamp,
+  meetingShowsObservation,
+  splitMeetingsBySchedule
+} from '../../utils/meeting-schedule.util';
+import {
+  meetingDisplayValue,
+  resolveMeetingCompanySupervisorName,
+  resolveMeetingCreatorName,
+  resolveMeetingCreatorTypeLabel
+} from '../../utils/meeting-display.util';
 
 @Component({
   selector: 'app-student-meetings-page',
@@ -74,12 +85,9 @@ export class StudentMeetingsPageComponent implements OnInit, OnDestroy {
   }
 
   getSupervisorTypeLabel(meeting: StudentMeeting): string {
-    const explicitType = String(meeting.typeEncadrantCreateur ?? '').trim().toUpperCase();
-    if (explicitType === 'ACADEMIQUE') {
-      return 'Académique';
-    }
-    if (explicitType === 'PROFESSIONNEL') {
-      return 'Professionnel';
+    const label = resolveMeetingCreatorTypeLabel(meeting.typeEncadrantCreateur);
+    if (label !== 'Non renseigné') {
+      return label === 'Encadrant académique' ? 'Académique' : label === 'Encadrant professionnel' ? 'Professionnel' : label;
     }
     if (meeting.source === 'FINALE') {
       return 'Professionnel';
@@ -94,21 +102,15 @@ export class StudentMeetingsPageComponent implements OnInit, OnDestroy {
   }
 
   getSupervisorName(meeting: StudentMeeting): string {
-    const explicitName = String(meeting.nomEncadrantCreateur ?? '').trim();
-    if (explicitName) {
-      return explicitName;
-    }
+    return resolveMeetingCreatorName(meeting, this.selectedInternship ?? undefined);
+  }
 
-    if (this.selectedInternship) {
-      if (this.getSupervisorTypeLabel(meeting) === 'Académique') {
-        return this.selectedInternship.academicSupervisor.fullName || 'Non renseigné';
-      }
-      if (this.getSupervisorTypeLabel(meeting) === 'Professionnel') {
-        return this.selectedInternship.professionalSupervisor.fullName || 'Non renseigné';
-      }
-    }
+  getCompanySupervisorName(meeting: StudentMeeting): string {
+    return resolveMeetingCompanySupervisorName(meeting.companySupervisorName, this.selectedInternship ?? undefined);
+  }
 
-    return 'Non renseigné';
+  meetingLabel(value: string | null | undefined): string {
+    return meetingDisplayValue(value);
   }
 
   getMeetingTypeLabel(meeting: StudentMeeting): string {
@@ -124,14 +126,14 @@ export class StudentMeetingsPageComponent implements OnInit, OnDestroy {
   }
 
   get upcomingMeetings(): StudentMeeting[] {
-    const now = Date.now();
-    return this.stageMeetings.filter((meeting) => this.toTimestamp(meeting) >= now);
+    return splitMeetingsBySchedule(this.stageMeetings).upcoming;
   }
 
   get pastMeetings(): StudentMeeting[] {
-    const now = Date.now();
-    return this.stageMeetings.filter((meeting) => this.toTimestamp(meeting) < now);
+    return splitMeetingsBySchedule(this.stageMeetings).past;
   }
+
+  readonly showsMeetingObservation = meetingShowsObservation;
 
   private startMeetingsRefresh(): void {
     this.meetingsRefreshSubscription?.unsubscribe();
@@ -153,7 +155,7 @@ export class StudentMeetingsPageComponent implements OnInit, OnDestroy {
 
     this.studentPortalService.listMeetingsForStage(this.selectedStageId).subscribe({
       next: (meetings) => {
-        this.meetings = [...meetings].sort((a, b) => this.toTimestamp(b) - this.toTimestamp(a));
+        this.meetings = [...meetings].sort((a, b) => getMeetingTimestamp(b) - getMeetingTimestamp(a));
         this.selectedMeeting = selectedMeetingId
           ? this.meetings.find((meeting) => meeting.id === selectedMeetingId) ?? null
           : null;
@@ -168,9 +170,4 @@ export class StudentMeetingsPageComponent implements OnInit, OnDestroy {
     });
   }
 
-  private toTimestamp(meeting: StudentMeeting): number {
-    const isoValue = `${meeting.date || '1970-01-01'}T${meeting.heure || '00:00:00'}`;
-    const timestamp = Date.parse(isoValue);
-    return Number.isNaN(timestamp) ? 0 : timestamp;
-  }
 }

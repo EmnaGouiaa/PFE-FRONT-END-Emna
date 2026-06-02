@@ -264,7 +264,14 @@
 
             <div class="form-group">
               <label>Email entreprise</label>
-              <input class="input" type="email" formControlName="emailEntreprise" />
+              <input
+                class="input"
+                type="email"
+                formControlName="emailEntreprise"
+                [readonly]="isEditMode"
+                [class.readonly-input]="isEditMode"
+              />
+              <div class="field-hint" *ngIf="isEditMode">L'email de l'entreprise ne peut pas etre modifie apres la creation.</div>
               <div class="field-error" *ngIf="getFieldError('emailEntreprise')">{{ getFieldError('emailEntreprise') }}</div>
             </div>
 
@@ -298,7 +305,14 @@
 
             <div class="form-group">
               <label>Email responsable *</label>
-              <input class="input" type="email" formControlName="emailResponsable" />
+              <input
+                class="input"
+                type="email"
+                formControlName="emailResponsable"
+                [readonly]="isEditMode"
+                [class.readonly-input]="isEditMode"
+              />
+              <div class="field-hint" *ngIf="isEditMode">L'email du responsable ne peut pas etre modifie apres la creation.</div>
               <div class="field-error" *ngIf="getFieldError('emailResponsable')">{{ getFieldError('emailResponsable') }}</div>
             </div>
 

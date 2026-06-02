@@ -23,6 +23,9 @@ export interface FacultyInternship {
   nbSemaine: number | null;
   niveauSouhaite: string;
   statut: string;
+  /** Statut métier de suivi : EN_COURS | TERMINE | REFUSE */
+  statutSuivi: string;
+  statutSuiviLibelle: string;
   statutSujet: string;
   trelloBoardUrl: string;
   conventionId: number | null;
@@ -77,7 +80,12 @@ export interface FacultyMeeting {
   stageTitre: string;
   studentName: string;
   companyName: string;
+  typeEncadrantCreateur: string;
+  nomEncadrantCreateur: string;
+  encadrantCreateurId: number | null;
+  companySupervisorName: string;
   participantIds: number[];
+  participantNames: string[];
   note: number | null;
   urlFormSatisfaction: string;
   titreEnqueteSatisfaction: string;
@@ -158,6 +166,7 @@ export interface FacultyStageDocumentStatus {
   raisonAbsence: string;
   signeeParResponsableUniversitaire: boolean;
   dateSignatureResponsableUniversitaire: string;
+  signataires?: { role?: string; libelle: string; signe: boolean }[];
   /** Cycle de vie typé du document, calculé automatiquement. */
   statutDocument: StatutDocument | null;
 }
@@ -199,5 +208,7 @@ export interface FacultyOffer {
   valideeParId: number | null;
   valideeParNomComplet: string;
   stageCree: boolean;
+  dateFinStage: string;
+  stageTermine: boolean;
   affectable: boolean;
 }

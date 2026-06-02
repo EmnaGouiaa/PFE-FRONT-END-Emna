@@ -87,8 +87,36 @@ export class CompanyOffersService {
       stageCree: Boolean(raw?.stageCree),
       affectable: Boolean(raw?.affectable),
       affectationActive: Boolean(raw?.affectationActive),
-      statutSujet: raw?.statutSujet == null ? null : String(raw.statutSujet)
+      statutSujet: raw?.statutSujet == null ? null : String(raw.statutSujet),
+      dateFinStage: raw?.dateFinStage == null ? null : String(raw.dateFinStage),
+      stageTermine: Boolean(raw?.stageTermine),
+      annulationAffectationAutorisee:
+        raw?.annulationAffectationAutorisee != null
+          ? Boolean(raw.annulationAffectationAutorisee)
+          : this.canCancelAssignmentFallback(raw)
     };
+  }
+
+  /** Repli si l'API ne renvoie pas encore le flag (anciennes versions). */
+  private canCancelAssignmentFallback(raw: any): boolean {
+    if (!raw?.affectationActive && raw?.statut !== 'AFFECTEE') {
+      return false;
+    }
+    if (raw?.stageTermine) {
+      return false;
+    }
+    if (raw?.statutSujet === 'VALIDEE') {
+      return false;
+    }
+    const dateDebut = String(raw?.dateDebutPrevue ?? '').trim();
+    if (!dateDebut) {
+      return Boolean(raw?.affectationActive ?? raw?.stageCree);
+    }
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const debut = new Date(dateDebut);
+    debut.setHours(0, 0, 0, 0);
+    return !Number.isNaN(debut.getTime()) && debut.getTime() > today.getTime();
   }
 
   private toPayload(payload: CompanyOfferPayload): CompanyOfferPayload {

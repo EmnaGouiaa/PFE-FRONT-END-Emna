@@ -28,7 +28,7 @@
             Actualiser
           </button>
 
-          <button *ngIf="section === 'reunions'" type="button" class="refresh-btn primary-action" (click)="openMeetingModal()">
+          <button *ngIf="section === 'reunions' && canCreateWeeklyMeeting" type="button" class="refresh-btn primary-action" (click)="openMeetingModal()">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M12 5v14" />
               <path d="M5 12h14" />
@@ -141,7 +141,7 @@
               <div class="stat-info">
                 <div class="stat-top">
                   <p>Réunions prévues</p>
-                  <span class="stat-chip">{{ meetings.length }} total</span>
+                  <span class="stat-chip">{{ participantMeetings.length }} total</span>
                 </div>
                 <h3>{{ stats.upcomingMeetings }}</h3>
                 <div class="stat-sub"><span class="muted">À venir</span></div>
@@ -205,7 +205,7 @@
                 <span class="pill soft">Réunions & notifications</span>
               </div>
               <div class="activity-list">
-                <div class="health-item" *ngFor="let meeting of meetings.slice(0, 3)">
+                <div class="health-item" *ngFor="let meeting of participantMeetings.slice(0, 3)">
                   <span class="status-dot ok"></span>
                   <div>
                     <div class="health-title">{{ meeting.numReunion || 'Réunion' }} - {{ meeting.stageTitre || 'Stage' }}</div>
@@ -306,12 +306,7 @@
                     <td class="actions">
                       <button type="button" class="btn btn-primary" (click)="openFollowUpModal(internship)">Suivi</button>
                       <button type="button" class="btn btn-secondary" (click)="openStageModal(internship)">Détail</button>
-                      <button type="button" class="btn btn-secondary"
-                              [disabled]="isInternshipStageFinished(internship)"
-                              (click)="loadTrello(internship)"
-                              title="{{ isInternshipStageFinished(internship) ? 'Trello indisponible : stage terminé.' : '' }}">
-                        Trello
-                      </button>
+                      <button type="button" class="btn btn-secondary" (click)="loadTrello(internship)">Trello</button>
                       <button *ngIf="role === 'ENCADRANT_ACADEMIQUE' && internship.statutSujet === 'EN_ATTENTE'"
                               type="button" class="btn btn-primary"
                               (click)="validateSubject(internship)"
@@ -337,7 +332,7 @@
             </div>
             <div class="filters">
               <input class="input" type="search" [(ngModel)]="searchTerm" placeholder="Rechercher une réunion..." />
-              <button type="button" class="btn btn-primary" (click)="openMeetingModal()">Créer réunion</button>
+              <button type="button" class="btn btn-primary" (click)="openMeetingModal()" *ngIf="canCreateWeeklyMeeting">Créer réunion</button>
             </div>
             <div class="analytics-grid" *ngIf="filteredMeetings.length">
               <div class="analytics-card">
@@ -352,11 +347,14 @@
                     <div>
                       <div class="health-title">{{ meeting.numReunion || 'Reunion' }} - {{ meeting.stageTitre || 'Stage' }}</div>
                       <div class="health-sub">{{ meeting.date }} a {{ meeting.heure }} - {{ meeting.studentName || 'Stagiaire' }}</div>
-                      <div class="health-sub">{{ meeting.companyName || '-' }} - {{ meeting.source }}</div>
+                      <div class="health-sub">
+                        {{ meeting.companyName || '-' }} —
+                        <span class="status-pill" [ngClass]="getMeetingTypeBadgeClass(meeting)">{{ getMeetingTypeLabel(meeting) }}</span>
+                      </div>
                     </div>
                     <div class="actions">
-                      <button type="button" class="btn btn-secondary" (click)="openMeetingDetails(meeting)">Détails</button>
-                      <button type="button" class="btn btn-primary" (click)="openReportModal(meeting)">Ajouter observation</button>
+                      <button type="button" class="btn btn-secondary" (click)="openMeetingDetails(meeting)" *ngIf="isCurrentUserMeetingParticipant(meeting)">Détails</button>
+                      <button type="button" class="btn btn-primary" (click)="openReportModal(meeting)" *ngIf="canAddOrEditObservationForMeeting(meeting)">Ajouter observation</button>
                     </div>
                   </div>
                 </div>
@@ -373,11 +371,14 @@
                     <div>
                       <div class="health-title">{{ meeting.numReunion || 'Reunion' }} - {{ meeting.stageTitre || 'Stage' }}</div>
                       <div class="health-sub">{{ meeting.date }} a {{ meeting.heure }} - {{ meeting.studentName || 'Stagiaire' }}</div>
-                      <div class="health-sub">{{ meeting.observation || meeting.compteRendu || 'Aucun détail disponible' }}</div>
+                      <div class="health-sub">
+                        <ng-container *ngIf="showsMeetingObservation(meeting)">{{ meeting.observation || meeting.compteRendu || 'Aucun détail disponible' }}</ng-container>
+                        <ng-container *ngIf="!showsMeetingObservation(meeting)">{{ meeting.compteRendu || 'Réunion finale' }}</ng-container>
+                      </div>
                     </div>
                     <div class="actions">
-                      <button type="button" class="btn btn-secondary" (click)="openMeetingDetails(meeting)">Détails</button>
-                      <button type="button" class="btn btn-primary" (click)="openReportModal(meeting)">
+                      <button type="button" class="btn btn-secondary" (click)="openMeetingDetails(meeting)" *ngIf="isCurrentUserMeetingParticipant(meeting)">Détails</button>
+                      <button type="button" class="btn btn-primary" (click)="openReportModal(meeting)" *ngIf="canAddOrEditObservationForMeeting(meeting)">
                         {{ meeting.observation ? 'Modifier observation' : 'Ajouter observation' }}
                       </button>
                     </div>
@@ -400,7 +401,9 @@
                   <tr *ngFor="let meeting of filteredMeetings">
                     <td>
                       <div class="cell-title">{{ meeting.numReunion || 'Réunion' }}</div>
-                      <div class="cell-sub">{{ meeting.source }}</div>
+                      <div class="cell-sub">
+                        <span class="status-pill" [ngClass]="getMeetingTypeBadgeClass(meeting)">{{ getMeetingTypeLabel(meeting) }}</span>
+                      </div>
                     </td>
                     <td>
                       <div class="cell-title">{{ meeting.stageTitre || '-' }}</div>
@@ -408,12 +411,15 @@
                     </td>
                     <td>{{ meeting.date }} à {{ meeting.heure }}</td>
                     <td>
-                      <div class="cell-sub">{{ meeting.observation || 'En attente' }}</div>
+                      <div class="cell-sub" *ngIf="showsMeetingObservation(meeting)">{{ meeting.observation || 'En attente' }}</div>
+                      <div class="cell-sub muted" *ngIf="!showsMeetingObservation(meeting)">—</div>
                     </td>
                     <td class="actions">
-                      <button type="button" class="btn btn-secondary" (click)="openMeetingDetails(meeting)">Détails</button>
-                      <button type="button" class="btn btn-secondary" (click)="openMeetingModal(meeting)" [disabled]="!canModifyMeeting(meeting)">Modifier</button>
-                      <button type="button" class="btn btn-secondary" (click)="openReportModal(meeting)">
+                      <button type="button" class="btn btn-secondary" (click)="openMeetingDetails(meeting)" *ngIf="isCurrentUserMeetingParticipant(meeting)">Détails</button>
+                      <button type="button" class="btn btn-secondary" (click)="openMeetingModal(meeting)" *ngIf="canModifyMeeting(meeting)">
+                        {{ meeting.source === 'FINALE' ? "Modifier l'horaire" : 'Modifier' }}
+                      </button>
+                      <button type="button" class="btn btn-secondary" (click)="openReportModal(meeting)" *ngIf="canAddOrEditObservationForMeeting(meeting)">
                         {{ meeting.observation ? 'Modifier observation' : 'Ajouter observation' }}
                       </button>
                     </td>
@@ -464,23 +470,25 @@
                           {{ getDocStatusLabel(getConventionStatus(internship.id)) }}
                         </span>
                       </div>
-                      <div class="doc-card-short-status">{{ agreement.dateDebut || '-' }} – {{ agreement.dateFin || '-' }}</div>
+                      <div class="doc-card-short-status">{{ getSignatureCardSummary(internship.id, 'convention') }}</div>
                       <div class="doc-card-meta">
                         <div class="doc-card-meta-item">
-                          <span class="label">Ma signature</span>
-                          <strong>{{ isAgreementSignedByMe(agreement) ? '✓ Signée' : 'En attente' }}</strong>
+                          <span class="label">Statut</span>
+                          <strong>{{ getDocStatusLabel(getConventionStatus(internship.id)) }}</strong>
                         </div>
                         <div class="doc-card-meta-item">
                           <span class="label">Accès PDF</span>
-                          <strong>{{ getConventionStatus(internship.id)?.disponible ? 'Autorisé' : 'En attente' }}</strong>
+                          <strong>{{ getConventionStatus(internship.id)?.disponible ? 'Autorisé' : 'Indisponible' }}</strong>
                         </div>
                       </div>
-                      <div class="doc-card-actions">
-                        <a class="btn btn-secondary btn-sm" [routerLink]="['/stages/convention', agreement.id]">Voir</a>
-                        <button type="button" class="btn btn-secondary btn-sm" (click)="download(internship.id, 'convention')" [disabled]="!getConventionStatus(internship.id)?.disponible" [title]="getConventionStatus(internship.id)?.raisonAbsence || 'Voir le PDF'">PDF</button>
-                        <button type="button" class="btn btn-sm" [class.btn-primary]="!isAgreementSignedByMe(agreement)" [class.btn-secondary]="isAgreementSignedByMe(agreement)" (click)="signAgreement(agreement)" [disabled]="isAgreementSignedByMe(agreement)">
-                          {{ isAgreementSignedByMe(agreement) ? '✓ Signée' : 'Signer' }}
-                        </button>
+                      <div class="doc-card-actions doc-card-actions--standard">
+                        <button type="button" class="btn btn-secondary btn-sm" (click)="openDocDetails('Convention de stage', getConventionStatus(internship.id), internship.id, 'convention')">Détail</button>
+                        <button type="button" class="btn btn-secondary btn-sm" (click)="download(internship.id, 'convention')" [disabled]="!getConventionStatus(internship.id)?.disponible" [title]="getConventionStatus(internship.id)?.raisonAbsence || 'Télécharger le PDF'">PDF</button>
+                        <app-stage-document-sign-action
+                          [context]="buildConventionSignContextPublic(internship, agreement)"
+                          (sign)="signAgreement(agreement)"
+                          (initialize)="initializeConvention(internship)"
+                        />
                       </div>
                     </ng-container>
                     <ng-container *ngIf="!agreementsByStage.get(internship.id)">
@@ -488,10 +496,14 @@
                         <div class="doc-card-title">Convention de stage</div>
                         <span class="status-pill status-neutral">Non générée</span>
                       </div>
-                      <div class="doc-card-short-status">{{ getConventionStatus(internship.id)?.raisonAbsence || 'Convention pas encore créée.' }}</div>
-                      <div class="doc-card-actions">
+                      <div class="doc-card-short-status">{{ getSignatureCardSummary(internship.id, 'convention') }}</div>
+                      <div class="doc-card-actions doc-card-actions--standard">
+                        <button type="button" class="btn btn-secondary btn-sm" (click)="openDocDetails('Convention de stage', getConventionStatus(internship.id), internship.id, 'convention')">Détail</button>
                         <button type="button" class="btn btn-secondary btn-sm" disabled>PDF</button>
-                        <button type="button" class="btn btn-secondary btn-sm" disabled>Signer</button>
+                        <app-stage-document-sign-action
+                          [context]="buildConventionSignContextPublic(internship, null)"
+                          (initialize)="initializeConvention(internship)"
+                        />
                       </div>
                     </ng-container>
                   </article>
@@ -506,43 +518,56 @@
                           {{ getDocStatusLabel(getLogbookStatus(internship.id)) }}
                         </span>
                       </div>
-                      <div class="doc-card-short-status">Généré le {{ logbook.dateGeneration || '-' }}</div>
+                      <div class="doc-card-short-status">{{ getSignatureCardSummary(internship.id, 'cahier-stage') }}</div>
                       <div class="doc-card-meta">
                         <div class="doc-card-meta-item">
-                          <span class="label">Ma signature</span>
-                          <strong>{{ isLogbookSignedByMe(logbook) ? '✓ Signé' : 'En attente' }}</strong>
+                          <span class="label">Statut</span>
+                          <strong>{{ getDocStatusLabel(getLogbookStatus(internship.id)) }}</strong>
                         </div>
                         <div class="doc-card-meta-item">
                           <span class="label">Accès PDF</span>
-                          <strong>{{ getLogbookStatus(internship.id)?.disponible ? 'Autorisé' : 'En attente' }}</strong>
+                          <strong>{{ getLogbookStatus(internship.id)?.disponible ? 'Autorisé' : 'Indisponible' }}</strong>
                         </div>
                       </div>
-                      <div class="doc-card-actions">
-                        <button type="button" class="btn btn-secondary btn-sm" (click)="openDocDetails('Cahier de stage', getLogbookStatus(internship.id))">Détails</button>
-                        <button type="button" class="btn btn-secondary btn-sm" (click)="download(internship.id, 'cahier-stage')" [disabled]="!getLogbookStatus(internship.id)?.disponible" [title]="getLogbookStatus(internship.id)?.raisonAbsence || 'Voir le PDF'">PDF</button>
-                        <button type="button" class="btn btn-sm" [class.btn-primary]="!isLogbookSignedByMe(logbook)" [class.btn-secondary]="isLogbookSignedByMe(logbook)" (click)="signLogbook(logbook)" [disabled]="isLogbookSignedByMe(logbook)">
-                          {{ isLogbookSignedByMe(logbook) ? '✓ Signé' : 'Signer' }}
-                        </button>
+                      <div class="doc-card-actions doc-card-actions--standard">
+                        <button type="button" class="btn btn-secondary btn-sm" (click)="openDocDetails('Cahier de stage', getLogbookStatus(internship.id), internship.id, 'cahier-stage')">Détail</button>
+                        <button type="button" class="btn btn-secondary btn-sm" (click)="download(internship.id, 'cahier-stage')" [disabled]="!getLogbookStatus(internship.id)?.disponible" [title]="getLogbookStatus(internship.id)?.raisonAbsence || 'Télécharger le PDF'">PDF</button>
+                        <app-stage-document-sign-action
+                          [context]="buildLogbookSignContextPublic(internship, logbook)"
+                          (sign)="signLogbook(logbook)"
+                        />
                       </div>
                     </ng-container>
                     <ng-container *ngIf="!logbooksByStage.get(internship.id)">
                       <div class="doc-card-top">
                         <div class="doc-card-title">Cahier de stage</div>
-                        <span class="status-pill" [ngClass]="getLogbookStatus(internship.id)?.generationAutorisee ? 'status-info' : 'status-neutral'">
-                          {{ getLogbookStatus(internship.id)?.generationAutorisee ? 'Prêt à générer' : 'Non disponible' }}
+                        <span class="status-pill" [ngClass]="getDocStatusBadgeClass(getLogbookStatus(internship.id))">
+                          {{ getDocStatusLabel(getLogbookStatus(internship.id)) }}
                         </span>
                       </div>
-                      <div class="doc-card-short-status">{{ getLogbookStatus(internship.id)?.raisonAbsence || "Le cahier n'est pas encore généré." }}</div>
-                      <div class="doc-card-actions">
-                        <button type="button" class="btn btn-secondary btn-sm" disabled>PDF</button>
-                        <button type="button" class="btn btn-secondary btn-sm" disabled>Signer</button>
-                        <button type="button" class="btn btn-primary btn-sm" (click)="generateLogbook(internship)" [disabled]="isSaving || !getLogbookStatus(internship.id)?.generationAutorisee">Générer</button>
+                      <div class="doc-card-short-status">{{ getSignatureCardSummary(internship.id, 'cahier-stage') }}</div>
+                      <div class="doc-card-meta">
+                        <div class="doc-card-meta-item">
+                          <span class="label">Statut</span>
+                          <strong>{{ getDocStatusLabel(getLogbookStatus(internship.id)) }}</strong>
+                        </div>
+                        <div class="doc-card-meta-item">
+                          <span class="label">Accès PDF</span>
+                          <strong>{{ getLogbookStatus(internship.id)?.disponible ? 'Autorisé' : 'Indisponible' }}</strong>
+                        </div>
+                      </div>
+                      <div class="doc-card-actions doc-card-actions--standard">
+                        <button type="button" class="btn btn-secondary btn-sm" (click)="openDocDetails('Cahier de stage', getLogbookStatus(internship.id), internship.id, 'cahier-stage')">Détail</button>
+                        <button type="button" class="btn btn-secondary btn-sm" (click)="download(internship.id, 'cahier-stage')" [disabled]="!getLogbookStatus(internship.id)?.disponible" [title]="getLogbookStatus(internship.id)?.raisonAbsence || 'Télécharger le PDF'">PDF</button>
+                        <app-stage-document-sign-action
+                          [context]="buildLogbookSignContextPublic(internship, null)"
+                        />
                       </div>
                     </ng-container>
                   </article>
 
-                  <!-- Fiche d'évaluation (ENCADRANT_PROFESSIONNEL uniquement) -->
-                  <ng-container *ngIf="role === 'ENCADRANT_PROFESSIONNEL'">
+                  <!-- Fiche d'évaluation -->
+                  <ng-container>
                     <article class="doc-mini-card">
                       <div class="doc-card-eyebrow">Fiche d'évaluation</div>
                       <ng-container *ngIf="evaluationsByStage.get(internship.id) as evaluation">
@@ -552,26 +577,36 @@
                             {{ getEvalStatusLabel(evaluation) }}
                           </span>
                         </div>
-                        <div class="doc-card-short-status">{{ evaluation.verrouillee ? 'Verrouillée — lecture seule' : (evaluation.donneesCompletes ? 'Données complètes' : 'À compléter') }}</div>
-                        <div class="doc-card-meta">
+                        <div class="doc-card-short-status">{{ getSignatureCardSummary(internship.id, 'fiche-evaluation') }}</div>
+                        <div class="doc-card-meta" *ngIf="isEvaluationContentVisible(evaluation)">
                           <div class="doc-card-meta-item">
                             <span class="label">Note finale</span>
-                            <strong>{{ evaluation.noteFinale != null ? evaluation.noteFinale : '—' }}</strong>
+                            <strong>{{ formatEvaluationCardFinalScore(evaluation) }}</strong>
                           </div>
                           <div class="doc-card-meta-item">
-                            <span class="label">Ma signature</span>
-                            <strong>{{ isEvaluationSignedByMe(evaluation) ? '✓ Signée' : 'En attente' }}</strong>
+                            <span class="label">Accès PDF</span>
+                            <strong>{{ getEvaluationStatus(internship.id)?.disponible ? 'Autorisé' : 'Indisponible' }}</strong>
                           </div>
                         </div>
-                        <div class="doc-card-actions">
-                          <button type="button" class="btn btn-secondary btn-sm" (click)="openDocDetails('Fiche d\'évaluation', getEvaluationStatus(internship.id))">Détails</button>
-                          <button type="button" class="btn btn-secondary btn-sm" (click)="download(internship.id, 'fiche-evaluation')" [disabled]="!getEvaluationStatus(internship.id)?.disponible" [title]="getEvaluationStatus(internship.id)?.raisonAbsence || 'Voir le PDF'">PDF</button>
-                          <button type="button" class="btn btn-secondary btn-sm" (click)="openEvaluationModal(evaluation)">
-                            {{ evaluation.verrouillee ? 'Consulter' : 'Remplir' }}
+                        <div class="doc-card-short-status" *ngIf="!isEvaluationContentVisible(evaluation)">
+                          {{ evaluation.evaluationIndisponibleMessage || evaluationUnavailableMessage }}
+                        </div>
+                        <div class="doc-card-actions doc-card-actions--standard">
+                          <button type="button" class="btn btn-secondary btn-sm" (click)="openDocDetails('Fiche d\'évaluation', getEvaluationStatus(internship.id), internship.id, 'fiche-evaluation')">Détail</button>
+                          <button type="button" class="btn btn-secondary btn-sm" (click)="download(internship.id, 'fiche-evaluation')" [disabled]="!getEvaluationStatus(internship.id)?.disponible" [title]="getEvaluationStatus(internship.id)?.raisonAbsence || 'Télécharger le PDF'">PDF</button>
+                          <button
+                            type="button"
+                            class="btn btn-secondary btn-sm"
+                            (click)="openEvaluationModal(evaluation)"
+                            [disabled]="!isEvaluationPeriodOpenForInternship(internship)"
+                            [title]="isEvaluationPeriodOpenForInternship(internship) ? '' : evaluationUnavailableMessage"
+                          >
+                            {{ isEvaluationReadOnlyForCurrentUser(evaluation) ? 'Consulter' : 'Remplir' }}
                           </button>
-                          <button type="button" class="btn btn-sm" [class.btn-primary]="!isEvaluationSignedByMe(evaluation)" [class.btn-secondary]="isEvaluationSignedByMe(evaluation)" (click)="signEvaluation(evaluation)" [disabled]="isEvaluationSignedByMe(evaluation)">
-                            {{ isEvaluationSignedByMe(evaluation) ? '✓ Signée' : 'Signer' }}
-                          </button>
+                          <app-stage-document-sign-action
+                            [context]="buildEvaluationSignContextPublic(internship, evaluation)"
+                            (sign)="signEvaluation(evaluation)"
+                          />
                         </div>
                       </ng-container>
                       <ng-container *ngIf="!evaluationsByStage.get(internship.id)">
@@ -579,10 +614,13 @@
                           <div class="doc-card-title">Fiche d'évaluation</div>
                           <span class="status-pill status-neutral">Non disponible</span>
                         </div>
-                        <div class="doc-card-short-status">{{ getEvaluationStatus(internship.id)?.raisonAbsence || 'La fiche sera disponible en cours de stage.' }}</div>
-                        <div class="doc-card-actions">
+                        <div class="doc-card-short-status">{{ getSignatureCardSummary(internship.id, 'fiche-evaluation') }}</div>
+                        <div class="doc-card-actions doc-card-actions--standard">
                           <button type="button" class="btn btn-secondary btn-sm" disabled>PDF</button>
                           <button type="button" class="btn btn-secondary btn-sm" disabled>Remplir</button>
+                          <app-stage-document-sign-action
+                            [context]="buildEvaluationSignContextPublic(internship, null)"
+                          />
                         </div>
                       </ng-container>
                     </article>
@@ -670,11 +708,11 @@
                     <div class="doc-card-meta" style="margin-top:4px">
                       <div class="doc-card-meta-item">
                         <span class="label">Note finale</span>
-                        <strong>{{ evaluation.noteFinale != null ? evaluation.noteFinale : '—' }}</strong>
+                        <strong>{{ formatEvaluationCardFinalScore(evaluation) }}</strong>
                       </div>
                       <div class="doc-card-meta-item">
                         <span class="label">Critères saisis</span>
-                        <strong>{{ evaluation.notesAttribuees.length }}</strong>
+                        <strong>{{ countProfessionalCriteriaScored(evaluation) }} / {{ professionalCriteriaLabels.length }}</strong>
                       </div>
                       <div class="doc-card-meta-item">
                         <span class="label">Données</span>
@@ -703,15 +741,13 @@
                         </svg>
                         {{ evaluation.verrouillee ? 'Consulter' : 'Évaluer' }}
                       </button>
-                      <button
-                        *ngIf="!isEvaluationSignedByMe(evaluation)"
-                        type="button"
-                        class="btn btn-primary btn-sm"
-                        (click)="signEvaluation(evaluation)"
-                        [disabled]="!evaluation.donneesCompletes"
-                        [title]="!evaluation.donneesCompletes ? 'Complétez d\'abord la fiche avant de signer' : 'Signer la fiche d\'évaluation'"
-                      >Signer</button>
-                      <span *ngIf="isEvaluationSignedByMe(evaluation)" class="status-pill status-positive eval-signed-badge">✓ Signé</span>
+                      <app-stage-document-sign-action
+                        [context]="buildEvaluationSignContextPublic(internship, evaluation)"
+                        (sign)="signEvaluation(evaluation)"
+                      />
+                      <p class="eval-sign-hint" *ngIf="showEvaluationSignBlockedHint(internship, evaluation)">
+                        {{ evaluationSignIncompleteMessage }}
+                      </p>
                     </div>
                   </ng-container>
 
@@ -847,27 +883,52 @@
               <ng-container *ngIf="type === 'conventions' && agreementsByStage.get(internship.id) as agreement">
                 <a class="btn btn-secondary" [routerLink]="['/stages/convention', agreement.id]">Voir</a>
                 <button type="button" class="btn btn-secondary" (click)="download(internship.id, 'convention')" [disabled]="!getConventionStatus(internship.id)?.disponible" [title]="getConventionStatus(internship.id)?.raisonAbsence || 'Ouvrir le PDF'">PDF</button>
-                <button type="button" class="btn btn-primary" (click)="signAgreement(agreement)" [disabled]="isAgreementSignedByMe(agreement)" [title]="isAgreementSignedByMe(agreement) ? 'Vous avez déjà signé cette convention' : 'Signer la convention'">{{ isAgreementSignedByMe(agreement) ? '✓ Signé' : 'Signer' }}</button>
+                <app-stage-document-sign-action
+                  buttonClass="btn btn-primary"
+                  [context]="buildConventionSignContextPublic(internship, agreement)"
+                  (sign)="signAgreement(agreement)"
+                  (initialize)="initializeConvention(internship)"
+                />
+              </ng-container>
+              <ng-container *ngIf="type === 'conventions' && !agreementsByStage.get(internship.id)">
+                <app-stage-document-sign-action
+                  buttonClass="btn btn-primary"
+                  [context]="buildConventionSignContextPublic(internship, null)"
+                  (initialize)="initializeConvention(internship)"
+                />
               </ng-container>
               <ng-container *ngIf="type === 'cahier' && logbooksByStage.get(internship.id) as logbook">
-                <button type="button" class="btn btn-secondary" (click)="openDocDetails('Cahier de stage', getLogbookStatus(internship.id))">Détails</button>
+                <button type="button" class="btn btn-secondary" (click)="openDocDetails('Cahier de stage', getLogbookStatus(internship.id), internship.id, 'cahier-stage')">Détail</button>
                 <button type="button" class="btn btn-secondary" (click)="download(internship.id, 'cahier-stage')" [disabled]="!getLogbookStatus(internship.id)?.disponible" [title]="getLogbookStatus(internship.id)?.raisonAbsence || 'Ouvrir le PDF'">PDF</button>
-                <button type="button" class="btn btn-primary" (click)="signLogbook(logbook)" [disabled]="isLogbookSignedByMe(logbook)" [title]="isLogbookSignedByMe(logbook) ? 'Vous avez déjà signé ce cahier' : 'Valider et signer le cahier'">{{ isLogbookSignedByMe(logbook) ? '✓ Signé' : 'Valider et signer' }}</button>
+                <app-stage-document-sign-action
+                  buttonClass="btn btn-primary"
+                  [context]="buildLogbookSignContextPublic(internship, logbook)"
+                  (sign)="signLogbook(logbook)"
+                />
               </ng-container>
-              <button
-                *ngIf="type === 'cahier' && !logbooksByStage.get(internship.id)"
-                type="button"
-                class="btn btn-primary"
-                (click)="generateLogbook(internship)"
-                [disabled]="isSaving || !getLogbookStatus(internship.id)?.generationAutorisee"
-              >
-                Générer
-              </button>
+              <ng-container *ngIf="type === 'cahier' && !logbooksByStage.get(internship.id)">
+                <button type="button" class="btn btn-secondary" (click)="openDocDetails('Cahier de stage', getLogbookStatus(internship.id), internship.id, 'cahier-stage')">Détail</button>
+                <button type="button" class="btn btn-secondary" (click)="download(internship.id, 'cahier-stage')" [disabled]="!getLogbookStatus(internship.id)?.disponible" [title]="getLogbookStatus(internship.id)?.raisonAbsence || 'Ouvrir le PDF'">PDF</button>
+                <app-stage-document-sign-action
+                  buttonClass="btn btn-primary"
+                  [context]="buildLogbookSignContextPublic(internship, null)"
+                />
+              </ng-container>
               <ng-container *ngIf="type === 'evaluations' && evaluationsByStage.get(internship.id) as evaluation">
-                <button type="button" class="btn btn-secondary" (click)="openDocDetails('Fiche d’évaluation', getEvaluationStatus(internship.id))">Détails</button>
+                <button type="button" class="btn btn-secondary" (click)="openDocDetails('Fiche d’évaluation', getEvaluationStatus(internship.id), internship.id, 'fiche-evaluation')">Détail</button>
                 <button type="button" class="btn btn-secondary" (click)="download(internship.id, 'fiche-evaluation')" [disabled]="!getEvaluationStatus(internship.id)?.disponible" [title]="getEvaluationStatus(internship.id)?.raisonAbsence || 'Ouvrir le PDF'">PDF</button>
-                <button type="button" class="btn btn-secondary" (click)="openEvaluationModal(evaluation)" [disabled]="evaluation.verrouillee">Remplir</button>
-                <button type="button" class="btn btn-primary" (click)="signEvaluation(evaluation)" [disabled]="isEvaluationSignedByMe(evaluation)" [title]="isEvaluationSignedByMe(evaluation) ? 'Vous avez déjà signé cette fiche' : 'Signer la fiche'">{{ isEvaluationSignedByMe(evaluation) ? '✓ Signé' : 'Signer' }}</button>
+                <button type="button" class="btn btn-secondary" (click)="openEvaluationModal(evaluation)">{{ isEvaluationReadOnlyForCurrentUser(evaluation) ? 'Consulter' : 'Remplir' }}</button>
+                <app-stage-document-sign-action
+                  buttonClass="btn btn-primary"
+                  [context]="buildEvaluationSignContextPublic(internship, evaluation)"
+                  (sign)="signEvaluation(evaluation)"
+                />
+              </ng-container>
+              <ng-container *ngIf="type === 'evaluations' && !evaluationsByStage.get(internship.id)">
+                <app-stage-document-sign-action
+                  buttonClass="btn btn-primary"
+                  [context]="buildEvaluationSignContextPublic(internship, null)"
+                />
               </ng-container>
             </td>
           </tr>
@@ -957,11 +1018,15 @@
         <div class="detail-item"><span class="label">Référence</span><span class="value">{{ meetingDetailsModal.numReunion || ('Réunion #' + meetingDetailsModal.id) }}</span></div>
         <div class="detail-item"><span class="label">Stage</span><span class="value">{{ meetingDetailsModal.stageTitre || '-' }}</span></div>
         <div class="detail-item"><span class="label">Stagiaire</span><span class="value">{{ meetingDetailsModal.studentName || '-' }}</span></div>
-        <div class="detail-item"><span class="label">Entreprise</span><span class="value">{{ meetingDetailsModal.companyName || '-' }}</span></div>
+        <div class="detail-item"><span class="label">Entreprise</span><span class="value">{{ meetingDetailsModal.companyName || 'Non renseignée' }}</span></div>
+        <div class="detail-item"><span class="label">Créateur de la réunion</span><span class="value">{{ getMeetingCreatorName(meetingDetailsModal) }}</span></div>
+        <div class="detail-item"><span class="label">Responsable entreprise</span><span class="value">{{ getMeetingCompanySupervisorName(meetingDetailsModal) }}</span></div>
         <div class="detail-item"><span class="label">Date</span><span class="value">{{ meetingDetailsModal.date || '-' }}</span></div>
         <div class="detail-item"><span class="label">Heure</span><span class="value">{{ meetingDetailsModal.heure || '-' }}</span></div>
-        <div class="detail-item full-width"><span class="label">Participants</span><span class="value">{{ meetingDetailsModal.participantNames?.length ? meetingDetailsModal.participantNames!.join(', ') : 'Aucun participant renseigné' }}</span></div>
-        <div class="detail-item full-width"><span class="label">Observation</span><span class="value">{{ meetingDetailsModal.observation || 'Aucune observation' }}</span></div>
+        <div class="detail-item full-width"><span class="label">Participants</span><span class="value">{{ getMeetingParticipantsLabel(meetingDetailsModal) }}</span></div>
+        <div class="detail-item full-width" *ngIf="showsMeetingObservation(meetingDetailsModal)">
+          <span class="label">Observation</span><span class="value">{{ meetingDetailsModal.observation || 'Aucune observation' }}</span>
+        </div>
         <div class="detail-item full-width"><span class="label">Compte rendu</span><span class="value">{{ meetingDetailsModal.compteRendu || 'Aucun compte rendu disponible' }}</span></div>
       </div>
       <div class="form-actions">
@@ -997,13 +1062,13 @@
       <section class="follow-up-block">
         <div class="card-header">
           <h2>Suivi du stage (Trello)</h2>
-          <span class="pill soft">{{ followUpStageFinished ? 'Trello indisponible' : (followUpHasTrelloBoard ? 'Board disponible' : 'Board à créer') }}</span>
+          <span class="pill soft">{{ followUpHasTrelloBoard ? 'Board disponible' : 'Board à créer' }}</span>
         </div>
         <p class="trello-section-copy">
           Un aperçu clair du board permet de comprendre en un coup d'oeil où en est le stage.
         </p>
         <div class="empty-inline" *ngIf="isLoadingFollowUp">Synchronisation Trello...</div>
-        <div class="alert" *ngIf="followUpInfoMessage" [ngClass]="followUpStageFinished ? 'alert-warning' : 'alert-error'">{{ followUpInfoMessage }}</div>
+        <div class="alert alert-error" *ngIf="followUpInfoMessage">{{ followUpInfoMessage }}</div>
         <div class="trello-progress-head">
           <span class="trello-progress-label">Progression globale</span>
           <strong class="trello-progress-value">{{ followUpProgressPercent }}% completed</strong>
@@ -1035,7 +1100,7 @@
         </div>
         <div class="trello-board-actions">
           <a
-            *ngIf="followUpHasTrelloBoard && !followUpStageFinished"
+            *ngIf="followUpHasTrelloBoard"
             class="btn btn-primary trello-primary-button"
             [href]="followUpModal.trelloBoardUrl"
             target="_blank"
@@ -1044,19 +1109,11 @@
             Ouvrir le board Trello
           </a>
           <button
-            *ngIf="followUpHasTrelloBoard && followUpStageFinished"
-            type="button"
-            class="btn btn-primary trello-primary-button"
-            disabled
-          >
-            Ouvrir le board Trello
-          </button>
-          <button
             *ngIf="!followUpHasTrelloBoard"
             type="button"
             class="btn btn-primary trello-primary-button"
             (click)="openTrelloBoard(followUpModal)"
-            [disabled]="openingTrelloStageId === followUpModal.id || followUpStageFinished"
+            [disabled]="openingTrelloStageId === followUpModal.id"
           >
             {{ openingTrelloStageId === followUpModal.id ? 'Création...' : 'Créer automatiquement le board' }}
           </button>
@@ -1065,7 +1122,7 @@
             type="button"
             class="btn btn-secondary"
             (click)="openTrelloBoard(followUpModal)"
-            [disabled]="openingTrelloStageId === followUpModal.id || followUpStageFinished"
+            [disabled]="openingTrelloStageId === followUpModal.id"
           >
             {{ openingTrelloStageId === followUpModal.id ? 'Ouverture...' : 'Actualiser et ouvrir' }}
           </button>
@@ -1098,7 +1155,7 @@
                 <td>{{ meeting.date }} à {{ meeting.heure || '-' }}</td>
                 <td>{{ meeting.observation || 'Aucune observation' }}</td>
                 <td>{{ meeting.compteRendu || 'Aucun compte rendu' }}</td>
-                <td class="actions"><button type="button" class="btn btn-secondary" (click)="openReportModal(meeting)">Modifier observation</button></td>
+                <td class="actions"><button type="button" class="btn btn-secondary" (click)="openReportModal(meeting)" *ngIf="canAddOrEditObservationForMeeting(meeting)">Modifier observation</button></td>
               </tr>
             </tbody>
           </table>
@@ -1108,7 +1165,7 @@
       <section class="follow-up-block">
         <div class="card-header">
           <h2>Cahier de stage</h2>
-          <span class="pill">{{ logbooksByStage.get(followUpModal.id) ? 'Disponible' : 'À générer' }}</span>
+          <span class="pill">{{ getDocStatusLabel(getLogbookStatus(followUpModal.id)) }}</span>
         </div>
         <div class="alert alert-error" *ngIf="getLogbookStatus(followUpModal.id)?.raisonAbsence">{{ getLogbookStatus(followUpModal.id)?.raisonAbsence }}</div>
         <ng-container *ngIf="logbooksByStage.get(followUpModal.id) as logbook; else followUpMissingLogbook">
@@ -1117,14 +1174,16 @@
             <div class="detail-item"><span class="label">Encadrant professionnel</span><span class="value">{{ logbook.signeeEncPro ? 'Signé' : 'En attente' }}</span></div>
           </div>
           <div class="form-actions">
-            <button type="button" class="btn-submit" (click)="signLogbook(logbook)" [disabled]="isSaving">Valider et signer</button>
-            <button type="button" class="btn-cancel" (click)="download(followUpModal.id, 'cahier-stage')" [disabled]="!getLogbookStatus(followUpModal.id)?.disponible">Ouvrir PDF</button>
+            <button type="button" class="btn-cancel" (click)="openDocDetails('Cahier de stage', getLogbookStatus(followUpModal.id), followUpModal.id, 'cahier-stage')">Détail</button>
+            <button type="button" class="btn-cancel" (click)="download(followUpModal.id, 'cahier-stage')" [disabled]="!getLogbookStatus(followUpModal.id)?.disponible">PDF</button>
+            <button type="button" class="btn-submit" (click)="signLogbook(logbook)" [disabled]="isSaving || !canSignLogbook(logbook)" [title]="getLogbookSignTooltip(logbook)">Signer</button>
           </div>
         </ng-container>
         <ng-template #followUpMissingLogbook>
-          <div class="empty-inline">Le cahier de stage n'est pas encore généré.</div>
+          <div class="empty-inline">Le cahier de stage n'est pas encore disponible pour consultation.</div>
           <div class="form-actions">
-            <button type="button" class="btn-submit" (click)="generateLogbook(followUpModal)" [disabled]="isSaving">Générer le cahier</button>
+            <button type="button" class="btn-cancel" (click)="openDocDetails('Cahier de stage', getLogbookStatus(followUpModal.id), followUpModal.id, 'cahier-stage')">Détail</button>
+            <button type="button" class="btn-cancel" (click)="download(followUpModal.id, 'cahier-stage')" [disabled]="!getLogbookStatus(followUpModal.id)?.disponible">PDF</button>
           </div>
         </ng-template>
       </section>
@@ -1145,70 +1204,156 @@
         <div class="mini-kpi"><span class="mini-label">En cours</span><span class="mini-value">{{ trelloModal.nombreTachesEnCours }}</span></div>
         <div class="mini-kpi"><span class="mini-label">Terminées</span><span class="mini-value">{{ trelloModal.nombreTachesTerminees }}</span></div>
       </div>
-      <a *ngIf="trelloModal.trelloBoardUrl && trelloModalInternship && !isInternshipStageFinished(trelloModalInternship)"
-         class="btn btn-primary"
-         [href]="trelloModal.trelloBoardUrl"
-         target="_blank"
-         rel="noreferrer">Ouvrir Trello</a>
-      <button *ngIf="trelloModal.trelloBoardUrl && trelloModalInternship && isInternshipStageFinished(trelloModalInternship)"
-              type="button"
-              class="btn btn-primary"
-              disabled>Ouvrir Trello</button>
-      <p *ngIf="trelloModalInternship && isInternshipStageFinished(trelloModalInternship)"
-         style="margin-top:12px;color:#92400e;font-size:0.9rem;">
-        Trello indisponible : stage terminé.
-      </p>
+      <a *ngIf="trelloModal.trelloBoardUrl" class="btn btn-primary" [href]="trelloModal.trelloBoardUrl" target="_blank" rel="noreferrer">Ouvrir Trello</a>
     </div>
   </article>
 </div>
 
 <div class="modal-overlay" *ngIf="meetingModalOpen" (click)="closeModals()">
-  <form class="modal" (click)="$event.stopPropagation()" (ngSubmit)="saveMeeting()">
+  <form #meetingForm="ngForm" class="modal modal-wide meeting-form-modal" (click)="$event.stopPropagation()" (ngSubmit)="saveMeeting(meetingForm)">
     <div class="modal-header">
-      <h2>{{ meetingDraft.id ? 'Modifier réunion' : 'Créer réunion' }}</h2>
+      <div>
+        <h2>{{ meetingModalTitle }}</h2>
+        <p class="meeting-form-lead" *ngIf="!isEditingFinalMeeting">
+          Réunion de suivi avec le stagiaire. Les participants (vous et le stagiaire) sont ajoutés automatiquement ;
+          l'observation se renseigne après la réunion.
+        </p>
+        <p class="meeting-form-lead" *ngIf="isEditingFinalMeeting">
+          Réunion générée automatiquement à la fin du stage — seul l'horaire peut être modifié.
+        </p>
+      </div>
       <button type="button" class="btn-close" (click)="closeModals()">×</button>
     </div>
-    <div class="form form-grid">
-      <label>Stage
-        <select class="select" [(ngModel)]="meetingDraft.stageId" name="stageId" required>
-          <option [ngValue]="0">Sélectionner</option>
-          <option *ngFor="let internship of internships" [ngValue]="internship.id">{{ internship.titre }} - {{ internship.student.fullName }}</option>
-        </select>
-      </label>
-      <label>Type de réunion
-        <select class="select" [(ngModel)]="meetingDraft.typeReunion" name="typeReunion" required>
-          <option value="HEBDOMADAIRE">Réunion de suivi</option>
-        </select>
-      </label>
-      <label>Date
-        <input class="input" type="date" [(ngModel)]="meetingDraft.date" name="date" required />
-      </label>
-      <label>Heure
-        <input class="input" type="time" [(ngModel)]="meetingDraft.heure" name="heure" required />
-      </label>
-      <label class="full-width">Description
-        <textarea class="textarea" [(ngModel)]="meetingDraft.observation" name="observation" required></textarea>
-      </label>
-      <div class="full-width">
-        <div class="label">Participants</div>
-        <div class="filters" *ngIf="getMeetingParticipantOptions(meetingDraft.stageId).length; else noParticipantOptions">
-          <label class="cell-sub" *ngFor="let participant of getMeetingParticipantOptions(meetingDraft.stageId)">
-            <input
-              type="checkbox"
-              [checked]="isMeetingParticipantSelected(participant.id)"
-              (change)="toggleMeetingParticipant(participant.id, $any($event.target).checked)"
-            />
-            {{ participant.label }}
+
+    <div class="meeting-final-banner" *ngIf="isEditingFinalMeeting" role="status">
+      <strong>Modification limitée</strong>
+      <span>Seule l'<em>heure</em> est modifiable. La date, l'observation, les participants et les autres champs restent verrouillés.</span>
+    </div>
+
+    <!-- Réunion finale : horaire éditable uniquement -->
+    <ng-container *ngIf="isEditingFinalMeeting">
+      <section class="meeting-form-section">
+        <h3 class="meeting-form-section-title">Informations verrouillées</h3>
+        <div class="meeting-readonly-grid">
+          <div class="meeting-readonly-item">
+            <span class="field-label">Stage</span>
+            <span class="meeting-readonly-value">{{ originalMeetingForEdit?.stageTitre || '—' }}</span>
+          </div>
+          <div class="meeting-readonly-item">
+            <span class="field-label">N° réunion</span>
+            <span class="meeting-readonly-value">{{ meetingDraft.numReunion || '—' }}</span>
+          </div>
+          <div class="meeting-readonly-item">
+            <span class="field-label">Type</span>
+            <span class="meeting-readonly-value">{{ meetingTypeLabel }}</span>
+          </div>
+          <div class="meeting-readonly-item">
+            <span class="field-label">Date</span>
+            <span class="meeting-readonly-value">{{ meetingDraft.date || '—' }}</span>
+          </div>
+        </div>
+      </section>
+
+      <section class="meeting-form-section">
+        <h3 class="meeting-form-section-title">Horaire</h3>
+        <p class="form-hint">Modifiez uniquement l'heure de la réunion finale.</p>
+        <div class="form form-grid meeting-form-grid">
+          <label class="field-block">
+            <span class="field-label">Heure <span class="required-mark">*</span></span>
+            <input class="input" type="time" [(ngModel)]="meetingDraft.heure" name="heure" required />
           </label>
         </div>
-        <ng-template #noParticipantOptions>
-          <div class="cell-sub">Aucun participant disponible pour ce stage.</div>
-        </ng-template>
-      </div>
-      <div class="form-actions full-width">
-        <button type="button" class="btn-cancel" (click)="closeModals()">Annuler</button>
-        <button type="submit" class="btn-submit" [disabled]="isSaving">Enregistrer</button>
-      </div>
+      </section>
+
+      <section class="meeting-form-section" *ngIf="meetingParticipantGroups.length">
+        <h3 class="meeting-form-section-title">Participants (lecture seule)</h3>
+        <div class="meeting-participant-groups readonly-participants">
+          <div class="participant-group" *ngFor="let group of meetingParticipantGroups">
+            <div class="participant-group-title">{{ group.label }}</div>
+            <div class="participant-group-cards">
+              <div class="participant-card readonly" *ngFor="let participant of group.participants">
+                <div class="participant-card-body">
+                  <span class="participant-card-name">{{ participant.fullName }}</span>
+                  <span class="participant-card-meta" *ngIf="participant.email">{{ participant.email }}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </ng-container>
+
+    <!-- Réunion hebdomadaire : formulaire complet -->
+    <ng-container *ngIf="!isEditingFinalMeeting">
+      <section class="meeting-form-section">
+        <h3 class="meeting-form-section-title">Informations générales</h3>
+        <div class="form form-grid meeting-form-grid">
+          <label class="field-block">
+            <span class="field-label">Stage <span class="required-mark">*</span></span>
+            <select
+              class="select"
+              [(ngModel)]="meetingDraft.stageId"
+              (ngModelChange)="onMeetingStageChange()"
+              name="stageId"
+              required
+            >
+              <option [ngValue]="0">Choisir un stage…</option>
+              <option *ngFor="let internship of internships" [ngValue]="internship.id">
+                {{ internship.titre }} — {{ internship.student.fullName || 'Stagiaire' }}
+              </option>
+            </select>
+          </label>
+
+          <label class="field-block">
+            <span class="field-label">Type de réunion <span class="required-mark">*</span></span>
+            <input class="input input-readonly" [value]="meetingTypeLabel" readonly tabindex="-1" aria-readonly="true" />
+            <input type="hidden" [(ngModel)]="meetingDraft.typeReunion" name="typeReunion" />
+          </label>
+
+          <label class="field-block">
+            <span class="field-label">Date <span class="required-mark">*</span></span>
+            <input
+              class="input"
+              type="date"
+              [(ngModel)]="meetingDraft.date"
+              name="date"
+              required
+              [min]="meetingDateMinIso"
+              [max]="meetingDateMaxIso || null"
+              #meetingDateField="ngModel"
+            />
+            <p class="form-hint" *ngIf="selectedMeetingInternship">
+              Période du stage : {{ selectedMeetingInternship.dateDebut || '—' }} → {{ selectedMeetingInternship.dateFin || '—' }}.
+              Date au plus tôt : {{ meetingDateMinIso }} (début de réunion ≥ 24 h).
+            </p>
+            <p
+              class="form-error"
+              *ngIf="(meetingDateField.touched || meetingForm.submitted) && meetingDateFieldError(meetingDateField.errors, meetingDraft.date)"
+            >
+              {{ meetingDateFieldError(meetingDateField.errors, meetingDraft.date) }}
+            </p>
+          </label>
+
+          <label class="field-block">
+            <span class="field-label">Heure <span class="required-mark">*</span></span>
+            <input class="input" type="time" [(ngModel)]="meetingDraft.heure" name="heure" required />
+          </label>
+        </div>
+      </section>
+
+      <section class="meeting-form-section" *ngIf="meetingDraft.stageId">
+        <h3 class="meeting-form-section-title">Participants</h3>
+        <p class="form-hint meeting-participants-hint">
+          Automatiques : vous (encadrant créateur) et le stagiaire du stage. Aucune autre personne ne peut être invitée.
+        </p>
+      </section>
+    </ng-container>
+
+    <div class="form-actions meeting-form-actions">
+      <button type="button" class="btn-cancel" (click)="closeModals()">Annuler</button>
+      <button type="submit" class="btn-submit" [disabled]="isSaving">
+        {{ isEditingFinalMeeting ? 'Enregistrer' : (meetingDraft.id ? 'Enregistrer les modifications' : 'Créer la réunion') }}
+      </button>
     </div>
   </form>
 </div>
@@ -1216,10 +1361,13 @@
 <div class="modal-overlay" *ngIf="reportModal" (click)="closeModals()">
   <form class="modal" (click)="$event.stopPropagation()" (ngSubmit)="saveReport()">
     <div class="modal-header">
-      <h2>Observation</h2>
+      <h2>Mon observation</h2>
       <button type="button" class="btn-close" (click)="closeModals()">×</button>
     </div>
     <div class="form">
+      <p class="form-hint" *ngIf="reportModal">
+        Observation personnelle sur la réunion que vous avez créée (visible uniquement par vous).
+      </p>
       <label>Observation
         <textarea class="textarea" [(ngModel)]="reportText" name="reportText" required></textarea>
       </label>
@@ -1242,13 +1390,20 @@
 
     <div class="form eval-modal-body">
 
-      <!-- Bloc verrouillée -->
-      <div class="eval-period-locked" *ngIf="evaluationModal.verrouillee">
+      <div class="eval-period-locked" *ngIf="isEvaluationPeriodLocked(evaluationModal)">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
           <path d="M7 11V7a5 5 0 0 1 10 0v4" />
         </svg>
-        <span><strong>Fiche verrouillée.</strong> Toutes les signatures ont été apposées — la fiche est en lecture seule.</span>
+        <span>{{ evaluationUnavailableMessage }}</span>
+      </div>
+
+      <div class="eval-period-locked" *ngIf="!isEvaluationPeriodLocked(evaluationModal) && isEvaluationSubmittedReadOnly(evaluationModal)">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+          <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+        </svg>
+        <span><strong>Fiche en lecture seule.</strong> Cette évaluation a déjà été soumise/signée et ne peut plus être modifiée.</span>
       </div>
 
       <!-- Informations stagiaire (depuis la liste des stages chargés) -->
@@ -1309,64 +1464,53 @@
         </div>
       </div>
 
-      <!-- Critères d'évaluation -->
+      <!-- Critères d'évaluation (fixes — encadrant professionnel, sans Ponctualité) -->
       <div class="eval-section-bloc">
-        <div class="eval-section-titre" style="justify-content:space-between;flex-wrap:wrap;gap:8px">
-          <span style="display:flex;align-items:center;gap:0.5rem">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-            Critères d'évaluation
-            <span class="eval-badge-info">{{ evaluationDraft.notesAttribuees.length }} critère(s)</span>
-          </span>
-          <button type="button" class="btn btn-secondary btn-sm" (click)="addEvaluationNote()" [disabled]="evaluationModal.verrouillee">+ Ajouter un critère</button>
+        <div class="eval-section-titre">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+          Critères d'évaluation
+          <span class="eval-badge-info">{{ professionalCriteriaDraft.length }} critère(s)</span>
         </div>
 
-        <div class="eval-card-empty" *ngIf="!evaluationDraft.notesAttribuees.length">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v4"/><path d="M12 16h.01"/></svg>
-          Aucun critère saisi. Cliquez sur "Ajouter un critère" pour commencer.
-        </div>
-
-        <div class="eval-notes-table-wrapper" *ngIf="evaluationDraft.notesAttribuees.length">
-          <table class="eval-notes-table">
+        <div class="eval-criteria-table-wrapper">
+          <table class="eval-criteria-table">
             <thead>
               <tr>
-                <th class="col-critere">Critère</th>
-                <th class="col-note">Note / 5</th>
-                <th class="col-coeff">Coeff.</th>
-                <th class="col-score">Score pondéré</th>
-                <th class="col-commentaire">Commentaire</th>
-                <th style="width:48px"></th>
+                <th>Critère</th>
+                <th class="col-note">Note</th>
+                <th>Commentaire</th>
               </tr>
             </thead>
             <tbody>
-              <tr *ngFor="let note of evaluationDraft.notesAttribuees; let i = index">
-                <td class="col-critere">
-                  <input class="input critere-label" [(ngModel)]="note.critereLibelle" [name]="'critereLibelle' + i" [readonly]="evaluationModal.verrouillee" required placeholder="Libellé du critère" />
+              <tr *ngFor="let criterion of professionalCriteriaDraft; let i = index">
+                <td class="critere-label-cell">{{ criterion.critereLibelle }}</td>
+                <td class="col-note">
+                  <div class="ponct-input-group">
+                    <input
+                      type="number"
+                      class="ponct-input"
+                      [formControl]="professionalCriteriaFormArray.at(i)"
+                      min="0"
+                      max="5"
+                      step="1"
+                      [disabled]="evaluationModalCriteriaLocked"
+                    />
+                    <span class="ponct-bareme-label">/ 5</span>
+                  </div>
                 </td>
-                <td class="col-note" style="text-align:center">
-                  <input class="note-input" type="number" min="0" max="5" step="0.5" [(ngModel)]="note.note" [name]="'note' + i" (ngModelChange)="updateEvaluationNoteScore(note)" [disabled]="evaluationModal.verrouillee" required />
-                  <span class="note-bareme">/ {{ note.bareme || 5 }}</span>
-                </td>
-                <td class="col-coeff" style="text-align:center">
-                  <span class="coeff-badge">× {{ note.poids }}</span>
-                </td>
-                <td class="col-score" style="text-align:center">
-                  <span class="score-val">{{ note.scorePondere != null ? note.scorePondere.toFixed(2) : '—' }}</span>
-                </td>
-                <td class="col-commentaire">
-                  <input class="commentaire-input" [(ngModel)]="note.commentaire" [name]="'commentaire' + i" [disabled]="evaluationModal.verrouillee" placeholder="Commentaire (optionnel)" />
-                </td>
-                <td style="text-align:center">
-                  <button type="button" class="btn btn-secondary btn-sm" (click)="removeEvaluationNote(i)" [disabled]="evaluationModal.verrouillee" title="Retirer ce critère">×</button>
+                <td>
+                  <input
+                    type="text"
+                    class="input critere-comment-input"
+                    [(ngModel)]="criterion.commentaire"
+                    [name]="'critereComment' + i"
+                    [disabled]="evaluationModalCriteriaLocked"
+                    placeholder="Commentaire (optionnel)"
+                  />
                 </td>
               </tr>
             </tbody>
           </table>
-
-          <div class="eval-total-row" *ngIf="evaluationDraft.notesAttribuees.length">
-            <span class="eval-total-label">Score total pondéré</span>
-            <span class="eval-total-val">{{ evaluationTotalScore.toFixed(2) }}</span>
-            <span class="eval-total-label">/ {{ evaluationTotalWeight }}</span>
-          </div>
         </div>
       </div>
 
@@ -1378,25 +1522,25 @@
         </div>
         <label>
           Points forts <span class="req-star">*</span>
-          <textarea class="textarea" [(ngModel)]="evaluationDraft.pointFortEncadrantPro" name="pointFortEncadrantPro" [readonly]="evaluationModal.verrouillee" required placeholder="Décrivez les points forts observés..."></textarea>
+          <textarea class="textarea" [(ngModel)]="evaluationDraft.pointFortEncadrantPro" name="pointFortEncadrantPro" [readonly]="isEvaluationReadOnlyForCurrentUser(evaluationModal)" required placeholder="Décrivez les points forts observés..."></textarea>
         </label>
         <label>
           Axes d'amélioration <span class="req-star">*</span>
-          <textarea class="textarea" [(ngModel)]="evaluationDraft.axeAmeliorationEncadrantPro" name="axeAmeliorationEncadrantPro" [readonly]="evaluationModal.verrouillee" required placeholder="Indiquez les axes de progression..."></textarea>
+          <textarea class="textarea" [(ngModel)]="evaluationDraft.axeAmeliorationEncadrantPro" name="axeAmeliorationEncadrantPro" [readonly]="isEvaluationReadOnlyForCurrentUser(evaluationModal)" required placeholder="Indiquez les axes de progression..."></textarea>
         </label>
       </div>
 
       <!-- Note finale calculée -->
-      <div class="eval-note-finale-box" *ngIf="evaluationModal.noteFinale != null || evaluationDraft.notesAttribuees.length">
-        <span>Note finale calculée</span>
-        <strong>{{ evaluationModal.noteFinale != null ? evaluationModal.noteFinale : evaluationTotalScore.toFixed(2) }}</strong>
+      <div class="eval-note-finale-box">
+        <span>Note finale</span>
+        <strong>Note finale : {{ formatEvaluationFinalScore(evaluationModalFinalScoreOnFive) }}</strong>
         <span *ngIf="evaluationModal.donneesCompletes">✓ Données complètes</span>
         <span *ngIf="!evaluationModal.donneesCompletes" style="color:#fde68a">Données incomplètes</span>
       </div>
 
       <div class="form-actions">
         <button type="button" class="btn-cancel" (click)="closeModals()">Fermer</button>
-        <button type="submit" class="btn-submit btn-primary-action" [disabled]="isSaving || evaluationModal.verrouillee">
+        <button type="submit" class="btn-submit btn-primary-action" [disabled]="isSaving || isEvaluationReadOnlyForCurrentUser(evaluationModal)">
           {{ isSaving ? 'Enregistrement...' : 'Enregistrer' }}
         </button>
       </div>
@@ -1421,6 +1565,9 @@
           <span class="value" style="white-space:pre-wrap;line-height:1.5">{{ docDetailsModal.status.raisonAbsence }}</span>
         </div>
       </div>
+      <app-stage-document-signatures-block
+        [actors]="getSignatureActors(docDetailsModal.stageId, docDetailsModal.docType)"
+      />
       <div class="form-actions">
         <button type="button" class="btn-cancel" (click)="closeModals()">Fermer</button>
       </div>
